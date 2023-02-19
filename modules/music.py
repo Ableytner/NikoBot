@@ -1,5 +1,3 @@
-from time import sleep as sleep
-
 import discord
 import youtube_dl
 from discord.ext import commands, tasks

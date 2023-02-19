@@ -1,26 +1,14 @@
-import asyncio
 import os
 
 import discord
 import requests
-from discord import Embed
 from discord.ext import commands
 
-class General(commands.Cog):
+class Avatar(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
-
-    @commands.command()
-    async def help(self, ctx: commands.context.Context):
-        """Return a help command"""
-
-        await ctx.send("This is a help command.")
-
-    @commands.command()
-    async def UwU(self, ctx: commands.context.Context):
-        """Return the gesture"""
-
-        await ctx.send("UwU")
+        if not os.path.exists(os.path.join("cache", "avatars")):
+            os.mkdir(os.path.join("cache", "avatars"))
 
     @commands.command()
     async def avatar(self, ctx: commands.context.Context, user: str):
@@ -34,11 +22,11 @@ class General(commands.Cog):
         # Download the user's avatar
         response = requests.get(user_obj.avatar.url)
         if response.status_code == 200:
-            with open(f"avatars/{user_obj}.png", "wb") as f:
+            with open(f"cache/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
-            avatar_file = discord.File(f"avatars/{user_obj}.png", filename=f"{user_obj}.png")
+            avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
             await ctx.channel.send(f"Profile picture of {user_obj}:", file=avatar_file)
-            os.remove(f"avatars/{user_obj}.png")
+            # os.remove(f"cache/avatars/{user_obj}.png")
         else:
             await ctx.channel.send("Failed to download avatar.")
 
@@ -67,4 +55,4 @@ class General(commands.Cog):
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
-    await bot.add_cog(General(bot))
+    await bot.add_cog(Avatar(bot))
