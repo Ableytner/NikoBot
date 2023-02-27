@@ -4,3 +4,4 @@
 *\cache
 *.pyc
 *.db
+perf_test.txt
