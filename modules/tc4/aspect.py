@@ -6,12 +6,12 @@ from discord import Embed, File, Color
 
 class Aspect():
     def __init__(self, name: str, keyword: str, cost: int = 10, component1: Aspect = None, component2: Aspect = None) -> None:
-        self._name = name
-        self._keyword = keyword
-        self._cost = cost
-        self._component1 = component1
-        self._component2 = component2
-        self._neighbors = None
+        self.name = name
+        self.keyword = keyword
+        self.cost = cost
+        self.component1 = component1
+        self.component2 = component2
+        self.neighbors = None
 
         assert type(self.name) == str, f"Expected str, got {type(self.name)}({self.name})"
         assert type(self.keyword) == str, f"Expected str, got {type(self.keyword)}({self.keyword})"
@@ -19,44 +19,11 @@ class Aspect():
             assert type(self.component1) == Aspect, f"Expected Aspect, got {type(self.component1)}({self.component1})"
             assert type(self.component2) == Aspect, f"Expected Aspect, got {type(self.component2)}({self.component2})"
 
-    @property
-    def name(self) -> str:
-        return self._name
-    
-    @property
-    def keyword(self) -> str:
-        return self._keyword
-    
-    @property
-    def cost(self) -> int:
-        return self._cost
-
-    @cost.setter
-    def cost(self, cost: int) -> None:
-        if not isinstance(cost, int):
-            raise TypeError(f"cost must be of type int, not {type(cost)}")
-        self._cost = cost
-
-    @property
-    def component1(self) -> Aspect:
-        return self._component1
-    
-    @property
-    def component2(self) -> Aspect:
-        return self._component2
-    
-    @property
-    def neighbors(self) -> list[Aspect]:
-        if self._neighbors is None:
-            raise Exception("Neighbors not yet calculated")
-
-        return self._neighbors.copy()
-
     def construct_neighbors(self, aspects: dict[str, Aspect]) -> None:
-        self._neighbors = []
+        self.neighbors = []
         for aspect in aspects.values():
             if self == aspect.component1 or self == aspect.component2 or self.component1 == aspect or self.component2 == aspect:
-                self._neighbors.append(aspect)
+                self.neighbors.append(aspect)
 
     def primal(self) -> bool:
         return (self.component1 == None and self.component2 == None)
@@ -83,6 +50,8 @@ class Aspect():
         # while the color is black, look at the next pixel
         while all([item < 50 for item in central_rgb]):
             c += 1
+            if int(im.size[0]/2+c) >= im.width or int(im.size[1]/2+c) >= im.height:
+                break
             central_rgb = pix[int(im.size[0]/2+c), int(im.size[1]/2+c)][:-1:]
 
         embed_var = Embed(title=self.name, color=Color.from_rgb(*central_rgb))
@@ -96,4 +65,7 @@ class Aspect():
         return embed_var, file
 
     def __str__(self) -> str:
+        return f"{self.name} ({self.keyword})"
+
+    def __repr__(self) -> str:
         return f"{self.name} ({self.keyword})"

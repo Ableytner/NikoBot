@@ -21,8 +21,8 @@ class AspectParser():
             line_split = remaining_lines[i].strip("\n").split(",")
 
             if len(line_split) % 2 == 1:
-                cost = float(line_split.pop())
-                cost = int((1 / cost) * 10)
+                cost = int(line_split.pop())
+                # cost = int((1 / cost) * 10)
 
             if len(line_split) == 2:
                 aspect_to_add = Aspect(*line_split, cost=cost)

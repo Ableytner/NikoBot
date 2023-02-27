@@ -36,8 +36,8 @@ class TC4(commands.Cog):
         if aspect_objs[1] is None:
             await ctx.message.reply(f"The aspect {aspect_name_2} wasn't found!")
             return
-        
-        sp = ShortestPath(self.aspects).recursive(*aspect_objs)
+
+        sp = ShortestPath(self.aspects).recursive(*aspect_objs)[0]
         to_send = [sp[0].embed()]
         path = str(sp[0])
         for aspect in sp[1::]:
