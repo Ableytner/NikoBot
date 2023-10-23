@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import os
+
 from PIL import Image
 
 from discord import Embed, File, Color
+
+ASSETS_PATH = os.path.join(__file__.rsplit(os.sep, maxsplit=1)[0], "assets")
 
 class Aspect():
     def __init__(self, name: str, keyword: str, cost: int = 10, component1: Aspect = None, component2: Aspect = None) -> None:
@@ -43,7 +47,7 @@ class Aspect():
 
     def embed(self) -> tuple[Embed, File]:
         # get the aspect color
-        im = Image.open(f"modules/tc4/assets/{self.name.lower()}.png")
+        im = Image.open(f"{ASSETS_PATH}/{self.name.lower()}.png")
         pix = im.load()
         central_rgb = pix[int(im.size[0]/2), int(im.size[1]/2)][:-1:]
         c = 0
@@ -55,7 +59,7 @@ class Aspect():
             central_rgb = pix[int(im.size[0]/2+c), int(im.size[1]/2+c)][:-1:]
 
         embed_var = Embed(title=self.name, color=Color.from_rgb(*central_rgb))
-        file = File(f"modules/tc4/assets/{self.name.lower()}.png", filename=f"{self.name.lower()}.png")
+        file = File(f"{ASSETS_PATH}/{self.name.lower()}.png", filename=f"{self.name.lower()}.png")
         embed_var.set_image(url=f"attachment://{self.name.lower()}.png")
         embed_var.add_field(name="Keyword", value=f"{self.keyword}", inline=False)
         if not self.primal():

@@ -8,13 +8,18 @@ class Clear(commands.Cog):
         self._yes_emoji = "✅"
         self._no_emoji = "❌"
 
-    @commands.command()
+    @commands.hybrid_command(
+        name="clear",
+        brief="delete n messages",
+        description="delete the given amount of messages, as well as the ",
+        with_app_command=True
+    )
     async def clear(self, ctx: commands.context.Context, amount: int):
-        accept_decline = await ctx.send(f"Are you sure you want to delete {amount} messages?")
+        accept_decline = await ctx.reply(f"Are you sure you want to delete {amount} messages?")
         await accept_decline.add_reaction(self._yes_emoji)
         await accept_decline.add_reaction(self._no_emoji)
 
-        self._to_clear[accept_decline.id] = {"channel_id": ctx.channel.id, "message_id": accept_decline.id, "amount": amount}
+        self._to_clear[accept_decline.id] = {"channel_id": ctx.channel.id, "message_id": accept_decline.id, "amount": amount + 1}
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
@@ -24,7 +29,7 @@ class Clear(commands.Cog):
         data = self._to_clear[reaction.message.id]
 
         if reaction.emoji == "✅":
-            await self.bot.get_channel(data["channel_id"]).purge(limit=data["amount"] + 2)
+            await self.bot.get_channel(data["channel_id"]).purge(limit=data["amount"])
             self._to_clear.pop(reaction.message.id)
         elif reaction.emoji == "❌":
             await self.bot.get_channel(data["channel_id"]).get_partial_message(data["message_id"]).clear_reactions()

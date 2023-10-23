@@ -6,17 +6,19 @@ from .aspect import Aspect
 from .aspect_parser import AspectParser
 from .shortest_path import ShortestPath
 
+PATH = __file__.rsplit(os.sep, maxsplit=1)[0]
+
 class TC4(commands.Cog):
     """The module for Thaumcraft 4-related commands"""
 
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-        parser = AspectParser("modules/tc4/aspects.txt")
+        parser = AspectParser(f"{PATH}/aspects.txt")
         self.aspects = parser.parse()
         for aspect in self.aspects.values():
             aspect.construct_neighbors(self.aspects)
-            if not os.path.isfile(f"modules/tc4/assets/{aspect.name.lower()}.png"):
+            if not os.path.isfile(f"{PATH}/assets/{aspect.name.lower()}.png"):
                 print(f"Icon for aspect {aspect.name} not found!")
 
     @commands.command(name="tc4.aspect", brief="Information about an aspect", description="Prints out information about an Thaumcraft 4 aspect.")

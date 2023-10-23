@@ -5,6 +5,8 @@ import discord
 from discord.ext import commands
 import numpy
 
+MODULES = ["general", "clear", "music", "avatar", "owner", "tc4.tc4"]
+
 class DiscordBot(commands.Bot):
     def __init__(self) -> None:
         super().__init__(command_prefix = 'niko.', help_command=None, intents = discord.Intents.all())
@@ -19,13 +21,8 @@ class DiscordBot(commands.Bot):
         self.run(token)
 
     async def setup_hook(self) -> None:
-        await self.load_extension("modules.general")
-        await self.load_extension("modules.clear")
-        await self.load_extension("modules.music")
-        await self.load_extension("modules.avatar")
-        await self.load_extension("modules.owner")
-        await self.load_extension("modules.tc4.tc4")
-        # await self.load_extension("modules.test")
+        for module in MODULES:
+            await self.load_extension(f"modules.{module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
