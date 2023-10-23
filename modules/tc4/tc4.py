@@ -7,6 +7,8 @@ from .aspect_parser import AspectParser
 from .shortest_path import ShortestPath
 
 class TC4(commands.Cog):
+    """The module for Thaumcraft 4-related commands"""
+
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -17,7 +19,7 @@ class TC4(commands.Cog):
             if not os.path.isfile(f"modules/tc4/assets/{aspect.name.lower()}.png"):
                 print(f"Icon for aspect {aspect.name} not found!")
 
-    @commands.command(name="tc4.aspect")
+    @commands.command(name="tc4.aspect", brief="Information about an aspect", description="Prints out information about an Thaumcraft 4 aspect.")
     async def aspect(self, ctx: commands.context.Context, aspect_name: str):
         aspect_obj = self._find_aspect(aspect_name)
         if aspect_obj is None:
@@ -27,8 +29,10 @@ class TC4(commands.Cog):
         embed_var, file_var = aspect_obj.embed()
         await ctx.message.reply(embed=embed_var, file=file_var)
 
-    @commands.command(name="tc4.path")
+    @commands.command(name="tc4.path", brief="The shortest path between two aspects", description="Return the shortest path between two aspects, also considering their custom cost.")
     async def path(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2):
+        """The shortest path between two aspects"""
+
         aspect_objs = [self._find_aspect(aspect_name_1), self._find_aspect(aspect_name_2)]
         if aspect_objs[0] is None:
             await ctx.message.reply(f"The aspect {aspect_name_1} wasn't found!")

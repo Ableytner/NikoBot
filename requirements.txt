@@ -1,4 +1,6 @@
+aiohttp==3.9.0b0
 discord.py
 requests
 youtube_dl
 pillow
+numpy
