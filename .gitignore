@@ -5,4 +5,4 @@
 *\venv
 *.pyc
 *.db
-perf_test.txt
+perf_*.txt
