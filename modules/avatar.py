@@ -21,17 +21,18 @@ class Avatar(commands.Cog):
         if user_obj.avatar is None:
             await ctx.channel.send("User has a default avatar, which can't be downloadad.")
             return
-
+        
         # Download the user's avatar
         response = requests.get(user_obj.avatar.url)
         if response.status_code == 200:
             with open(f"cache/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
-            avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
-            await ctx.channel.send(f"Profile picture of {user_obj}:", file=avatar_file)
-            # os.remove(f"cache/avatars/{user_obj}.png")
         else:
             await ctx.channel.send("Failed to download avatar.")
+
+        # send the avatar
+        avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
+        await ctx.channel.send(f"Profile picture of {user_obj}:", file=avatar_file)
 
     async def parse_user(self, ctx: commands.context.Context, user: any) -> discord.member.Member | None:
         if user == None:
