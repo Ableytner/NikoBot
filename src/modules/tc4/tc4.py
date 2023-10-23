@@ -1,3 +1,5 @@
+"""contains the cog of the tc4 module"""
+
 import os
 
 from discord.ext import commands
@@ -21,8 +23,13 @@ class TC4(commands.Cog):
             if not os.path.isfile(f"{PATH}/assets/{aspect.name.lower()}.png"):
                 print(f"Icon for aspect {aspect.name} not found!")
 
-    @commands.command(name="tc4.aspect", brief="Information about an aspect", description="Prints out information about an Thaumcraft 4 aspect.")
+    @commands.command(
+        name="tc4.aspect",
+        brief="Information about an aspect",
+        description="Prints out information about an Thaumcraft 4 aspect.")
     async def aspect(self, ctx: commands.context.Context, aspect_name: str):
+        """Information about an aspect"""
+
         aspect_obj = self._find_aspect(aspect_name)
         if aspect_obj is None:
             await ctx.message.reply("That aspect wasn't found!")
@@ -31,7 +38,10 @@ class TC4(commands.Cog):
         embed_var, file_var = aspect_obj.embed()
         await ctx.message.reply(embed=embed_var, file=file_var)
 
-    @commands.command(name="tc4.path", brief="The shortest path between two aspects", description="Return the shortest path between two aspects, also considering their custom cost.")
+    @commands.command(
+        name="tc4.path",
+        brief="The shortest path between two aspects",
+        description="Return the shortest path between two aspects, also considering their cost.")
     async def path(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2):
         """The shortest path between two aspects"""
 
@@ -49,7 +59,8 @@ class TC4(commands.Cog):
         for aspect in sp[1::]:
             to_send.append(aspect.embed())
             path += f" -> {aspect}"
-        await ctx.message.reply(path, embeds=([item[0] for item in to_send]), files=([item[1] for item in to_send]))
+        await ctx.message.reply(path, embeds=([item[0] for item in to_send]),
+                                files=([item[1] for item in to_send]))
 
     def _find_aspect(self, aspect_name: str) -> Aspect | None:
         aspect_name = aspect_name.capitalize()
@@ -61,7 +72,7 @@ class TC4(commands.Cog):
         for aspect in self.aspects.values():
             if aspect.keyword == aspect_name.lower():
                 aspect_obj = aspect
-        
+
         return aspect_obj
 
 async def setup(bot: commands.Bot):

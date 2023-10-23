@@ -4,3 +4,5 @@ requests
 youtube_dl
 pillow
 numpy
+pylint
+pytest

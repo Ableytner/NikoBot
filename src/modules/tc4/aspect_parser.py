@@ -1,10 +1,16 @@
+"""module containing the AspectParser class"""
+
 from .aspect import Aspect
 
 class AspectParser():
+    """class for parsing the aspects.txt file to aspect objects"""
+
     def __init__(self, filename: str) -> None:
         self._filename = filename
 
     def parse(self) -> dict[str, Aspect]:
+        """parse the aspects, returning a aspect_name: Aspect dictionary"""
+
         parsed_lines: list[Aspect] = []
         parsed_names = []
 
