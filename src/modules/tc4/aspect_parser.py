@@ -11,31 +11,29 @@ class AspectParser():
     def parse(self) -> dict[str, Aspect]:
         """parse the aspects, returning a aspect_name: Aspect dictionary"""
 
-        parsed_lines: list[Aspect] = []
-        parsed_names = []
+        result: dict[str, Aspect] = {}
 
         with open(self._filename, "r") as f:
             remaining_lines = f.readlines()
-        
-        # last_remaining = len(remaining_lines)
-        i = 0
+
         while len(remaining_lines) > 0:
             component1 = None
             component2 = None
             aspect_to_add = None
             cost = 10
-            line_split = remaining_lines[i].strip("\n").split(",")
+            line_split = remaining_lines[0].strip("\n").split(",")
 
+            # a custom cost is given
             if len(line_split) % 2 == 1:
                 cost = int(line_split.pop())
-                # cost = int((1 / cost) * 10)
 
+            # the aspect is primal
             if len(line_split) == 2:
                 aspect_to_add = Aspect(*line_split, cost=cost)
-
+            # the aspect is not primal
             elif len(line_split) == 4:
-                if line_split[2] in parsed_names and line_split[3] in parsed_names:
-                    for aspect in parsed_lines:
+                if line_split[2] in result.keys() and line_split[3] in result.keys():
+                    for aspect in result.values():
                         if aspect.name == line_split[2]:
                             component1 = aspect
                         if aspect.name == line_split[3]:
@@ -45,18 +43,10 @@ class AspectParser():
                         aspect_to_add = Aspect(line_split[0], line_split[1], cost, component1, component2)
             
             if aspect_to_add is not None:
-                parsed_lines.append(aspect_to_add)
-                parsed_names.append(aspect_to_add.name)
-                remaining_lines.pop(i)
+                result[aspect_to_add.name] = aspect_to_add
+                remaining_lines.pop(0)
+            else:
+                # move aspect to the back of the list
+                remaining_lines.append(remaining_lines.pop(0))
 
-            i += 1
-            if i >= len(remaining_lines):
-                i = 0
-            
-            # if len(remaining_lines) != last_remaining:
-                # last_remaining = len(remaining_lines)
-                # print(f"remaining: {last_remaining}")
-                # print(f"parsed_names: {parsed_names}")
-                # print(f"parsed_lines: {parsed_lines}")
-
-        return {aspect.name: aspect for aspect in parsed_lines}
+        return result
