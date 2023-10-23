@@ -23,9 +23,9 @@ class DiscordBot(commands.Bot):
         await self.load_extension("modules.clear")
         await self.load_extension("modules.music")
         await self.load_extension("modules.avatar")
+        await self.load_extension("modules.owner")
         await self.load_extension("modules.tc4.tc4")
         # await self.load_extension("modules.test")
-        await self.tree.sync()
 
     async def on_ready(self):
         """Method called when the bot is ready"""
