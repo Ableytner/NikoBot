@@ -18,6 +18,9 @@ class Avatar(commands.Cog):
         if user_obj is None:
             await ctx.channel.send("User could not be found!")
             return
+        if user_obj.avatar is None:
+            await ctx.channel.send("User has a default avatar, which can't be downloadad.")
+            return
 
         # Download the user's avatar
         response = requests.get(user_obj.avatar.url)
