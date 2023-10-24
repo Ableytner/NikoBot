@@ -10,7 +10,7 @@ class ShortestPath():
 
     counter = 0
 
-    def recursive(self, curr: Aspect, goal: Aspect, path = None, cost = 0) -> list[tuple[Aspect, int]] | None: # pylint: disable=line-too-long
+    def recursive(self, curr: Aspect, goal: Aspect, path = None, cost = 0) -> tuple[list[Aspect], int] | None: # pylint: disable=line-too-long
         """
         calculate the shortest path, returning a list representing the shortest path
         every element is the aspect node and the total cost till this point
