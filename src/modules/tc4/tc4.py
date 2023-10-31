@@ -73,6 +73,9 @@ class TC4(commands.Cog):
     async def path(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2):
         """The shortest path between two aspects"""
 
+        if ctx.author.name != "ableytner":
+            await ctx.message.reply(f"The path command is currently broken, use exactpath instead!")
+
         aspect1 = self._find_aspect(aspect_name_1)
         aspect2 = self._find_aspect(aspect_name_2)
 

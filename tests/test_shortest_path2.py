@@ -28,6 +28,10 @@ def test_correct_path():
     sp2 = ShortestPath2(list(aspects.values()))
     sp2.calculate_graph()
 
+    path = sp.recursive(aspects["Motus"], aspects["Cognitio"])[0]
+    path2 = sp2.recursive(sp2.all_nodes["Motus"], sp2.all_nodes["Cognitio"])
+    assert len(path) == len(path2)
+
     path = sp.recursive(aspects["Ignis"], aspects["Nebrisum"])[0]
     path2 = sp2.recursive(sp2.all_nodes["Ignis"], sp2.all_nodes["Nebrisum"])
     assert len(path) == len(path2)
