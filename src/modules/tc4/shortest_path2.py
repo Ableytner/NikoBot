@@ -60,7 +60,7 @@ class ShortestPath2():
                 while c2 < len(remaining_names): # for target_node_name in curr_node.paths.keys():
                     node2: Node = self.all_nodes[remaining_names[c2]]
 
-                    if node1.aspect.name == "Aqua" or node2.aspect.name == "Aqua":
+                    if node1.aspect.name == "Potentia" and node2.aspect.name == "Vitium":
                         pass
                     # print(f"c1: {c1}, c2: {c2}", end="\r")
 
@@ -75,6 +75,7 @@ class ShortestPath2():
                         continue
 
                     self._exchange_paths(node1, node2)
+                    self._exchange_paths(node2, node1)
 
                     c2 += 1
 
@@ -87,64 +88,52 @@ class ShortestPath2():
                 c1 += 1
 
     def _exchange_paths(self, curr_node: Node, other_node: Node):
-        for node_name, other_path in other_node.paths.items():
-            if node_name == curr_node.aspect.name:
-                continue
-
-            if not node_name in curr_node.paths.keys():
-                sp = self.recursive(curr_node, other_node)
-                i = 1
-                while i < len(sp) - 1:
-                    node = self.all_nodes[sp[i].name]
-                    if node_name not in node.paths.keys():
-                        node.paths[node_name] = Path(sp[i + 1].name, self._calc_cost(other_node, self.all_nodes[node_name]) + other_node.aspect.cost + self._calc_cost(node, other_node))
-                    i += 1
-
-                curr_node.paths[node_name] = Path(sp[1].name, self._calc_cost(other_node, self.all_nodes[node_name]) + other_node.aspect.cost + self._calc_cost(curr_node, other_node))
-            else:
-                if self._calc_cost(curr_node, self.all_nodes[node_name]) > (self._calc_cost(other_node, self.all_nodes[node_name]) + other_node.aspect.cost + self._calc_cost(curr_node, other_node)):
-                    sp = self.recursive(curr_node, other_node)
-                    i = 1
-                    while i < len(sp) - 1:
-                        node = self.all_nodes[sp[i].name]
-                        if node_name not in node.paths.keys():
-                            node.paths[node_name] = Path(sp[i + 1].name, self._calc_cost(other_node, self.all_nodes[node_name]) + other_node.aspect.cost + self._calc_cost(node, other_node))
-                        i += 1
-
-                    curr_node.paths[node_name] = Path(sp[1].name, self._calc_cost(other_node, self.all_nodes[node_name]) + other_node.aspect.cost + self._calc_cost(curr_node, other_node))
-                else:
-                    pass
-
-        for node_name, curr_path in curr_node.paths.items():
-            if node_name == other_node.aspect.name:
+        """Adds all missing or cheaper paths from other_node to curr_node"""
+        for node_name in other_node.paths.keys():
+            if node_name == curr_node.aspect.name or other_node.paths[node_name].next_node == curr_node.aspect.name:
                 continue
 
             try:
-                if not node_name in other_node.paths.keys():
-                    sp = self.recursive(other_node, curr_node)
-                    i = 1
-                    while i < len(sp) - 1:
-                        node = self.all_nodes[sp[i].name]
-                        if node_name not in node.paths.keys():
-                            node.paths[node_name] = Path(sp[i + 1].name, self._calc_cost(curr_node, self.all_nodes[node_name]) + curr_node.aspect.cost + self._calc_cost(node, curr_node))
-                        i += 1
-
-                    other_node.paths[node_name] = Path(sp[1].name, self._calc_cost(curr_node, self.all_nodes[node_name]) + curr_node.aspect.cost + self._calc_cost(other_node, curr_node))
-                else:
-                    if self._calc_cost(other_node, self.all_nodes[node_name]) > (self._calc_cost(curr_node, self.all_nodes[node_name]) + curr_node.aspect.cost + self._calc_cost(other_node, curr_node)):
-                        sp = self.recursive(other_node, curr_node)
-                        i = 1
-                        while i < len(sp) - 1:
-                            node = self.all_nodes[sp[i].name]
-                            if node_name not in node.paths.keys():
-                                node.paths[node_name] = Path(sp[i + 1].name, self._calc_cost(curr_node, self.all_nodes[node_name]) + curr_node.aspect.cost + self._calc_cost(node, curr_node))
-                            i += 1
-
-                        other_node.paths[node_name] = Path(sp[1].name, self._calc_cost(curr_node, self.all_nodes[node_name]) + curr_node.aspect.cost + self._calc_cost(other_node, curr_node))
-                    else:
-                        pass
-            except:
+                new_path_cost = self._calc_cost(other_node, self.all_nodes[node_name]) + other_node.aspect.cost + self._calc_cost(curr_node, other_node)
+            except RecursionError:
                 pass
+
+            if not node_name in curr_node.paths.keys():
+                sp = self.recursive(curr_node, other_node)[1::] + self.recursive(other_node, self.all_nodes[node_name])
+
+                full_path_is_known = True
+                path_is_recursive = False
+                for sp_aspect in sp[1:-1:]:
+                    sp_node = self.all_nodes[sp_aspect.name]
+                    if node_name not in sp_node.paths.keys():
+                        full_path_is_known = False
+                    if curr_node.aspect.name == sp_aspect.name:
+                        path_is_recursive = True
+                
+                if full_path_is_known and not path_is_recursive:
+                    curr_node.paths[node_name] = Path(sp[1].name, new_path_cost)
+            else:
+                try:
+                    curr_path_cost = self._calc_cost(curr_node, self.all_nodes[node_name])
+                except RecursionError:
+                    pass
+
+                if curr_path_cost > new_path_cost:
+                    sp = self.recursive(curr_node, other_node)[1::] + self.recursive(other_node, self.all_nodes[node_name])
+
+                    full_path_is_known = True
+                    path_is_recursive = False
+                    for sp_aspect in sp[1:-1:]:
+                        sp_node = self.all_nodes[sp_aspect.name]
+                        if node_name not in sp_node.paths.keys():
+                            full_path_is_known = False
+                        if curr_node.aspect.name == sp_aspect.name:
+                            path_is_recursive = True
+
+                    if full_path_is_known and not path_is_recursive:
+                        curr_node.paths[node_name] = Path(sp[1].name, new_path_cost)
+                else:
+                    pass
 
     def _calc_cost(self, start_node: Node, goal_node: Node):
         cost = 0
@@ -167,8 +156,8 @@ class ShortestPath2():
         while curr.aspect.name != goal.aspect.name:
             ShortestPath2.counter += 1
             c += 1
-            if c > 100000:
-                raise Exception()
+            if c > 1000:
+                raise RecursionError()
 
             path.append(curr.aspect)
 
