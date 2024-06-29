@@ -6,8 +6,6 @@ from discord.ext import commands
 
 from .aspect import Aspect
 from .aspect_parser import AspectParser
-from .shortest_path import ShortestPath
-from .shortest_path2 import ShortestPath2
 from .shortest_path3 import Graph
 
 PATH = __file__.rsplit(os.sep, maxsplit=1)[0]
@@ -25,8 +23,6 @@ class TC4(commands.Cog):
             aspect.construct_neighbors(self.aspects)
             if not os.path.isfile(f"{PATH}/assets/{aspect.name.lower()}.png"):
                 print(f"Icon for aspect {aspect.name} not found!")
-        
-        self.sp2 = ShortestPath2(list(self.aspects.values()))
 
         self.graph = Graph(list(self.aspects.values()))
         self.graph.construct()
@@ -85,61 +81,3 @@ async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
     await bot.add_cog(TC4(bot))
-
-# --------------------------------------------------------------------------------------------------------------------------
-#                            BROKEN COMMANDS
-
-    @commands.command(
-        name="tc4.exactpath",
-        brief="The cheapest path between two aspects considering cost",
-        description="Return the cheapest path between two aspects, also considering their cost.")
-    async def exactpath(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2: str):
-        """The shortest path between two aspects"""
-
-        aspect_objs = [self._find_aspect(aspect_name_1), self._find_aspect(aspect_name_2)]
-        if aspect_objs[0] is None:
-            await ctx.message.reply(f"The aspect {aspect_name_1} wasn't found!")
-            return
-        if aspect_objs[1] is None:
-            await ctx.message.reply(f"The aspect {aspect_name_2} wasn't found!")
-            return
-
-        sp = ShortestPath(self.aspects).recursive(*aspect_objs)[0]
-        to_send = [sp[0].embed()]
-        path = str(sp[0])
-        for aspect in sp[1::]:
-            to_send.append(aspect.embed())
-            path += f" -> {aspect}"
-        await ctx.message.reply(path, embeds=([item[0] for item in to_send]),
-                                files=([item[1] for item in to_send]))
-
-    @commands.command(
-        name="tc4.brokenpath",
-        brief="The shortest path between two aspects",
-        description="Return the shortest path between two aspects, not considering their cost.")
-    async def broken_path(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2: str):
-        """The shortest path between two aspects"""
-
-        if ctx.author.name != "ableytner":
-            await ctx.message.reply(f"The path command is currently broken, use exactpath instead!")
-
-        aspect1 = self._find_aspect(aspect_name_1)
-        aspect2 = self._find_aspect(aspect_name_2)
-
-        if not aspect1:
-            await ctx.message.reply(f"The aspect {aspect_name_1} wasn't found!")
-            return
-        if not aspect2:
-            await ctx.message.reply(f"The aspect {aspect_name_2} wasn't found!")
-            return
-
-        aspect_objs = [self.sp2.all_nodes[aspect1.name], self.sp2.all_nodes[aspect2.name]]
-
-        sp = self.sp2.recursive(*aspect_objs)
-        to_send = [sp[0].embed()]
-        path = str(sp[0])
-        for aspect in sp[1::]:
-            to_send.append(aspect.embed())
-            path += f" -> {aspect}"
-        await ctx.message.reply(path, embeds=([item[0] for item in to_send]),
-                                files=([item[1] for item in to_send]))
