@@ -41,9 +41,6 @@ class Graph():
         if not self.node_knows_path_to_node(self.get_node(next_neighbor_name), self.get_node(target_node_name)):
             raise RuntimeError(f"node {next_neighbor_name} doesn't know a way to node {target_node_name}")
         
-        if node_name == "Humanus":
-            print(node_name, target_node_name, next_neighbor_name)
-
         self._nodes[node_name].paths[target_node_name] = self.get_node(next_neighbor_name)
 
     def node_knows_path_to_node(self, node: Node, other_node: Node) -> bool:
