@@ -14,7 +14,7 @@ class Avatar(commands.Cog):
     async def avatar(self, ctx: commands.context.Context, user: str):
         """Send back the mentioned users avatar"""
 
-        user_obj: discord.member.Member = await self.parse_user(ctx, user)
+        user_obj: discord.member.Member | None = await self.parse_user(ctx, user)
         if user_obj is None:
             await ctx.channel.send("User could not be found!")
             return

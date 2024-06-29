@@ -9,13 +9,16 @@ class General(commands.Cog):
 
     @commands.hybrid_command(name="help",
         brief="Return a help command",
-        description="Show information about a command or module.",
+        description="Show information about a command or module, or list all available commands",
         with_app_command=True)
-    async def help(self, ctx: commands.context.Context, command_name: str = None):
+    async def help(self, ctx: commands.context.Context, command_name: str | None = None):
         if command_name is None:
             cmds: list[tuple[str, str]] = []
             for cmd in self.bot.commands:
                 cmds.append((cmd.name, cmd.brief))
+
+            # sort using the lowercase command name
+            cmds.sort(key=lambda x: x[0].lower())
 
             answer = Embed(title="All available commands")
             for name, desc in cmds:
