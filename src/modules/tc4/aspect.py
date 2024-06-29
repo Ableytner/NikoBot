@@ -15,13 +15,14 @@ class Aspect():
         self.cost = cost
         self.component1 = component1
         self.component2 = component2
-        self.neighbors = None
 
         assert type(self.name) == str, f"Expected str, got {type(self.name)}({self.name})"
         assert type(self.keyword) == str, f"Expected str, got {type(self.keyword)}({self.keyword})"
         if not self.primal():
             assert type(self.component1) == Aspect, f"Expected Aspect, got {type(self.component1)}({self.component1})"
             assert type(self.component2) == Aspect, f"Expected Aspect, got {type(self.component2)}({self.component2})"
+
+    neighbors: list[Aspect] | None = None
 
     def construct_neighbors(self, aspects: dict[str, Aspect]) -> None:
         self.neighbors = []
