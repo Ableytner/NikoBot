@@ -16,10 +16,10 @@ class Avatar(commands.Cog):
 
         user_obj: discord.member.Member | None = await self.parse_user(ctx, user)
         if user_obj is None:
-            await ctx.channel.send("User could not be found!")
+            await ctx.message.reply("User could not be found!")
             return
         if user_obj.avatar is None:
-            await ctx.channel.send("User has a default avatar, which can't be downloadad.")
+            await ctx.message.reply("User has a default avatar, which can't be downloadad.")
             return
         
         # Download the user's avatar
@@ -28,11 +28,11 @@ class Avatar(commands.Cog):
             with open(f"cache/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
         else:
-            await ctx.channel.send("Failed to download avatar.")
+            await ctx.message.reply("Failed to download avatar.")
 
         # send the avatar
         avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
-        await ctx.channel.send(f"Profile picture of {user_obj}:", file=avatar_file)
+        await ctx.message.reply(f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
 
     async def parse_user(self, ctx: commands.context.Context, user: any) -> discord.member.Member | None:
         if user == None:
