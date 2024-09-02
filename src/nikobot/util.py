@@ -2,18 +2,13 @@ from __future__ import annotations
 
 import functools
 
+import discord
 from discord import app_commands
 from discord.ext import commands
 
 bot: commands.Bot | None = None
 
-class Cog():
-    def __init__(self) -> None:
-        Cog.instances[self.__class__.__name__] = self
-
-    instances: dict[str, Cog] = {}
-
-def register_hybrid_command(name: str, description: str):
+def hybrid_command(name: str, description: str):
     """register the provided method as both a normal and a slash command"""
 
     def decorator(func):
@@ -25,9 +20,8 @@ def register_hybrid_command(name: str, description: str):
 
             # __qualname__ looks like this: <classname>.<methodname>
             cls_name = func.__qualname__.split(".", maxsplit=1)[0]
-            if cls_name not in Cog.instances:
-                raise Exception(f"Instance of class '{cls_name}' not found, did you forget to inherit from util.Cog or forget to call super().__init__()?")
-            return await func(Cog.instances[cls_name], *args, **kwargs)
+            cog = bot.cogs[cls_name]
+            return await func(cog, *args, **kwargs)
 
         if bot is None:
             raise ValueError("bot variable is not yet set")
@@ -56,7 +50,7 @@ def register_hybrid_command(name: str, description: str):
         return wrapper
     return decorator
 
-def register_grouped_hybrid_command(name: str, description: str, command_group: app_commands.Group):
+def grouped_hybrid_command(name: str, description: str, command_group: app_commands.Group):
     """register the provided method as both a normal and a slash command of a given command group"""
 
     def decorator(func):
@@ -68,9 +62,8 @@ def register_grouped_hybrid_command(name: str, description: str, command_group: 
 
             # __qualname__ looks like this: <classname>.<methodname>
             cls_name = func.__qualname__.split(".", maxsplit=1)[0]
-            if cls_name not in Cog.instances:
-                raise Exception(f"Instance of class '{cls_name}' not found, did you forget to inherit from util.Cog or forget to call super().__init__()?")
-            return await func(Cog.instances[cls_name], *args, **kwargs)
+            cog = bot.cogs[cls_name]
+            return await func(cog, *args, **kwargs)
 
         if bot is None:
             raise ValueError("bot variable is not yet set")
@@ -98,3 +91,24 @@ def register_grouped_hybrid_command(name: str, description: str, command_group: 
 
         return wrapper
     return decorator
+
+def is_slash_command(ctx: commands.context.Context | discord.interactions.Interaction):
+    # for slash commands
+    if isinstance(ctx, discord.interactions.Interaction):
+        return True
+
+    # for normal commands
+    if isinstance(ctx, commands.context.Context):
+        return False
+
+    raise Exception(f"Unknown context type {type(ctx)}")
+
+async def reply(ctx: commands.context.Context | discord.interactions.Interaction, *args, **kwargs):
+    if not is_slash_command(ctx):
+        return await ctx.reply(*args, **kwargs)
+    else:
+        if not ctx.response.is_done():
+            await ctx.response.send_message(*args, **kwargs)
+            return await ctx.original_response()
+        else:
+            raise Exception("Slash commands can only reply once")

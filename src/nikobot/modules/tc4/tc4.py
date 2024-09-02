@@ -17,7 +17,7 @@ command_group = app_commands.Group(
     description="The module for Thaumcraft 4-related commands"
 )
 
-class TC4(commands.Cog, util.Cog):
+class TC4(commands.Cog):
     """The module for Thaumcraft 4-related commands"""
 
     def __init__(self, bot: commands.Bot) -> None:
@@ -34,9 +34,7 @@ class TC4(commands.Cog, util.Cog):
         self.graph = Graph(list(self.aspects.values()))
         self.graph.construct()
 
-        super().__init__()
-
-    @util.register_grouped_hybrid_command(
+    @util.grouped_hybrid_command(
         "aspect",
         "Prints out information about an Thaumcraft 4 aspect.",
         command_group
@@ -52,7 +50,7 @@ class TC4(commands.Cog, util.Cog):
         embed_var, file_var = aspect_obj.embed()
         await ctx.message.reply(embed=embed_var, file=file_var)
 
-    @util.register_grouped_hybrid_command(
+    @util.grouped_hybrid_command(
         "path",
         "Return the cheapest path between two aspects, also considering their cost.",
         command_group

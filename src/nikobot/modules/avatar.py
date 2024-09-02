@@ -6,15 +6,13 @@ from discord.ext import commands
 
 from .. import util
 
-class Avatar(commands.Cog, util.Cog):
+class Avatar(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         if not os.path.exists(os.path.join("cache", "avatars")):
             os.mkdir(os.path.join("cache", "avatars"))
-        
-        super().__init__()
 
-    @util.register_hybrid_command(
+    @util.hybrid_command(
         "avatar",
         "Send back the mentioned users avatar"
     )
@@ -41,7 +39,7 @@ class Avatar(commands.Cog, util.Cog):
         avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
         await util.reply(ctx, f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
 
-    async def parse_user(self, ctx: commands.context.Context | discord.interactions.Interaction, user: any) -> discord.member.Member | None:
+    async def parse_user(self, ctx: commands.context.Context | discord.interactions.Interaction, user: str) -> discord.member.Member | None:
         if user == None:
             return None
 
@@ -49,8 +47,19 @@ class Avatar(commands.Cog, util.Cog):
             user = user.strip('"')
 
         try:
+            # convert string to user
             converter = commands.MemberConverter()
-            user = await converter.convert(ctx, user) # convert string to user
+            if not util.is_slash_command(ctx):
+                user = await converter.convert(ctx, user)
+            else:
+                # this is stupid, but it works
+                class ConverterCtx():
+                    def __init__(slf, bot, message) -> None:
+                        slf.bot = bot
+                        slf.guild = None
+                        slf.message = message
+
+                user = await converter.convert(ConverterCtx(self.bot, ctx.message), user)
             return user
         except:
             pass

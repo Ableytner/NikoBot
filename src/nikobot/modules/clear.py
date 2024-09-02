@@ -3,7 +3,7 @@ from discord.ext import commands
 
 from .. import util
 
-class Clear(commands.Cog, util.Cog):
+class Clear(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -11,9 +11,7 @@ class Clear(commands.Cog, util.Cog):
         self._yes_emoji = "✅"
         self._no_emoji = "❌"
 
-        super().__init__()
-
-    @util.register_hybrid_command(
+    @util.hybrid_command(
         "clear",
         "Delete the given amount of messages"
     )
