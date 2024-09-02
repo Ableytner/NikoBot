@@ -4,37 +4,44 @@ import discord
 import requests
 from discord.ext import commands
 
-class Avatar(commands.Cog):
+from .. import util
+
+class Avatar(commands.Cog, util.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
         if not os.path.exists(os.path.join("cache", "avatars")):
             os.mkdir(os.path.join("cache", "avatars"))
+        
+        super().__init__()
 
-    @commands.command()
-    async def avatar(self, ctx: commands.context.Context, user: str):
+    @util.register_hybrid_command(
+        "avatar",
+        "Send back the mentioned users avatar"
+    )
+    async def avatar(self, ctx: commands.context.Context | discord.interactions.Interaction, user: str):
         """Send back the mentioned users avatar"""
 
         user_obj: discord.member.Member | None = await self.parse_user(ctx, user)
         if user_obj is None:
-            await ctx.message.reply("User could not be found!")
+            await util.reply(ctx, "User could not be found!")
             return
         if user_obj.avatar is None:
-            await ctx.message.reply("User has a default avatar, which can't be downloadad.")
+            await util.reply(ctx, "User has a default avatar, which can't be downloadad.")
             return
-        
+
         # Download the user's avatar
         response = requests.get(user_obj.avatar.url)
         if response.status_code == 200:
             with open(f"cache/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
         else:
-            await ctx.message.reply("Failed to download avatar.")
+            await util.reply(ctx, "Failed to download avatar.")
 
         # send the avatar
         avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
-        await ctx.message.reply(f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
+        await util.reply(ctx, f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
 
-    async def parse_user(self, ctx: commands.context.Context, user: any) -> discord.member.Member | None:
+    async def parse_user(self, ctx: commands.context.Context | discord.interactions.Interaction, user: any) -> discord.member.Member | None:
         if user == None:
             return None
 

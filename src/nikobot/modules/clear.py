@@ -17,16 +17,20 @@ class Clear(commands.Cog, util.Cog):
         "clear",
         "Delete the given amount of messages"
     )
-    async def clear(self, ctx: commands.context.Context, amount: int):
-        accept_decline = await ctx.reply(f"Are you sure you want to delete {amount} messages?")
+    async def clear(self, ctx: commands.context.Context | discord.interactions.Interaction, amount: int):
+        accept_decline = await util.reply(ctx, f"Are you sure you want to delete {amount} messages?")
         await accept_decline.add_reaction(self._yes_emoji)
         await accept_decline.add_reaction(self._no_emoji)
 
-        self._to_clear[accept_decline.id] = {"channel_id": ctx.channel.id, "message_id": accept_decline.id, "amount": amount + 2}
+        amount += 1 if util.is_slash_command(ctx) else 2
+
+        self._to_clear[accept_decline.id] = {"channel_id": ctx.channel.id, "message_id": accept_decline.id, "amount": amount}
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
         if reaction.message.id not in self._to_clear.keys():
+            return
+        if user.bot:
             return
 
         data = self._to_clear[reaction.message.id]
