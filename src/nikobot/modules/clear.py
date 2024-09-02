@@ -3,24 +3,26 @@ from discord.ext import commands
 
 from .. import util
 
-class Clear(commands.Cog):
+class Clear(commands.Cog, util.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
+
         self._to_clear = {}
         self._yes_emoji = "✅"
         self._no_emoji = "❌"
 
-    #@util.register_hybrid_command("clear", "Delete the given amount of messages")
-    @commands.command(
-        name="clear",
-        brief="Delete the given amount of messages",
-        description="Delete the given amount of messages")
+        super().__init__()
+
+    @util.register_hybrid_command(
+        "clear",
+        "Delete the given amount of messages"
+    )
     async def clear(self, ctx: commands.context.Context, amount: int):
         accept_decline = await ctx.reply(f"Are you sure you want to delete {amount} messages?")
         await accept_decline.add_reaction(self._yes_emoji)
         await accept_decline.add_reaction(self._no_emoji)
 
-        self._to_clear[accept_decline.id] = {"channel_id": ctx.channel.id, "message_id": accept_decline.id, "amount": amount + 1}
+        self._to_clear[accept_decline.id] = {"channel_id": ctx.channel.id, "message_id": accept_decline.id, "amount": amount + 2}
 
     @commands.Cog.listener()
     async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
@@ -41,8 +43,4 @@ class Clear(commands.Cog):
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
-    cog = Clear(bot)
-
-
-
-    await bot.add_cog(cog)
+    await bot.add_cog(Clear(bot))

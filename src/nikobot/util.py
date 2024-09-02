@@ -25,6 +25,8 @@ def register_hybrid_command(name: str, description: str):
 
             # __qualname__ looks like this: <classname>.<methodname>
             cls_name = func.__qualname__.split(".", maxsplit=1)[0]
+            if cls_name not in Cog.instances:
+                raise Exception(f"Instance of class '{cls_name}' not found, did you forget to inherit from util.Cog or forget to call super().__init__()?")
             return await func(Cog.instances[cls_name], *args, **kwargs)
 
         if bot is None:
@@ -33,7 +35,7 @@ def register_hybrid_command(name: str, description: str):
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if name in [item.name for item in list(bot.commands)]:
-            print(f"Command {name} is already registered, skipping...")
+            # print(f"Command {name} is already registered, skipping...")
             return wrapper
 
         # register normal command
@@ -66,6 +68,8 @@ def register_grouped_hybrid_command(name: str, description: str, command_group: 
 
             # __qualname__ looks like this: <classname>.<methodname>
             cls_name = func.__qualname__.split(".", maxsplit=1)[0]
+            if cls_name not in Cog.instances:
+                raise Exception(f"Instance of class '{cls_name}' not found, did you forget to inherit from util.Cog or forget to call super().__init__()?")
             return await func(Cog.instances[cls_name], *args, **kwargs)
 
         if bot is None:
@@ -74,7 +78,7 @@ def register_grouped_hybrid_command(name: str, description: str, command_group: 
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if f"{command_group.name}.{name}" in [item.name for item in list(bot.commands)]:
-            print(f"Command {command_group.name}.{name} is already registered, skipping...")
+            # print(f"Command {command_group.name}.{name} is already registered, skipping...")
             return wrapper
 
         # register normal command
