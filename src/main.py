@@ -5,6 +5,8 @@ import discord
 from discord.ext import commands
 import numpy
 
+from nikobot import util
+
 MODULES = ["general", "clear", "music", "avatar", "owner", "tc4.tc4"]
 
 class DiscordBot(commands.Bot):
@@ -22,7 +24,7 @@ class DiscordBot(commands.Bot):
 
     async def setup_hook(self) -> None:
         for module in MODULES:
-            await self.load_extension(f"modules.{module}")
+            await self.load_extension(f"nikobot.modules.{module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
@@ -96,4 +98,8 @@ def levenshtein_distance(token1: str, token2: str) -> int:
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 
 if __name__ == "__main__":
-    DiscordBot().start_bot()
+    bot = DiscordBot()
+
+    util.bot = bot
+
+    bot.start_bot()

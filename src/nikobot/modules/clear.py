@@ -1,6 +1,8 @@
 import discord
 from discord.ext import commands
 
+from .. import util
+
 class Clear(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
@@ -8,12 +10,11 @@ class Clear(commands.Cog):
         self._yes_emoji = "✅"
         self._no_emoji = "❌"
 
-    @commands.hybrid_command(
+    #@util.register_hybrid_command("clear", "Delete the given amount of messages")
+    @commands.command(
         name="clear",
-        brief="delete n messages",
-        description="delete the given amount of messages, as well as the ",
-        with_app_command=True
-    )
+        brief="Delete the given amount of messages",
+        description="Delete the given amount of messages")
     async def clear(self, ctx: commands.context.Context, amount: int):
         accept_decline = await ctx.reply(f"Are you sure you want to delete {amount} messages?")
         await accept_decline.add_reaction(self._yes_emoji)
@@ -40,4 +41,8 @@ class Clear(commands.Cog):
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
-    await bot.add_cog(Clear(bot))
+    cog = Clear(bot)
+
+
+
+    await bot.add_cog(cog)

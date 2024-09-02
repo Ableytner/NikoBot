@@ -2,15 +2,22 @@
 
 import os
 
+from discord import app_commands
 from discord.ext import commands
 
 from .aspect import Aspect
 from .aspect_parser import AspectParser
 from .shortest_path3 import Graph
+from ... import util
 
 PATH = __file__.rsplit(os.sep, maxsplit=1)[0]
 
-class TC4(commands.Cog):
+command_group = app_commands.Group(
+    name="tc4",
+    description="The module for Thaumcraft 4-related commands"
+)
+
+class TC4(commands.Cog, util.Cog):
     """The module for Thaumcraft 4-related commands"""
 
     def __init__(self, bot: commands.Bot) -> None:
@@ -27,10 +34,13 @@ class TC4(commands.Cog):
         self.graph = Graph(list(self.aspects.values()))
         self.graph.construct()
 
-    @commands.command(
-        name="tc4.aspect",
-        brief="Information about an aspect",
-        description="Prints out information about an Thaumcraft 4 aspect.")
+        super().__init__()
+
+    @util.register_grouped_hybrid_command(
+        "aspect",
+        "Prints out information about an Thaumcraft 4 aspect.",
+        command_group
+    )
     async def aspect(self, ctx: commands.context.Context, aspect_name: str):
         """Information about an aspect"""
 
@@ -42,10 +52,11 @@ class TC4(commands.Cog):
         embed_var, file_var = aspect_obj.embed()
         await ctx.message.reply(embed=embed_var, file=file_var)
 
-    @commands.command(
-        name="tc4.path",
-        brief="The cheapest path between two aspects considering cost",
-        description="Return the cheapest path between two aspects, also considering their cost.")
+    @util.register_grouped_hybrid_command(
+        "path",
+        "Return the cheapest path between two aspects, also considering their cost.",
+        command_group
+    )
     async def path(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2: str):
         """The shortest path between two aspects"""
 
