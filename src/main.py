@@ -7,7 +7,7 @@ import numpy
 
 from nikobot import util
 
-MODULES = ["general", "clear", "music", "avatar", "owner", "tc4.tc4"]
+MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4"]
 
 class DiscordBot(commands.Bot):
     def __init__(self) -> None:
