@@ -7,22 +7,22 @@ class Help(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @util.hybrid_command(
+    @util.discord.hybrid_command(
         "help",
         "Show information about a command or module, or list all available commands"
     )
     async def help(self, ctx: commands.context.Context | discord.interactions.Interaction, command_name: str | None = None):
         if command_name is None:
-            if util.is_slash_command(ctx):
+            if util.discord.is_slash_command(ctx):
                 answer = self._generate_help_general_slash()
             else:
                 answer = self._generate_help_general_normal()
         else:
-            if util.is_slash_command(ctx):
+            if util.discord.is_slash_command(ctx):
                 answer = self._generate_help_specific_slash(command_name)
             else:
                 answer = self._generate_help_specific_normal(command_name)
-        await util.reply(ctx, embed=answer)
+        await util.discord.reply(ctx, embed=answer)
 
     def _generate_help_general_normal(self) -> discord.Embed:
         cmds: dict[str, list[tuple[str, str]]] = {}

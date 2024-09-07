@@ -3,11 +3,10 @@ import os
 import asyncio
 import discord
 from discord.ext import commands
-import numpy
 
 from nikobot import util
 
-MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4"]
+MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "malnotifier.malnotifier"]
 
 class DiscordBot(commands.Bot):
     def __init__(self) -> None:
@@ -51,9 +50,9 @@ class DiscordBot(commands.Bot):
 
             cmds: list[tuple[commands.Command, int]] = []
             for cmd in self.commands:
-                dist = levenshtein_distance(cmd.name, user_command)
+                dist = util.general.levenshtein_distance(cmd.name, user_command)
                 if dist <= 2:
-                    cmds.append((cmd, levenshtein_distance(cmd.name, user_command)))
+                    cmds.append((cmd, dist))
             if len(cmds) > 0:
                 answer += "Did you mean:"
                 cmds.sort(key=lambda x:x[1])
@@ -70,43 +69,12 @@ class DiscordBot(commands.Bot):
         send_fut = asyncio.run_coroutine_threadsafe(self.get_channel(channel_id).send(text), self.loop)
         return send_fut.result()
 
-def levenshtein_distance(token1: str, token2: str) -> int:
-    distances = numpy.zeros((len(token1) + 1, len(token2) + 1))
-
-    for t1 in range(len(token1) + 1):
-        distances[t1][0] = t1
-
-    for t2 in range(len(token2) + 1):
-        distances[0][t2] = t2
-
-    a = 0
-    b = 0
-    c = 0
-
-    for t1 in range(1, len(token1) + 1):
-        for t2 in range(1, len(token2) + 1):
-            if (token1[t1-1] == token2[t2-1]):
-                distances[t1][t2] = distances[t1 - 1][t2 - 1]
-            else:
-                a = distances[t1][t2 - 1]
-                b = distances[t1 - 1][t2]
-                c = distances[t1 - 1][t2 - 1]
-                
-                if (a <= b and a <= c):
-                    distances[t1][t2] = a + 1
-                elif (b <= a and b <= c):
-                    distances[t1][t2] = b + 1
-                else:
-                    distances[t1][t2] = c + 1
-
-    return distances[len(token1)][len(token2)]
-
 # to-do
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 
 if __name__ == "__main__":
     bot = DiscordBot()
 
-    util.bot = bot
+    util.VolatileStorage["bot"] = bot
 
     bot.start_bot()

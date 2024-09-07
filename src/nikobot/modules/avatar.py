@@ -12,7 +12,7 @@ class Avatar(commands.Cog):
         if not os.path.exists(os.path.join("cache", "avatars")):
             os.mkdir(os.path.join("cache", "avatars"))
 
-    @util.hybrid_command(
+    @util.discord.hybrid_command(
         "avatar",
         "Send back the mentioned users avatar"
     )
@@ -21,10 +21,10 @@ class Avatar(commands.Cog):
 
         user_obj: discord.member.Member | None = await self.parse_user(ctx, user)
         if user_obj is None:
-            await util.reply(ctx, "User could not be found!")
+            await util.discord.reply(ctx, "User could not be found!")
             return
         if user_obj.avatar is None:
-            await util.reply(ctx, "User has a default avatar, which can't be downloadad.")
+            await util.discord.reply(ctx, "User has a default avatar, which can't be downloadad.")
             return
 
         # Download the user's avatar
@@ -33,11 +33,11 @@ class Avatar(commands.Cog):
             with open(f"cache/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
         else:
-            await util.reply(ctx, "Failed to download avatar.")
+            await util.discord.reply(ctx, "Failed to download avatar.")
 
         # send the avatar
         avatar_file = discord.File(f"cache/avatars/{user_obj}.png", filename=f"{user_obj}.png")
-        await util.reply(ctx, f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
+        await util.discord.reply(ctx, f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
 
     async def parse_user(self, ctx: commands.context.Context | discord.interactions.Interaction, user: str) -> discord.member.Member | None:
         if user == None:
@@ -49,7 +49,7 @@ class Avatar(commands.Cog):
         try:
             # convert string to user
             converter = commands.MemberConverter()
-            if not util.is_slash_command(ctx):
+            if not util.discord.is_slash_command(ctx):
                 user = await converter.convert(ctx, user)
             else:
                 # this is stupid, but it works

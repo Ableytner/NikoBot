@@ -3,7 +3,6 @@ from __future__ import annotations
 import os
 
 from PIL import Image
-
 from discord import Embed, File, Color
 
 ASSETS_PATH = os.path.join(__file__.rsplit(os.sep, maxsplit=1)[0], "assets")
