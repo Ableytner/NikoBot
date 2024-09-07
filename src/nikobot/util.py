@@ -87,6 +87,12 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             description=description
         )(wrapper)
 
+        # register group of not yet registered
+        try:
+            bot.tree.add_command(command_group)
+        except discord.app_commands.CommandAlreadyRegistered:
+            pass
+
         print(f"Registered command {command_group.name}.{name}")
 
         return wrapper

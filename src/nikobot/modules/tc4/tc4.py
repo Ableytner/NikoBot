@@ -44,11 +44,11 @@ class TC4(commands.Cog):
 
         aspect_obj = self._find_aspect(aspect_name)
         if aspect_obj is None:
-            await ctx.message.reply("That aspect wasn't found!")
+            await util.reply(ctx, "That aspect wasn't found!")
             return
 
         embed_var, file_var = aspect_obj.embed()
-        await ctx.message.reply(embed=embed_var, file=file_var)
+        await util.reply(ctx, embed=embed_var, file=file_var)
 
     @util.grouped_hybrid_command(
         "path",
@@ -60,12 +60,12 @@ class TC4(commands.Cog):
 
         aspect_objs = [self._find_aspect(aspect_name_1), self._find_aspect(aspect_name_2)]
         if aspect_objs[0] is None:
-            await ctx.message.reply(f"The aspect {aspect_name_1} wasn't found!")
+            await util.reply(ctx, f"The aspect {aspect_name_1} wasn't found!")
             return
         if aspect_objs[1] is None:
-            await ctx.message.reply(f"The aspect {aspect_name_2} wasn't found!")
+            await util.reply(ctx, f"The aspect {aspect_name_2} wasn't found!")
             return
-        
+
         sp = self.graph.calc_shortest_path(*[item.name for item in aspect_objs])
 
         to_send = [sp[0].embed()]
@@ -73,8 +73,10 @@ class TC4(commands.Cog):
         for aspect in sp[1::]:
             to_send.append(aspect.embed())
             path += f" -> {aspect}"
-        await ctx.message.reply(path, embeds=([item[0] for item in to_send]),
-                                files=([item[1] for item in to_send]))
+        await util.reply(ctx,
+                         path,
+                         embeds=([item[0] for item in to_send]),
+                         files=([item[1] for item in to_send]))
 
     def _find_aspect(self, aspect_name: str) -> Aspect | None:
         aspect_name = aspect_name.capitalize()
