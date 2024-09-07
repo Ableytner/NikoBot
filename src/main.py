@@ -39,7 +39,14 @@ class DiscordBot(commands.Bot):
 
     async def on_command_error(self, context: commands.context.Context, exception: commands.errors.CommandError, /) -> None:
         if isinstance(exception, commands.errors.CommandNotFound):
-            user_command = exception.args[0].split('"')[1]
+            user_command: str = exception.args[0].split('"')[1]
+
+            if user_command.endswith(".help"):
+                help_cog = self.cogs["Help"]
+                answer = help_cog._generate_help_specific_normal(user_command.replace(".help", ""))
+                await context.message.reply(embed=answer)
+                return
+
             answer = f"Command '{user_command}' not found!\n"
 
             cmds: list[tuple[commands.Command, int]] = []
