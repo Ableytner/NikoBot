@@ -6,3 +6,4 @@
 *.pyc
 *.db
 perf_*.txt
+storage.json
