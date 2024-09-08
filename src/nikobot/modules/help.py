@@ -12,23 +12,29 @@ class Help(commands.Cog):
         "Show information about a command or module, or list all available commands"
     )
     async def help(self, ctx: commands.context.Context | discord.interactions.Interaction, command_name: str | None = None):
+        sent_by_owner: bool = await util.VolatileStorage["bot"].is_owner(ctx.author)
+
         if command_name is None:
             if util.discord.is_slash_command(ctx):
-                answer = self._generate_help_general_slash()
+                answer = self._generate_help_general_slash(sent_by_owner)
             else:
-                answer = self._generate_help_general_normal()
+                answer = self._generate_help_general_normal(sent_by_owner)
         else:
             if util.discord.is_slash_command(ctx):
                 answer = self._generate_help_specific_slash(command_name)
             else:
                 answer = self._generate_help_specific_normal(command_name)
+
         await util.discord.reply(ctx, embed=answer)
 
-    def _generate_help_general_normal(self) -> discord.Embed:
+    def _generate_help_general_normal(self, sent_by_owner: bool = False) -> discord.Embed:
         cmds: dict[str, list[tuple[str, str]]] = {}
         cmds["General"] = []
 
         for cmd in self.bot.commands:
+            if cmd.description.startswith("__hidden__") and not sent_by_owner:
+                continue
+
             if "." in cmd.name:
                 groupname = cmd.name.split(".", maxsplit=1)[0]
                 if groupname not in cmds:
@@ -46,16 +52,19 @@ class Help(commands.Cog):
             commands_texts = []
             for name, desc in commands:
                 commands_texts.append(f"**{name}**")
-                commands_texts.append(desc or "None")
+                commands_texts.append(desc.strip("__hidden__") or "None")
             answer.add_field(name=groupname, value="\n".join(commands_texts), inline=False)
 
         return answer
 
-    def _generate_help_general_slash(self) -> discord.Embed:
+    def _generate_help_general_slash(self, sent_by_owner: bool = False) -> discord.Embed:
         cmds: dict[str, list[tuple[str, str]]] = {}
         cmds["General"] = []
 
         for cmd in self.bot.tree.get_commands():
+            if cmd.description.startswith("__hidden__") and not sent_by_owner:
+                continue
+
             if isinstance(cmd, discord.app_commands.Group):
                 cmds[cmd.name] = [(item.name, item.description) for item in cmd.commands]
             elif isinstance(cmd, discord.app_commands.Command):
@@ -72,7 +81,7 @@ class Help(commands.Cog):
             commands_texts = []
             for name, desc in commands:
                 commands_texts.append(f"**{name}**")
-                commands_texts.append(desc or "None")
+                commands_texts.append(desc.strip("__hidden__") or "None")
             answer.add_field(name=groupname, value="\n".join(commands_texts), inline=False)
 
         return answer
@@ -102,7 +111,7 @@ class Help(commands.Cog):
                and cmd.name.split(".", maxsplit=1)[1].lower() == command_name.lower()):
                 answer = discord.Embed(title=f"Help for '{cmd.name}'")
 
-                desc = cmd.description
+                desc = cmd.description.strip("__hidden__")
                 if "." in cmd.name:
                     desc += f"\nCommand is a part of the '{cmd.name.split(".", maxsplit=1)[0]}' module"
                 answer.add_field(name="Description", value=desc)
@@ -131,7 +140,7 @@ class Help(commands.Cog):
                 else:
                     answer = discord.Embed(title=f"Help for '{cmd.name}'")
 
-                    desc = cmd.description
+                    desc = cmd.description.strip("__hidden__")
                     if cmd.parent is not None:
                         desc += f"\nCommand is a part of the '{cmd.parent.name}' module"
                     answer.add_field(name="Description", value=desc)

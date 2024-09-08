@@ -45,7 +45,7 @@ class Aspect():
             return False
         return self.component1.derives_from(aspect) or self.component2.derives_from(aspect)
 
-    def embed(self) -> tuple[Embed, File]:
+    def to_embed(self) -> tuple[Embed, File]:
         # get the aspect color
         im = Image.open(f"{ASSETS_PATH}/{self.name.lower()}.png")
         pix = im.load()

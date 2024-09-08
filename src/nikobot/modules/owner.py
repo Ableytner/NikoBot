@@ -1,5 +1,6 @@
-import discord
 from discord.ext import commands
+
+from .. import util
 
 class Owner(commands.Cog):
     """The module for owner-only commands"""
@@ -7,10 +8,10 @@ class Owner(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-    @commands.hybrid_command(
+    @util.discord.normal_command(
         name = "sync_tree",
         description = "sync the bots tree to load new slash commands",
-        with_app_command = True
+        hidden=True
     )
     @commands.is_owner()
     async def sync_tree(self, ctx: commands.context.Context):

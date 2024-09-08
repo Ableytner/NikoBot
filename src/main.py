@@ -1,3 +1,5 @@
+import pathlib
+import shutil
 import os
 
 import asyncio
@@ -7,12 +9,14 @@ from discord.ext import commands
 from nikobot import util
 
 MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "malnotifier.malnotifier"]
+STORAGE_DIR = str(pathlib.Path(os.path.dirname(__file__), "..", "storage").resolve())
+STORAGE_FILE = os.path.join(STORAGE_DIR, "storage.json")
+CACHE_DIR = os.path.join(STORAGE_DIR, "cache")
+TEMP_DIR = os.path.join(STORAGE_DIR, "temp")
 
 class DiscordBot(commands.Bot):
     def __init__(self) -> None:
         super().__init__(command_prefix = 'niko.', help_command=None, intents = discord.Intents.all())
-        if not os.path.exists("cache"):
-            os.mkdir("cache")
 
     def start_bot(self):
         """Start the discord bot"""
@@ -37,28 +41,39 @@ class DiscordBot(commands.Bot):
             return
 
     async def on_command_error(self, context: commands.context.Context, exception: commands.errors.CommandError, /) -> None:
+        # owner-only commands
+        if isinstance(exception, commands.errors.NotOwner):
+            embed = discord.Embed(title="Not allowed to use this command", color=discord.Color.red())
+            await util.discord.reply(context, embed=embed)
+            return
+
+        # command wasn't found
         if isinstance(exception, commands.errors.CommandNotFound):
             user_command: str = exception.args[0].split('"')[1]
 
+            # call help command if command ends with '.help'
             if user_command.endswith(".help"):
                 help_cog = self.cogs["Help"]
                 answer = help_cog._generate_help_specific_normal(user_command.replace(".help", ""))
                 await context.message.reply(embed=answer)
                 return
 
-            answer = f"Command '{user_command}' not found!\n"
+            embed = discord.Embed(title=f"Command '{user_command}' not found!\n")
 
             cmds: list[tuple[commands.Command, int]] = []
             for cmd in self.commands:
                 dist = util.general.levenshtein_distance(cmd.name, user_command)
                 if dist <= 2:
                     cmds.append((cmd, dist))
+
             if len(cmds) > 0:
-                answer += "Did you mean:"
                 cmds.sort(key=lambda x:x[1])
-                for cmd in cmds:
-                    answer += f"\n* {cmd[0].name}"
-            await context.message.reply(answer)
+                embed.add_field(name="Did you mean:", value="\n".join([f"- {cmd[0].name}" for cmd in cmds]))
+                embed.color = discord.Color.orange()
+            else:
+                embed.color = discord.Color.dark_orange()
+
+            await util.discord.reply(context, embed=embed)
             return
 
         return await super().on_command_error(context, exception)
@@ -73,6 +88,16 @@ class DiscordBot(commands.Bot):
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 
 if __name__ == "__main__":
+    util.VolatileStorage["storage_file"] = STORAGE_FILE
+    util.PersistentStorage._load_from_disk()
+
+    util.VolatileStorage["cache_dir"] = CACHE_DIR
+    os.makedirs(util.VolatileStorage["cache_dir"], exist_ok=True)
+
+    util.VolatileStorage["temp_dir"] = TEMP_DIR
+    shutil.rmtree(util.VolatileStorage["temp_dir"], ignore_errors=True)
+    os.makedirs(util.VolatileStorage["temp_dir"], exist_ok=True)
+
     bot = DiscordBot()
 
     util.VolatileStorage["bot"] = bot

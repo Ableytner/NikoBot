@@ -17,7 +17,7 @@ def get_bot() -> commands.Bot:
     
     return bot
 
-def normal_command(name: str, description: str):
+def normal_command(name: str, description: str, hidden: str = False):
     """register the provided method as a normal command"""
 
     def decorator(func):
@@ -40,12 +40,18 @@ def normal_command(name: str, description: str):
         if name in [item.name for item in list(get_bot().commands)]:
             # print(f"Command {name} is already registered, skipping...")
             return wrapper
+        
+        # add hidden attribute to hide command from help
+        if hidden:
+            desc = "__hidden__" + description
+        else:
+            desc = description
 
         # register normal command
         get_bot().command(
             name=name,
-            brief=description,
-            description=description
+            brief=desc,
+            description=desc
         )(wrapper)
 
         print(f"Registered command {name}")

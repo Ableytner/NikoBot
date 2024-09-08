@@ -47,7 +47,7 @@ class TC4(commands.Cog):
             await util.discord.reply(ctx, "That aspect wasn't found!")
             return
 
-        embed_var, file_var = aspect_obj.embed()
+        embed_var, file_var = aspect_obj.to_embed()
         await util.discord.reply(ctx, embed=embed_var, file=file_var)
 
     @util.discord.grouped_hybrid_command(
@@ -68,10 +68,10 @@ class TC4(commands.Cog):
 
         sp = self.graph.calc_shortest_path(*[item.name for item in aspect_objs])
 
-        to_send = [sp[0].embed()]
+        to_send = [sp[0].to_embed()]
         path = str(sp[0])
         for aspect in sp[1::]:
-            to_send.append(aspect.embed())
+            to_send.append(aspect.to_embed())
             path += f" -> {aspect}"
         await util.discord.reply(ctx,
                                  path,

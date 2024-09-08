@@ -1,9 +1,8 @@
 *\__pycache__
 *\.pytest_cache
 *\.vscode
-*\cache
 *\venv
+*\storage
 *.pyc
 *.db
 perf_*.txt
-storage.json
