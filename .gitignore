@@ -6,3 +6,4 @@
 *.pyc
 *.db
 perf_*.txt
+dc_token.txt
