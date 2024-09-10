@@ -25,6 +25,8 @@ class Avatar(commands.Cog):
             await util.discord.reply(ctx, "User has a default avatar, which can't be downloadad.")
             return
 
+        os.makedirs(f"{util.VolatileStorage["cache_dir"]}/avatars", exist_ok=True)
+
         # Download the user's avatar
         response = requests.get(user_obj.avatar.url)
         if response.status_code == 200:
