@@ -1,3 +1,4 @@
+import asyncio
 import functools
 import inspect
 import re
@@ -187,6 +188,12 @@ def is_slash_command(ctx: commands.context.Context | discord.interactions.Intera
         return False
 
     raise Exception(f"Unknown context type {type(ctx)}")
+
+def is_sent_by_owner(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
+    if is_slash_command(ctx):
+        return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.user), get_bot().loop)
+    else:
+        return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.author), get_bot().loop)
 
 async def reply(ctx: commands.context.Context | discord.interactions.Interaction, *args, **kwargs):
     if not is_slash_command(ctx):

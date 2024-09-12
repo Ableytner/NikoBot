@@ -12,7 +12,7 @@ class Help(commands.Cog):
         "Show information about a command or module, or list all available commands"
     )
     async def help(self, ctx: commands.context.Context | discord.interactions.Interaction, command_name: str | None = None):
-        sent_by_owner: bool = await util.VolatileStorage["bot"].is_owner(ctx.author)
+        sent_by_owner = util.discord.is_sent_by_owner(ctx)
 
         if command_name is None:
             if util.discord.is_slash_command(ctx):
@@ -99,7 +99,7 @@ class Help(commands.Cog):
                 commands_texts = []
                 for command in self.bot.commands:
                     if "." in command.name \
-                       and cmd.name.split(".", maxsplit=1)[0].lower() == module_name.lower():
+                       and command.name.split(".", maxsplit=1)[0].lower() == module_name.lower():
                         commands_texts.append(f"**{command.name}**")
                         commands_texts.append(command.description or "None")
                 answer.add_field(name="Available commands", value="\n".join(commands_texts), inline=False)
@@ -117,7 +117,7 @@ class Help(commands.Cog):
                 answer.add_field(name="Description", value=desc)
 
                 return answer
-        
+
         return discord.Embed(title=f"Command '{command_name}' not found")
 
     def _generate_help_specific_slash(self, command_name: str) -> discord.Embed:
