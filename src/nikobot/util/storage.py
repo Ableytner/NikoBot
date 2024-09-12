@@ -102,6 +102,12 @@ class _PersistentStorage(_BaseStorage):
 
     _store: dict[str, Any] = None
 
+    def __setitem__(self, key: str, item: Any) -> None:
+        if not isinstance(item, (str, int, list, dict)):
+            raise TypeError(f"Tried to add item with type {type(item)} to PersistentStorage")
+
+        return super().__setitem__(key, item)
+
     def _load_from_disk(self) -> None:
         if "storage_file" not in VolatileStorage:
             raise Exception()

@@ -1,4 +1,6 @@
 import functools
+import inspect
+import re
 
 import discord
 from discord import app_commands
@@ -91,10 +93,23 @@ def hybrid_command(name: str, description: str):
         )(wrapper)
 
         # register slash command
+        # replace signature
+        sig = str(inspect.signature(wrapper)).replace("self, ", "")
+        # replace *<some_arg>: list[str] with <some_arg>: str
+        sig = re.sub(r"\*(.+): list\[str\]", r"\1: str", sig).strip("()")
+        sig_without_types = re.sub(r": .+[,]", ",", sig)
+        sig_without_types = re.sub(r": .+[\006]", "", sig_without_types + "\006")
+        # eval function with new signature
+        # code from https://stackoverflow.com/a/1409496/15436169
+        fakefunc = f"async def func({sig}):\n    return await fakefunc({sig_without_types})"
+        fakefunc_code = compile(fakefunc, "fakesource", "exec")
+        fakeglobals = {}
+        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discord}, fakeglobals)
+        wrapper_for_slash_command = fakeglobals["func"]
         get_bot().tree.command(
             name=name,
             description=description
-        )(wrapper)
+        )(wrapper_for_slash_command)
 
         print(f"Registered command {name}")
 
@@ -133,10 +148,23 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         )(wrapper)
 
         # register slash command
+        # replace signature
+        sig = str(inspect.signature(wrapper)).replace("self, ", "")
+        # replace *<some_arg>: list[str] with <some_arg>: str
+        sig = re.sub(r"\*(.+): list\[str\]", r"\1: str", sig).strip("()")
+        sig_without_types = re.sub(r": .+[,]", ",", sig)
+        sig_without_types = re.sub(r": .+[\006]", "", sig_without_types + "\006")
+        # eval function with new signature
+        # code from https://stackoverflow.com/a/1409496/15436169
+        fakefunc = f"async def func({sig}):\n    return await fakefunc({sig_without_types})"
+        fakefunc_code = compile(fakefunc, "fakesource", "exec")
+        fakeglobals = {}
+        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discord}, fakeglobals)
+        wrapper_for_slash_command = fakeglobals["func"]
         command_group.command(
             name=name,
             description=description
-        )(wrapper)
+        )(wrapper_for_slash_command)
 
         # register group of not yet registered
         try:
@@ -169,3 +197,36 @@ async def reply(ctx: commands.context.Context | discord.interactions.Interaction
             return await ctx.original_response()
         else:
             raise Exception("Slash commands can only reply once")
+
+async def parse_user(ctx: commands.context.Context | discord.interactions.Interaction, user: str) -> discord.member.Member | None:
+    if user == None:
+        return None
+
+    if isinstance(user, str):
+        user = user.strip('"')
+
+    try:
+        # convert string to user
+        converter = commands.MemberConverter()
+        if not is_slash_command(ctx):
+            user = await converter.convert(ctx, user)
+        else:
+            # this is stupid, but it works
+            class ConverterCtx():
+                def __init__(slf, bot, message) -> None:
+                    slf.bot = bot
+                    slf.guild = None
+                    slf.message = message
+
+            user = await converter.convert(ConverterCtx(get_bot(), ctx.message), user)
+        return user
+    except:
+        pass
+
+    try:
+        user: discord.user.User = get_bot().get_user(int(user))
+        return user
+    except:
+        pass
+    
+    return None
