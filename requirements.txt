@@ -1,8 +1,9 @@
 aiohttp==3.9.0b0
+beautifulsoup4
 discord.py
-requests
-youtube_dl
-pillow
 numpy
+pillow
 pylint
 pytest
+requests
+youtube_dl
