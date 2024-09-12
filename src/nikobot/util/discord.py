@@ -195,7 +195,7 @@ def is_sent_by_owner(ctx: commands.context.Context | discord.interactions.Intera
     else:
         return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.author), get_bot().loop)
 
-async def reply(ctx: commands.context.Context | discord.interactions.Interaction, *args, **kwargs):
+async def reply(ctx: commands.context.Context | discord.interactions.Interaction, *args, **kwargs) -> discord.Message | discord.interactions.InteractionMessage:
     if not is_slash_command(ctx):
         return await ctx.reply(*args, **kwargs)
     else:
@@ -204,6 +204,13 @@ async def reply(ctx: commands.context.Context | discord.interactions.Interaction
             return await ctx.original_response()
         else:
             raise Exception("Slash commands can only reply once")
+
+async def private_message(user_id: int, *args, **kwargs) -> discord.Message | discord.interactions.InteractionMessage:
+    user = get_bot().get_user(user_id)
+    if user is None:
+        raise Exception("User could not be found")
+    
+    await user.send(*args, **kwargs)
 
 async def parse_user(ctx: commands.context.Context | discord.interactions.Interaction, user: str) -> discord.member.Member | None:
     if user == None:

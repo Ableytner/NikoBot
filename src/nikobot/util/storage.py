@@ -9,6 +9,19 @@ from typing import Any
 class _BaseStorage():
     _store: dict[str, Any] = None
 
+    def contains(self, key: str, item: Any) -> bool:
+        """
+        Checks whether a key within the storage contains an item
+        If 'key' contains a '.', also checks if all sub-dicts exist
+        """
+
+        if not isinstance(key, str):
+            raise TypeError()
+        
+        if not self.exists(key):
+            return False
+        return item in self[key]
+
     def exists(self, key: str) -> bool:
         """
         Checks whether a key exists within the storage
@@ -70,11 +83,35 @@ class _BaseStorage():
                     if part not in curr_dict:
                         curr_dict[part] = {}
                     curr_dict = curr_dict[part]
-                # add the actual value
                 else:
+                    # add the actual value
                     curr_dict[part] = item
         else:
             self._store[key] = item
+
+    def __delitem__(self, key: str) -> None:
+        if not isinstance(key, str):
+            raise TypeError()
+
+        # items can be removed using:
+        # del util.PersistentStorage["some_module"]["some_subdict"]["another_subdict"]["key"]
+        # or
+        # del util.PersistentStorage["some_module.some_subdict.another_subdict.key"]
+        if "." in key:
+            parts = key.split(".")
+            curr_dict = self._store
+            for c, part in enumerate(parts):
+                # if it isn't the last part
+                if c < len(parts) - 1:
+                    # if a directory is missing, the key definitly doesn't exist
+                    if part not in curr_dict:
+                        return
+                    curr_dict = curr_dict[part]
+                else:
+                    # delete the actual key
+                    del curr_dict[part]
+        else:
+            del self._store[key]
 
     def __contains__(self, key: str) -> bool:
         return key in self._store
