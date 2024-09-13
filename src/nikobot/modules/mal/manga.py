@@ -117,15 +117,21 @@ class Manga():
             export_data["chapters_last_notified"] = self._chapters_last_notified
         return export_data
 
-    def fetch_chapters(self) -> None:
-        """Fetch the newest released chapter from the set provider, using manganato as the default"""
+    def fetch_chapters(self) -> bool:
+        """
+        Fetch the newest released chapter from the set provider, using manganato as the default
+        
+        Return whether fetching worked or not
+        """
 
         if self._manga_provider is not None:
             self._fetch_chapters()
         else:
             manga_url = manganato_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
             if manga_url is None:
-                raise error.MangaNotFound("Manga could not be found automatically")
+                print(f"Manga could not be found automatically for {self.mal_id}")
+                return False
+#                raise error.MangaNotFound("Manga could not be found automatically")
             self.set_manga_provider(MangaProvider.MANGANATO, manga_url)
 
             try:
@@ -134,6 +140,7 @@ class Manga():
                 # reset manga_provider if fetching didn't work
                 self.set_manga_provider(None, None)
                 raise e
+        return True
 
     def _fetch_chapters(self) -> None:
         chapters: list[Chapter] = None

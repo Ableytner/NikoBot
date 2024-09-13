@@ -30,8 +30,11 @@ class DiscordBot(commands.Bot):
         self.run(token)
 
     async def setup_hook(self) -> None:
+        util.VolatileStorage["modules"] = []
         for module in MODULES:
             await self.load_extension(f"nikobot.modules.{module}")
+            util.VolatileStorage["modules"].append(module)
+            print(f"Loaded module {module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
@@ -89,6 +92,12 @@ class DiscordBot(commands.Bot):
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 # fix /tc4 path
 # write response message if argument is missing (implement in command_failed)
+# add manga provider path for newest unread chapter
+# tests (maybe with a second discord bot for testing purposes)
+# add LICENSE and README
+# Dockerfile
+# create sing module with all music commands
+# fix clear command for private messages
 
 # pylint: disable=protected-access
 if __name__ == "__main__":

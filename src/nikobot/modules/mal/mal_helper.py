@@ -15,7 +15,7 @@ HEADERS = {
 def get_manga_from_id(mal_id: int) -> dict[str, Any]:
     """Get a specific manga from MyAnimeList"""
 
-    r = requests.get(f"{BASE_URL}/manga/{mal_id}?fields=id,title,alternative_titles,main_picture,mean,media_type," + \
+    r = requests.get(f"{BASE_URL}/manga/{mal_id}?nsfw=true&fields=id,title,alternative_titles,main_picture,mean,media_type," + \
                       "status,genres,my_list_status,authors{first_name,last_name}",
                      headers=HEADERS,
                      timeout=30)
@@ -47,7 +47,7 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
         to_return["picture"] = r.json()["main_picture"]["large"]
 
     if "mean" in r.json():
-        to_return["score"] = r.json()["mean"]
+        to_return["score"] = float(r.json()["mean"])
     else:
         to_return["score"] = float("nan")
 
@@ -56,7 +56,7 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
 def get_manga_list_from_username(mal_username: str) -> list[dict[str, str | int]]:
     """Get the manga list from a specific MyAnimeList user"""
 
-    r = requests.get(f"{BASE_URL}/users/{mal_username}/mangalist?fields=list_status&status=reading&limit=1000",
+    r = requests.get(f"{BASE_URL}/users/{mal_username}/mangalist?nsfw=true&fields=list_status&status=reading&limit=1000",
                      headers=HEADERS,
                      timeout=30)
 
@@ -72,6 +72,7 @@ def get_manga_list_from_username(mal_username: str) -> list[dict[str, str | int]
             "mal_id": manga_json["node"]["id"],
             "read_chapters": manga_json["list_status"]["num_chapters_read"]
         })
+
     return return_data
 
 def _setup():

@@ -19,7 +19,15 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 
     results: dict[str, int] = {}
     for title in titles:
-        name_sanitized = title.replace(" ", "_").lower()
+        name_sanitized = title.replace(" ", "_") \
+                              .replace("(", "") \
+                              .replace(")", "") \
+                              .replace("'", "") \
+                              .replace("-", "_") \
+                              .replace(".", "") \
+                              .replace(":", "") \
+                              .replace("!", "") \
+                              .lower()
         r = requests.get(f"{BASE_URL}/search/story/{name_sanitized}", timeout=30)
 
         soup = bs.BeautifulSoup(r.content, features="html.parser")
@@ -32,8 +40,10 @@ def get_manga_url(titles: str | list[str]) -> str | None:
         found_titles = []
         for item in title_objects:
             # ignore empty manga such as https://chapmanganato.to/manga-zw1002905
-            if len(get_chapters(item["href"])) > 0:
-                found_titles.append((util.general.levenshtein_distance(item.contents[0], title), item["href"]))
+            # this is too request-heavy
+#            if len(get_chapters(item["href"])) == 0:
+#                continue
+            found_titles.append((util.general.levenshtein_distance(item.contents[0], title), item["href"]))
 
         found_titles.sort(key=lambda x: x[0])
         for c, item in enumerate(found_titles):

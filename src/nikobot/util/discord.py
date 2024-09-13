@@ -62,7 +62,7 @@ def normal_command(name: str, description: str, hidden: str = False):
             description=desc
         )(wrapper)
 
-        print(f"Registered command {name}")
+        # print(f"Registered command {name}")
 
         return wrapper
     return decorator
@@ -118,7 +118,7 @@ def hybrid_command(name: str, description: str):
             description=description
         )(wrapper_for_slash_command)
 
-        print(f"Registered command {name}")
+        # print(f"Registered command {name}")
 
         return wrapper
     return decorator
@@ -180,7 +180,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         except discord.app_commands.CommandAlreadyRegistered:
             pass
 
-        print(f"Registered command {command_group.name}.{name}")
+        # print(f"Registered command {command_group.name}.{name}")
 
         return wrapper
     return decorator

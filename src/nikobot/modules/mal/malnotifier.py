@@ -40,7 +40,14 @@ class MALNotifier(commands.Cog):
         """The discord command 'niko.search'"""
 
         recombined_name = " ".join(["".join(item) for item in manga_name])
-        manga_url = manganato_helper.get_manga_url(" ".join(recombined_name))
+
+        manga_url = manganato_helper.get_manga_url(recombined_name)
+        if manga_url is None:
+            await util.discord.reply(ctx,
+                                     embed=discord.Embed(title="Manga not found",
+                                                         color=discord.Color.orange()))
+            return
+
         chapters = manganato_helper.get_chapters(manga_url)
         latest_chap = max(chapters, key=lambda x: x.number)
 
@@ -108,6 +115,9 @@ class MALNotifier(commands.Cog):
         util.VolatileStorage[f"mal.user.{user_id}"] = maluser
         await message.edit(embed=discord.Embed(title="Successfully registered for new release notifications",
                                                color=discord.Color.blue()))
+        
+        # force-update the user once after registration
+        await self.notify_user(user_id, maluser)
 
     @util.discord.grouped_hybrid_command(
         name="deregister",
@@ -144,16 +154,33 @@ class MALNotifier(commands.Cog):
             if not isinstance(user_id, str): raise TypeError()
             if not isinstance(maluser, MALUser): raise TypeError()
 
-            maluser.fetch_manga_list()
+            await self.notify_user(int(user_id), maluser)
 
-            for manga in maluser.manga.values():
-                if not isinstance(manga, Manga): raise TypeError()
+    async def notify_user(self, user_id: int, maluser: MALUser) -> None:
+        """Notify the user if any of his ``Manga`` got a new chapter"""
 
-                if manga._time_next_notify < datetime.now():
-                    await self._handle_manga(int(user_id), manga)
+        if not isinstance(user_id, int): raise TypeError()
+        if not isinstance(maluser, MALUser): raise TypeError()
 
-    async def _handle_manga(self, user_id: int, manga: Manga) -> None:
-        manga.fetch_chapters()
+        maluser.fetch_manga_list()
+
+        for manga in maluser.manga.values():
+            if not isinstance(manga, Manga): raise TypeError()
+
+            if manga._time_next_notify < datetime.now():
+                await self.notify_manga(int(user_id), manga)
+        
+        maluser.save_to_storage()
+
+    async def notify_manga(self, user_id: int, manga: Manga) -> None:
+        """Notify the user if the given ``Manga`` received a new chapter"""
+
+        if not isinstance(user_id, int): raise TypeError()
+        if not isinstance(manga, Manga): raise TypeError()
+
+        if not manga.fetch_chapters():
+            return
+
         if manga._chapters_total > manga._chapters_read \
             and manga._chapters_total > manga._chapters_last_notified:
             # pylint: disable-next=redefined-outer-name
@@ -168,7 +195,19 @@ class MALNotifier(commands.Cog):
             await util.discord.private_message(user_id, embed=embed, file=file)
 
             manga._chapters_last_notified = manga._chapters_total
-            manga._time_next_notify = datetime.now() + timedelta(hours=1)
+            manga._time_next_notify = datetime.now() + timedelta(hours=12)
+
+    def import_users(self):
+        """Import all MALUsers from ``util.PersistentStorage``"""
+
+        c = 0
+        if util.PersistentStorage.exists("mal.user"):
+            for user_id, maluser_json in util.PersistentStorage["mal.user"].items():
+                maluser = MALUser.from_export(int(user_id), maluser_json)
+                maluser.fetch_manga_chapters()
+                util.VolatileStorage[f"mal.user.{user_id}"] = maluser
+                c += 1
+        print(f"Finished importing {c} MAL user(s)")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
@@ -178,19 +217,9 @@ async def setup(bot: commands.Bot):
     mal_helper._setup()
     manganato_helper._setup()
 
-    if util.PersistentStorage.exists("mal.user"):
-        def import_users():
-            c = 0
-            for user_id, maluser_json in util.PersistentStorage["mal.user"].items():
-                maluser = MALUser.from_export(int(user_id), maluser_json)
-                maluser.fetch_manga_chapters()
-                util.VolatileStorage[f"mal.user.{user_id}"] = maluser
-                c += 1
-            print(f"Finished importing {c} MAL user(s)")
-
-        Thread(target=import_users, daemon=True).start()
-
     cog = MALNotifier(bot)
+
+    Thread(target=cog.import_users, daemon=True).start()
 
     cog.notify_users.start()
 
