@@ -25,8 +25,16 @@ def get_bot() -> commands.Bot:
 
     return bot
 
+def get_user_id(ctx: commands.context.Context | discord.interactions.Interaction) -> int:
+    """Get discords user id from the message's sender"""
+
+    if not is_slash_command(ctx):
+        return ctx.author.id
+
+    return ctx.user.id
+
 def normal_command(name: str, description: str, hidden: str = False):
-    """register the provided method as a normal command"""
+    """Register the provided method as a normal command"""
 
     def decorator(func):
         """The decorator, which is called at program start"""
@@ -68,7 +76,7 @@ def normal_command(name: str, description: str, hidden: str = False):
     return decorator
 
 def hybrid_command(name: str, description: str):
-    """register the provided method as both a normal and a slash command"""
+    """Register the provided method as both a normal and a slash command"""
 
     def decorator(func):
         """The decorator, which is called at program start"""
@@ -124,7 +132,7 @@ def hybrid_command(name: str, description: str):
     return decorator
 
 def grouped_hybrid_command(name: str, description: str, command_group: app_commands.Group):
-    """register the provided method as both a normal and a slash command of a given command group"""
+    """Register the provided method as both a normal and a slash command of a given command group"""
 
     def decorator(func):
         """The decorator, which is called at program start"""

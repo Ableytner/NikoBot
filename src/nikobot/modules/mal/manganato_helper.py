@@ -11,6 +11,16 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:130.0) Gecko/20100101 Firefox/130.0"
 }
 
+def create_chapter(title: str, url: str) -> Chapter:
+    if not isinstance(title, str):
+        raise TypeError(f"Expected {str}, got {type(title)}")
+    if not isinstance(url, str):
+        raise TypeError(f"Expected {str}, got {type(url)}")
+
+    number = float(url.rsplit("/", maxsplit=1)[1].split("-", maxsplit=1)[1])
+
+    return Chapter(title, url, number)
+
 def get_manga_url(titles: str | list[str]) -> str | None:
     """Return the url of the searched manga, or None if it isn't found"""
 
@@ -39,10 +49,6 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 
         found_titles = []
         for item in title_objects:
-            # ignore empty manga such as https://chapmanganato.to/manga-zw1002905
-            # this is too request-heavy
-#            if len(get_chapters(item["href"])) == 0:
-#                continue
             found_titles.append((util.general.levenshtein_distance(item.contents[0], title), item["href"]))
 
         found_titles.sort(key=lambda x: x[0])
@@ -67,7 +73,7 @@ def get_chapters(url: str) -> list[Chapter]:
     if chapter_class is None:
         return []
     chapter_objects = chapter_class.find_all("a", href=True)
-    chapters = [Chapter(item.contents[0], item["href"]) for item in chapter_objects]
+    chapters = [create_chapter(item.contents[0], item["href"]) for item in chapter_objects]
 
     return chapters
 

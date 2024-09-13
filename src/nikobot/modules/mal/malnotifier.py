@@ -65,14 +65,25 @@ class MALNotifier(commands.Cog):
     async def search2(self, ctx: commands.context.Context, mal_id: int):
         """The discord command 'niko.search2'"""
 
-        try:
-            manga = Manga.from_mal_id(mal_id)
-        except error.MangaNotFound:
-            await util.discord.reply(ctx, "Manga not found on MAL")
-            return
-        except error.MediaTypeError:
-            await util.discord.reply(ctx, "Currently only supports manga and not light novel/novel")
-            return
+        manga = None
+
+        user_id = util.discord.get_user_id(ctx)
+        if util.VolatileStorage.exists(f"mal.user.{user_id}"):
+            maluser: MALUser = util.VolatileStorage[f"mal.user.{user_id}"]
+            maluser.fetch_manga_list()
+            if mal_id in maluser.manga:
+                manga = maluser.manga[mal_id]
+                manga.fetch_chapters()
+
+        if manga is None:
+            try:
+                manga = Manga.from_mal_id(mal_id)
+            except error.MangaNotFound:
+                await util.discord.reply(ctx, "Manga not found on MAL")
+                return
+            except error.MediaTypeError:
+                await util.discord.reply(ctx, "Currently only supports manga and not light novel/novel")
+                return
 
         # pylint: disable-next=redefined-outer-name
         embed, file = manga.to_embed()

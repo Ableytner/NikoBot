@@ -54,6 +54,7 @@ class Manga():
         self.status = status
         self.picture_url = picture_url
         self.score = score
+        self.chapters: list[Chapter] = []
         self._manga_provider: MangaProvider | None = None
         self._manga_provider_url: str | None = None
         self._chapters_read: int | None = None
@@ -78,6 +79,7 @@ class Manga():
             raise TypeError()
 
         manga = Manga.from_mal_id(export["mal_id"])
+
         manga._time_next_notify = datetime.fromtimestamp(export["time_next_notify"])
         if "provider" in export \
            and "provider_url" in export:
@@ -113,7 +115,7 @@ class Manga():
            and self._manga_provider_url is not None:
             export_data["provider"] = self._manga_provider.name
             export_data["provider_url"] = self._manga_provider_url
-        if self._chapters_last_notified is not None:
+        if self._chapters_last_notified is not None and self._chapters_last_notified > 0:
             export_data["chapters_last_notified"] = self._chapters_last_notified
         return export_data
 
@@ -129,9 +131,8 @@ class Manga():
         else:
             manga_url = manganato_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
             if manga_url is None:
-                print(f"Manga could not be found automatically for {self.mal_id}")
+                print(f"Manga {self.mal_id} could not be found automatically")
                 return False
-#                raise error.MangaNotFound("Manga could not be found automatically")
             self.set_manga_provider(MangaProvider.MANGANATO, manga_url)
 
             try:
@@ -149,6 +150,8 @@ class Manga():
 
         if chapters is None:
             raise error.UnknownProvider()
+
+        self.chapters = chapters
 
         latest_chapter = max(chapters, key=lambda x: x.number)
         self._chapters_total = int(latest_chapter.number)
@@ -217,11 +220,33 @@ class Manga():
             central_rgb = pix[int(im.size[0]/2+c), int(im.size[1]/2+c)][:-1:]
 
         embed_var = Embed(title=self.title) #, color=Color.from_rgb(*central_rgb))
-        embed_var.add_field(name="English title", value=self.title_translated, inline=False)
-        embed_var.add_field(name="Chapters read", value=f"{self._chapters_read or '?'} / {self._chapters_total or '?'}")
-        embed_var.add_field(name="Score", value=str(self.score), inline=False)
-        embed_var.add_field(name="Status", value=self.status, inline=False)
-        embed_var.add_field(name="MAL link", value=f"https://myanimelist.net/manga/{self.mal_id}")
+
+        embed_var.add_field(name="English title",
+                            value=self.title_translated,
+                            inline=False)
+        
+        if self._chapters_read is not None or self._chapters_total is not None:
+            embed_var.add_field(name="Chapters read",
+                                value=f"{self._chapters_read or '?'} / {self._chapters_total or '?'}",
+                                inline=False)
+
+        embed_var.add_field(name="Score",
+                            value=str(self.score),
+                            inline=False)
+        embed_var.add_field(name="Status",
+                            value=self.status,
+                            inline=False)
+
+        if len(self.chapters) > 0 and self._chapters_read is not None:
+            for chapter in self.chapters:
+                if int(chapter.number) == self._chapters_read + 1:
+                    embed_var.add_field(name="Next chapter link",
+                                        value=chapter.url,
+                                        inline=False)
+
+        embed_var.add_field(name="MAL link",
+                            value=f"https://myanimelist.net/manga/{self.mal_id}",
+                            inline=False)
 
         file = File(image_path, filename=os.path.basename(image_path))
         embed_var.set_image(url=f"attachment://{os.path.basename(image_path)}")
