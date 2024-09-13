@@ -12,6 +12,12 @@ HEADERS = {
 }
 
 def create_chapter(title: str, url: str) -> Chapter:
+    """
+    Create a new ``Chapter`` using the provided title and chapter url
+
+    The chapter number is read from the url
+    """
+
     if not isinstance(title, str):
         raise TypeError(f"Expected {str}, got {type(title)}")
     if not isinstance(url, str):

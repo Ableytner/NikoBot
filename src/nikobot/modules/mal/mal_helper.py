@@ -15,8 +15,9 @@ HEADERS = {
 def get_manga_from_id(mal_id: int) -> dict[str, Any]:
     """Get a specific manga from MyAnimeList"""
 
-    r = requests.get(f"{BASE_URL}/manga/{mal_id}?nsfw=true&fields=id,title,alternative_titles,main_picture,mean,media_type," + \
-                      "status,genres,my_list_status,authors{first_name,last_name}",
+    r = requests.get(f"{BASE_URL}/manga/{mal_id}?nsfw=true" \
+                     + "&fields=id,title,alternative_titles,main_picture,mean,media_type," \
+                     + "status,genres,my_list_status,authors{first_name,last_name}",
                      headers=HEADERS,
                      timeout=30)
 
@@ -56,7 +57,8 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
 def get_manga_list_from_username(mal_username: str) -> list[dict[str, str | int]]:
     """Get the manga list from a specific MyAnimeList user"""
 
-    r = requests.get(f"{BASE_URL}/users/{mal_username}/mangalist?nsfw=true&fields=list_status&status=reading&limit=1000",
+    r = requests.get(f"{BASE_URL}/users/{mal_username}/mangalist?nsfw=true" \
+                     + "&fields=list_status&status=reading&limit=1000",
                      headers=HEADERS,
                      timeout=30)
 
@@ -90,20 +92,22 @@ def search_for_manga(title: str) -> int | None:
 
     if "error" in r.json():
         raise error.CustomException(r.json()["error"])
-    
+
     try:
         for manga in r.json()["data"]:
             if _supported_media_type(manga["node"]["media_type"]):
                 return int(manga["node"]["id"])
-    except Exception:
-        return None
+    except KeyError:
+        pass
+
+    return None
 
 def _supported_media_type(media_type) -> bool:
     if media_type == "manga":
         return True
     if media_type == "manhwa":
         return True
-    
+
     return False
 
 def _setup():

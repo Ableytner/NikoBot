@@ -107,7 +107,7 @@ class MALNotifier(commands.Cog):
         util.VolatileStorage[f"mal.user.{user_id}"] = maluser
         await message.edit(embed=discord.Embed(title="Successfully registered for new release notifications",
                                                color=discord.Color.blue()))
-        
+
         # force-update the user once after registration
         await self.notify_user(user_id, maluser)
 
@@ -161,7 +161,7 @@ class MALNotifier(commands.Cog):
 
             if manga._time_next_notify < datetime.now():
                 await self.notify_manga(int(user_id), manga)
-        
+
         maluser.save_to_storage()
 
     async def notify_manga(self, user_id: int, manga: Manga) -> None:

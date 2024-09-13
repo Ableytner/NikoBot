@@ -92,12 +92,13 @@ class DiscordBot(commands.Bot):
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 # fix /tc4 path
 # write response message if argument is missing (implement in command_failed)
-# add manga provider path for newest unread chapter
 # tests (maybe with a second discord bot for testing purposes)
 # add LICENSE and README
 # Dockerfile
 # create sing module with all music commands
 # fix clear command for private messages
+# fix clear command message deletion on cancel
+# save clear command data in storage
 
 # pylint: disable=protected-access
 if __name__ == "__main__":

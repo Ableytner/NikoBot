@@ -224,7 +224,7 @@ class Manga():
         embed_var.add_field(name="English title",
                             value=self.title_translated,
                             inline=False)
-        
+
         if self._chapters_read is not None or self._chapters_total is not None:
             embed_var.add_field(name="Chapters read",
                                 value=f"{self._chapters_read or '?'} / {self._chapters_total or '?'}",
