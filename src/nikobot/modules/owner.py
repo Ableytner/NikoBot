@@ -1,3 +1,5 @@
+"""A module containing owner-only commands"""
+
 from discord.ext import commands
 
 from .. import util

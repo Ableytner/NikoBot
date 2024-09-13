@@ -1,3 +1,5 @@
+"""A module containing the ``DiscordBot`` class"""
+
 import pathlib
 import shutil
 import os
@@ -15,6 +17,8 @@ CACHE_DIR = os.path.join(STORAGE_DIR, "cache")
 TEMP_DIR = os.path.join(STORAGE_DIR, "temp")
 
 class DiscordBot(commands.Bot):
+    """The main ``discord.commands.Bot`` which is the center of the application"""
+
     def __init__(self) -> None:
         super().__init__(command_prefix = 'niko.', help_command=None, intents = discord.Intents.all())
 
@@ -34,13 +38,9 @@ class DiscordBot(commands.Bot):
 
         print(f"{self.user} is now online")
 
-    async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
-        """Method called when a reaction is added to a comment"""
-
-        if user.id == self.user.id:
-            return
-
-    async def on_command_error(self, context: commands.context.Context, exception: commands.errors.CommandError, /) -> None:
+    async def on_command_error(self,
+                               context: commands.context.Context,
+                               exception: commands.errors.CommandError, /) -> None:
         # owner-only commands
         if isinstance(exception, commands.errors.NotOwner):
             embed = discord.Embed(title="Not allowed to use this command", color=discord.Color.red())
@@ -54,6 +54,7 @@ class DiscordBot(commands.Bot):
             # call help command if command ends with '.help'
             if user_command.endswith(".help"):
                 help_cog = self.cogs["Help"]
+                # pylint: disable-next=protected-access
                 answer = help_cog._generate_help_specific_normal(user_command.replace(".help", ""))
                 await context.message.reply(embed=answer)
                 return
@@ -87,6 +88,7 @@ class DiscordBot(commands.Bot):
 # to-do
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 
+# pylint: disable=protected-access
 if __name__ == "__main__":
     util.VolatileStorage["storage_file"] = STORAGE_FILE
     util.PersistentStorage._load_from_disk()
@@ -103,3 +105,5 @@ if __name__ == "__main__":
     util.VolatileStorage["bot"] = bot
 
     bot.start_bot()
+
+# pylint: enable=protected-access

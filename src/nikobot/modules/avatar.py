@@ -1,3 +1,5 @@
+"""A module containing the avatar command"""
+
 import os
 
 import discord
@@ -7,6 +9,8 @@ from discord.ext import commands
 from .. import util
 
 class Avatar(commands.Cog):
+    """A ``discord.commands.Cog`` containing the avatar command"""
+
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -30,7 +34,7 @@ class Avatar(commands.Cog):
         os.makedirs(f"{util.VolatileStorage["cache_dir"]}/avatars", exist_ok=True)
 
         # Download the user's avatar
-        response = requests.get(user_obj.avatar.url)
+        response = requests.get(user_obj.avatar.url, timeout=30)
         if response.status_code == 200:
             with open(f"{util.VolatileStorage["cache_dir"]}/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
@@ -38,8 +42,11 @@ class Avatar(commands.Cog):
             await util.discord.reply(ctx, "Failed to download avatar.")
 
         # send the avatar
-        avatar_file = discord.File(f"{util.VolatileStorage["cache_dir"]}/avatars/{user_obj}.png", filename=f"{user_obj}.png")
-        await util.discord.reply(ctx, f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:", file=avatar_file)
+        avatar_file = discord.File(f"{util.VolatileStorage["cache_dir"]}/avatars/{user_obj}.png",
+                                   filename=f"{user_obj}.png")
+        await util.discord.reply(ctx,
+                                 f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:",
+                                 file=avatar_file)
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""

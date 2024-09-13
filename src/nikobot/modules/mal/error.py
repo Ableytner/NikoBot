@@ -1,14 +1,6 @@
-class CustomException(Exception):
-    def __init__(self, *args, **kwargs):
-        default_message = type(self).default_message
+"""Custom esceptions for usage within the ``mal`` module"""
 
-        if args:
-            super().__init__(*args, **kwargs)
-        else:
-            # exception was raised without args
-            super().__init__(default_message, **kwargs)
-    
-    default_message = ""
+from ...util.error import CustomException
 
 class MangaFetchException(CustomException):
     """Exception raised when fetching the manga failed"""

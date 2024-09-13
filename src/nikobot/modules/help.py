@@ -1,9 +1,13 @@
+"""A module containing the help command"""
+
 import discord
 from discord.ext import commands
 
 from .. import util
 
 class Help(commands.Cog):
+    """A ``discord.commands.Cog`` containing the help command"""
+
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
@@ -11,7 +15,15 @@ class Help(commands.Cog):
         "help",
         "Show information about a command or module, or list all available commands"
     )
-    async def help(self, ctx: commands.context.Context | discord.interactions.Interaction, command_name: str | None = None):
+    async def help(self,
+                   ctx: commands.context.Context | discord.interactions.Interaction,
+                   command_name: str | None = None):
+        """
+        Discord command displaying all commands
+        
+        If a command_name is given, display help about the command or module
+        """
+
         sent_by_owner = util.discord.is_sent_by_owner(ctx)
 
         if command_name is None:
@@ -28,8 +40,8 @@ class Help(commands.Cog):
         await util.discord.reply(ctx, embed=answer)
 
     def _generate_help_general_normal(self, sent_by_owner: bool = False) -> discord.Embed:
-        cmds: dict[str, list[tuple[str, str]]] = {}
-        cmds["General"] = []
+        cmds_grouped: dict[str, list[tuple[str, str]]] = {}
+        cmds_grouped["General"] = []
 
         for cmd in self.bot.commands:
             if cmd.description.startswith("__hidden__") and not sent_by_owner:
@@ -37,20 +49,20 @@ class Help(commands.Cog):
 
             if "." in cmd.name:
                 groupname = cmd.name.split(".", maxsplit=1)[0]
-                if groupname not in cmds:
-                    cmds[groupname] = []
-                cmds[groupname].append((cmd.name, cmd.description))
+                if groupname not in cmds_grouped:
+                    cmds_grouped[groupname] = []
+                cmds_grouped[groupname].append((cmd.name, cmd.description))
             else:
-                cmds["General"].append((cmd.name, cmd.description))
+                cmds_grouped["General"].append((cmd.name, cmd.description))
 
-        for groupname in cmds:
+        for cmds in cmds_grouped.values():
             # sort using the lowercase command name
-            cmds[groupname].sort(key=lambda x: x[0].lower())
+            cmds.sort(key=lambda x: x[0].lower())
 
         answer = discord.Embed(title="All available commands")
-        for groupname, commands in cmds.items():
+        for groupname, cmds in cmds_grouped.items():
             commands_texts = []
-            for name, desc in commands:
+            for name, desc in cmds:
                 commands_texts.append(f"**{name}**")
                 commands_texts.append(desc.strip("__hidden__") or "None")
             answer.add_field(name=groupname, value="\n".join(commands_texts), inline=False)
@@ -58,28 +70,28 @@ class Help(commands.Cog):
         return answer
 
     def _generate_help_general_slash(self, sent_by_owner: bool = False) -> discord.Embed:
-        cmds: dict[str, list[tuple[str, str]]] = {}
-        cmds["General"] = []
+        cmds_grouped: dict[str, list[tuple[str, str]]] = {}
+        cmds_grouped["General"] = []
 
         for cmd in self.bot.tree.get_commands():
             if cmd.description.startswith("__hidden__") and not sent_by_owner:
                 continue
 
             if isinstance(cmd, discord.app_commands.Group):
-                cmds[cmd.name] = [(item.name, item.description) for item in cmd.commands]
+                cmds_grouped[cmd.name] = [(item.name, item.description) for item in cmd.commands]
             elif isinstance(cmd, discord.app_commands.Command):
-                cmds["General"].append((cmd.name, cmd.description))
+                cmds_grouped["General"].append((cmd.name, cmd.description))
             else:
                 raise TypeError(f"Unexpected type {type(cmd)}")
 
-        for groupname in cmds:
+        for cmds in cmds_grouped.values():
             # sort using the lowercase command name
-            cmds[groupname].sort(key=lambda x: x[0].lower())
+            cmds.sort(key=lambda x: x[0].lower())
 
         answer = discord.Embed(title="All available commands")
-        for groupname, commands in cmds.items():
+        for groupname, cmds in cmds_grouped.items():
             commands_texts = []
-            for name, desc in commands:
+            for name, desc in cmds:
                 commands_texts.append(f"**{name}**")
                 commands_texts.append(desc.strip("__hidden__") or "None")
             answer.add_field(name=groupname, value="\n".join(commands_texts), inline=False)
@@ -136,16 +148,16 @@ class Help(commands.Cog):
                     answer.add_field(name="Available commands", value="\n".join(commands_texts), inline=False)
 
                     return answer
+
                 # help for command
-                else:
-                    answer = discord.Embed(title=f"Help for '{cmd.name}'")
+                answer = discord.Embed(title=f"Help for '{cmd.name}'")
 
-                    desc = cmd.description.strip("__hidden__")
-                    if cmd.parent is not None:
-                        desc += f"\nCommand is a part of the '{cmd.parent.name}' module"
-                    answer.add_field(name="Description", value=desc)
+                desc = cmd.description.strip("__hidden__")
+                if cmd.parent is not None:
+                    desc += f"\nCommand is a part of the '{cmd.parent.name}' module"
+                answer.add_field(name="Description", value=desc)
 
-                    return answer
+                return answer
 
         return discord.Embed(title=f"Command '{command_name}' not found")
 

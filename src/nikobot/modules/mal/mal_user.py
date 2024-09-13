@@ -1,10 +1,18 @@
+"""A module containing the ``MALUser`` class"""
+
 from __future__ import annotations
 
-from . import exec, mal_helper
+from . import error, mal_helper
 from .manga import Manga
 from ... import util
 
 class MALUser():
+    """
+    A class representing a MyAnimeList account
+
+    Each instance is bound to a single discord account
+    """
+
     def __init__(self, mal_username: str, discord_id: int) -> None:
         self.username: str = mal_username
         self.discord_id: int = discord_id
@@ -27,9 +35,11 @@ class MALUser():
         return maluser
 
     def add_manga(self, manga: Manga) -> None:
+        """Add a single ``Manga`` instance to the current user"""
+
         if not isinstance(manga, Manga):
             raise TypeError()
-        
+
         self.manga[manga.mal_id] = manga
 
     def export(self) -> dict[str, str]:
@@ -49,7 +59,7 @@ class MALUser():
             try:
                 manga.fetch_chapters()
             except Exception as e:
-                raise exec.MangaFetchException(f"Error fetching manga {manga.mal_id}: {e.args[0]}")
+                raise error.MangaFetchException(f"Error fetching manga {manga.mal_id}: {e.args[0]}")
         self.save_to_storage()
 
     def fetch_manga_list(self) -> None:
@@ -65,9 +75,11 @@ class MALUser():
                     manga = Manga.from_mal_id(mal_id)
                     manga.set_chapters_read(entry["read_chapters"])
                     self.manga[mal_id] = manga
-                except exec.MediaTypeError:
+                except error.MediaTypeError:
                     pass
         self.save_to_storage()
 
     def save_to_storage(self) -> None:
+        """Save the current object to the ``util.PersistentStorage``"""
+
         util.PersistentStorage[f"mal.user.{self.discord_id}"] = self.export()

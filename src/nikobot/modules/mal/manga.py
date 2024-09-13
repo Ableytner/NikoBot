@@ -1,3 +1,5 @@
+"""Module containing the ``Manga`` class"""
+
 from __future__ import annotations
 
 import os
@@ -8,17 +10,28 @@ import requests
 from PIL import Image
 from discord import Embed, File, Color
 
-from . import mal_helper, manganato_helper, exec
+from . import error, mal_helper, manganato_helper
 from .chapter import Chapter
 from ... import util
 
 class MangaProvider(Enum):
+    """
+    An Enum replesenting Manga providers
+    
+    These are websites which provide manga chapters
+    """
+
     MANGANATO = "manganato"
 
 class Manga():
-    """A class representing a specific Manga"""
+    """
+    A class representing a specific Manga belonging to an user
+    
+    Manga are comics or graphic novels originating from Japan 
+    """
 
-    def __init__(self, mal_id: int, title: str, title_translated: str | None, synonyms: list[str], status: str, picture_url: str, score: float) -> None:
+    def __init__(self, mal_id: int, title: str, title_translated: str | None, synonyms: list[str],
+                 status: str, picture_url: str, score: float) -> None:
         if not isinstance(mal_id, int):
             raise TypeError()
         if not isinstance(title, str):
@@ -48,6 +61,7 @@ class Manga():
         self._chapters_last_notified: int | None = None
         self._time_next_notify: datetime = datetime.now()
 
+    # pylint: disable=protected-access
     @staticmethod
     def from_export(export: dict[str, str]) -> Manga:
         """Factory method creating a new Manga object using the export data created by my_manga.export()"""
@@ -72,6 +86,7 @@ class Manga():
             manga._chapters_last_notified = export["chapters_last_notified"]
 
         return manga
+    # pylint: enable=protected-access
 
     @staticmethod
     def from_mal_id(mal_id: int) -> Manga:
@@ -86,15 +101,6 @@ class Manga():
                       data["picture"],
                       data["score"])
         return manga
-
-    def copy(self) -> Manga:
-        """
-        Create a copy of the current Manga object
-
-        Doesn't copy manga_provider
-        """
-
-        return self.__copy__()
 
     def export(self) -> dict[str, str]:
         """Create a dictionary which is JSON-compliant and can be used to recreate this exact Manga"""
@@ -119,12 +125,12 @@ class Manga():
         else:
             manga_url = manganato_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
             if manga_url is None:
-                raise exec.MangaNotFound("Manga could not be found automatically")
+                raise error.MangaNotFound("Manga could not be found automatically")
             self.set_manga_provider(MangaProvider.MANGANATO, manga_url)
 
             try:
                 self._fetch_chapters()
-            except exec.CustomException as e:
+            except error.CustomException as e:
                 # reset manga_provider if fetching didn't work
                 self.set_manga_provider(None, None)
                 raise e
@@ -133,9 +139,9 @@ class Manga():
         chapters: list[Chapter] = None
         if self._manga_provider == MangaProvider.MANGANATO:
             chapters = manganato_helper.get_chapters(self._manga_provider_url)
-        
+
         if chapters is None:
-            raise exec.UnknownProvider()
+            raise error.UnknownProvider()
 
         latest_chapter = max(chapters, key=lambda x: x.number)
         self._chapters_total = int(latest_chapter.number)
@@ -154,12 +160,18 @@ class Manga():
         if os.path.isfile(path):
             return path
 
-        r = requests.get(self.picture_url)
+        r = requests.get(self.picture_url, timeout=30)
         with open(path, "wb") as f:
             f.write(r.content)
         return path
 
     def set_chapters_read(self, chapters_read: int) -> None:
+        """
+        Set the number of chapters that the user already read
+        
+        Also initializes ``self._chapters_last_notified`` if not yet set
+        """
+
         if not isinstance(chapters_read, int):
             raise TypeError()
 
@@ -169,6 +181,8 @@ class Manga():
             self._chapters_last_notified = 0
 
     def set_manga_provider(self, manga_provider: MangaProvider | None, manga_provider_url: str | None) -> None:
+        """Set the manga_provider and its url to the current ``Manga``"""
+
         if not isinstance(manga_provider, (MangaProvider, None)):
             raise TypeError()
         if not isinstance(manga_provider_url, (str, None)) or manga_provider_url == "":
@@ -178,6 +192,8 @@ class Manga():
         self._manga_provider_url = manga_provider_url
 
     def to_embed(self) -> tuple[Embed, File]:
+        """Convert the ``Manga`` to a ``discord.Embed`` and ``discord.File``"""
+
         image_path = self.picture_file()
 
         # TODO: fix!!!
@@ -187,7 +203,7 @@ class Manga():
         central_rgb = pix[int(im.size[0]/2), int(im.size[1]/2)][:-1:]
         c = 0
         # while the color is black, look at the next pixel
-        while all([item < 50 for item in central_rgb]):
+        while all((item < 50 for item in central_rgb)):
             c += 1
             if int(im.size[0]/2+c) >= im.width or int(im.size[1]/2+c) >= im.height:
                 break
@@ -204,16 +220,6 @@ class Manga():
         embed_var.set_image(url=f"attachment://{os.path.basename(image_path)}")
 
         return embed_var, file
-
-    def __copy__(self):
-        copied_manga = Manga(self.mal_id,
-                             self.title,
-                             self.title_translated,
-                             self.synonyms,
-                             self.status,
-                             self.picture_url,
-                             self.score)
-        return copied_manga
 
     def __str__(self) -> str:
         return self.title

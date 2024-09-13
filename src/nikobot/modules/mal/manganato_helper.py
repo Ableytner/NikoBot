@@ -1,3 +1,5 @@
+"""Module containing functions for webscraping manganato.com"""
+
 import bs4 as bs
 import requests
 
@@ -18,7 +20,7 @@ def get_manga_url(titles: str | list[str]) -> str | None:
     results: dict[str, int] = {}
     for title in titles:
         name_sanitized = title.replace(" ", "_").lower()
-        r = requests.get(f"{BASE_URL}/search/story/{name_sanitized}")
+        r = requests.get(f"{BASE_URL}/search/story/{name_sanitized}", timeout=30)
 
         soup = bs.BeautifulSoup(r.content, features="html.parser")
         search_results = soup.find("div", {"class": "panel-search-story"})
@@ -35,10 +37,10 @@ def get_manga_url(titles: str | list[str]) -> str | None:
                 found_titles.append((util.general.levenshtein_distance(item.contents[0], title), item["href"]))
 
         found_titles.sort(key=lambda x: x[0])
-        for c in range(len(found_titles)):
-            if found_titles[c][1] not in results:
-                results[found_titles[c][1]] = 0
-            results[found_titles[c][1]] += 5 - c
+        for _, url in enumerate(found_titles):
+            if url not in results:
+                results[url] = 0
+            results[url] += 5 - c
             if c >= 5:
                 break
 
@@ -47,7 +49,9 @@ def get_manga_url(titles: str | list[str]) -> str | None:
     return closest_match[1]
 
 def get_chapters(url: str) -> list[Chapter]:
-    r = requests.get(url)
+    """Get a list of ``Chapter``s from a given manganato url"""
+
+    r = requests.get(url, timeout=30)
 
     soup = bs.BeautifulSoup(r.content, features="html.parser")
     chapter_class = soup.find("ul", {"class": "row-content-chapter"})
@@ -57,9 +61,6 @@ def get_chapters(url: str) -> list[Chapter]:
     chapters = [Chapter(item.contents[0], item["href"]) for item in chapter_objects]
 
     return chapters
-
-def get_latest_chapter(chapters: list[Chapter]) -> Chapter:
-    return max(chapters, key=lambda x: x.number)
 
 def _setup():
     pass

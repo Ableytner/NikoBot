@@ -1,7 +1,10 @@
-import requests
+"""Module containing functions for interacting with the MyAnimeList API"""
+
 from typing import Any
 
-from . import exec
+import requests
+
+from . import error
 from ... import util
 
 BASE_URL = "https://api.myanimelist.net/v2"
@@ -10,16 +13,21 @@ HEADERS = {
 }
 
 def get_manga_from_id(mal_id: int) -> dict[str, Any]:
-    r = requests.get(f"{BASE_URL}/manga/{mal_id}?fields=id,title,alternative_titles,main_picture,mean,media_type,status,genres,my_list_status,authors{{first_name,last_name}}", headers=HEADERS)
+    """Get a specific manga from MyAnimeList"""
+
+    r = requests.get(f"{BASE_URL}/manga/{mal_id}?fields=id,title,alternative_titles,main_picture,mean,media_type," + \
+                      "status,genres,my_list_status,authors{first_name,last_name}",
+                     headers=HEADERS,
+                     timeout=30)
 
     if "error" in r.json():
         if r.json()["error"] == "not_found":
-            raise exec.MangaNotFound()
-        else:
-            raise exec.CustomException(r.json()["error"])
+            raise error.MangaNotFound()
+
+        raise error.CustomException(r.json()["error"])
 
     if r.json()["media_type"] != "manga" and r.json()["media_type"] != "mahnwa":
-        raise exec.MediaTypeError("Currently only supports manga/mahnwa and not light novel/novel")
+        raise error.MediaTypeError("Currently only supports manga/mahnwa and not light novel/novel")
 
     to_return = {
         "id": r.json()["id"],
@@ -37,7 +45,7 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
         to_return["picture"] = r.json()["picture"]
     elif "main_picture" in r.json():
         to_return["picture"] = r.json()["main_picture"]["large"]
-    
+
     if "mean" in r.json():
         to_return["score"] = r.json()["mean"]
     else:
@@ -46,13 +54,17 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
     return to_return
 
 def get_manga_list_from_username(mal_username: str) -> list[dict[str, str | int]]:
-    r = requests.get(f"{BASE_URL}/users/{mal_username}/mangalist?fields=list_status&status=reading&limit=1000", headers=HEADERS)
+    """Get the manga list from a specific MyAnimeList user"""
+
+    r = requests.get(f"{BASE_URL}/users/{mal_username}/mangalist?fields=list_status&status=reading&limit=1000",
+                     headers=HEADERS,
+                     timeout=30)
 
     if "error" in r.json():
         if r.json()["error"] == "not_found":
-            raise exec.UserNotFound()
-        else:
-            raise exec.CustomException(r.json()["error"])
+            raise error.UserNotFound()
+
+        raise error.CustomException(r.json()["error"])
 
     return_data = []
     for manga_json in r.json()["data"]:

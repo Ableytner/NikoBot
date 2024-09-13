@@ -13,7 +13,7 @@ class AspectParser():
 
         result: dict[str, Aspect] = {}
 
-        with open(self._filename, "r") as f:
+        with open(self._filename, "r", encoding="utf8") as f:
             remaining_lines = f.readlines()
 
         while len(remaining_lines) > 0:
@@ -32,7 +32,7 @@ class AspectParser():
                 aspect_to_add = Aspect(*line_split, cost=cost)
             # the aspect is not primal
             elif len(line_split) == 4:
-                if line_split[2] in result.keys() and line_split[3] in result.keys():
+                if line_split[2] in result and line_split[3] in result:
                     for aspect in result.values():
                         if aspect.name == line_split[2]:
                             component1 = aspect
@@ -41,7 +41,7 @@ class AspectParser():
 
                     if component1 is not None and component2 is not None:
                         aspect_to_add = Aspect(line_split[0], line_split[1], cost, component1, component2)
-            
+
             if aspect_to_add is not None:
                 result[aspect_to_add.name] = aspect_to_add
                 remaining_lines.pop(0)

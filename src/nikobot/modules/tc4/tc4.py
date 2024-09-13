@@ -1,6 +1,7 @@
 """contains the cog of the tc4 module"""
 
 import os
+from threading import Thread
 
 from discord import app_commands
 from discord.ext import commands
@@ -32,7 +33,6 @@ class TC4(commands.Cog):
                 print(f"Icon for aspect {aspect.name} not found!")
 
         self.graph = Graph(list(self.aspects.values()))
-        self.graph.construct()
 
     @util.discord.grouped_hybrid_command(
         "aspect",
@@ -81,14 +81,20 @@ class TC4(commands.Cog):
     def _find_aspect(self, aspect_name: str) -> Aspect | None:
         aspect_name = aspect_name.capitalize()
 
-        if aspect_name in self.aspects.keys():
+        if aspect_name in self.aspects:
             return self.aspects[aspect_name]
 
         for aspect in self.aspects.values():
             if aspect.keyword == aspect_name.lower():
                 return aspect
 
+        return None
+
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
-    await bot.add_cog(TC4(bot))
+    cog = TC4(bot)
+
+    Thread(target=cog.graph.construct, daemon=True).start()
+
+    await bot.add_cog(cog)

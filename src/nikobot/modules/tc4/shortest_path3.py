@@ -1,12 +1,15 @@
-"""module containing util for calculating the shortest path between two aspects"""
+"""Module containing util for calculating the shortest path between two aspects"""
 
 from __future__ import annotations
 from dataclasses import dataclass
 
+from . import error
 from .aspect import Aspect
 
 @dataclass
 class Node():
+    """Represents a node in the graph containing an ``Aspect`` and a list of routes"""
+
     aspect: Aspect
     routes: dict[str, Node]
 
@@ -26,14 +29,18 @@ class Node():
         return f"{self.aspect.name}: {printable_routes}"
 
 class Graph():
+    """A graph consisting of multiple ``Node``s"""
+
     def __init__(self, aspects: list[Aspect]):
         self._nodes = {}
         for aspect in aspects:
             self._nodes[aspect.name] = Node(aspect, {})
-    
+
     _nodes: dict[str, Node]
 
     def is_constructed(self) -> bool:
+        """Check whether the graph is already constructed"""
+
         if self._nodes is None or len(self._nodes) == 0:
             return False
 
@@ -44,30 +51,35 @@ class Graph():
                 complete = False
         return complete
 
-    def get_nodes(self, iter = None) -> list[Node]:
+    def get_nodes(self, items = None) -> list[Node]:
         """
         Convert a given list of aspects or aspect names to nodes.
-        Return all nodes in the graph if iter is None.
+
+        Return all nodes in the graph if ``items`` is None.
         """
 
-        if iter is None:
-            return [item for item in self._nodes.values()]
-        else:
-            nodes = []
-            for item in iter:
-                nodes.append(self.get_node(item))
-            return nodes
-    
+        if items is None:
+            return list(self._nodes.values())
+
+        nodes = []
+        for item in items:
+            nodes.append(self.get_node(item))
+        return nodes
+
     def get_node(self, node_name: str | Aspect) -> Node:
+        """Return a specified aspect"""
+
         if not isinstance(node_name, (str, Aspect)):
             raise TypeError()
-        
+
         if isinstance(node_name, Aspect):
             node_name = node_name.name
 
         return self._nodes[node_name]
 
     def calc_cost(self, start_node_name: str, target_node_name: str) -> int:
+        """Calculate the cost between two aspects"""
+
         if not isinstance(start_node_name, str) or not isinstance(target_node_name, str):
             raise TypeError()
 
@@ -76,10 +88,12 @@ class Graph():
 
         for aspect in path:
             cost += aspect.cost
-        
+
         return cost
 
     def calc_shortest_path(self, start_node_name: str, target_node_name: str) -> list[Aspect]:
+        """Calculate the shortest/cheapest path between two aspects"""
+
         if not isinstance(start_node_name, str) or not isinstance(target_node_name, str):
             raise TypeError()
 
@@ -89,15 +103,17 @@ class Graph():
 
         while curr_node.aspect.name != target_node_name:
             if not target_node_name in curr_node.routes.keys():
-                raise Exception(f"route to node {target_node_name} not found in node {curr_node.aspect.name}")
+                raise error.MissingRoute(f"route to node {target_node_name} not found in node {curr_node.aspect.name}")
 
             path.append(curr_node.aspect)
             curr_node = curr_node.routes[target_node_name]
-        
+
         path.append(self._nodes[target_node_name].aspect)
         return path
 
     def construct(self):
+        """Construct the graph"""
+
         # add all neighbors to the routing table
         for node in self.get_nodes():
             for neighbor_aspect in node.aspect.neighbors:
