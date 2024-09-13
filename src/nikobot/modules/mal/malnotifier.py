@@ -73,7 +73,7 @@ class MALNotifier(commands.Cog):
 
     @util.discord.grouped_hybrid_command(
         name="register",
-        description="register an existing MyAnimeList account for use with the discord bot",
+        description="Register an existing MyAnimeList account for use with the discord bot",
         command_group=command_group
     )
     async def register(self, ctx: commands.context.Context | discord.interactions.Interaction, username: str):
@@ -111,7 +111,7 @@ class MALNotifier(commands.Cog):
 
     @util.discord.grouped_hybrid_command(
         name="deregister",
-        description="deregister the connected MyAnimeList account from your discord account",
+        description="Deregister the connected MyAnimeList account from your discord account",
         command_group=command_group
     )
     async def deregister(self, ctx: commands.context.Context | discord.interactions.Interaction):

@@ -31,16 +31,15 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 
         found_titles = []
         for item in title_objects:
-            c = get_chapters(item["href"])
             # ignore empty manga such as https://chapmanganato.to/manga-zw1002905
-            if len(c) > 0:
+            if len(get_chapters(item["href"])) > 0:
                 found_titles.append((util.general.levenshtein_distance(item.contents[0], title), item["href"]))
 
         found_titles.sort(key=lambda x: x[0])
-        for _, url in enumerate(found_titles):
-            if url not in results:
-                results[url] = 0
-            results[url] += 5 - c
+        for c, item in enumerate(found_titles):
+            if item[1] not in results:
+                results[item[1]] = 0
+            results[item[1]] += 5 - c
             if c >= 5:
                 break
 

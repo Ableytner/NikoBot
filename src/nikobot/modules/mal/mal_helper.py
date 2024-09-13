@@ -26,8 +26,8 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
 
         raise error.CustomException(r.json()["error"])
 
-    if r.json()["media_type"] != "manga" and r.json()["media_type"] != "mahnwa":
-        raise error.MediaTypeError("Currently only supports manga/mahnwa and not light novel/novel")
+    if r.json()["media_type"] != "manga" and r.json()["media_type"] != "manhwa":
+        raise error.MediaTypeError("Currently only supports manga/manhwa and not light novel/novel")
 
     to_return = {
         "id": r.json()["id"],

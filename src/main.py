@@ -10,7 +10,7 @@ from discord.ext import commands
 
 from nikobot import util
 
-MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "malnotifier.malnotifier"]
+MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "mal.malnotifier"]
 STORAGE_DIR = str(pathlib.Path(os.path.dirname(__file__), "..", "storage").resolve())
 STORAGE_FILE = os.path.join(STORAGE_DIR, "storage.json")
 CACHE_DIR = os.path.join(STORAGE_DIR, "cache")
@@ -85,8 +85,10 @@ class DiscordBot(commands.Bot):
         send_fut = asyncio.run_coroutine_threadsafe(self.get_channel(channel_id).send(text), self.loop)
         return send_fut.result()
 
-# to-do
+# TODO:
 # combine some parts of the mcserver-tools bot and roxy waifu bot
+# fix /tc4 path
+# write response message if argument is missing (implement in command_failed)
 
 # pylint: disable=protected-access
 if __name__ == "__main__":
