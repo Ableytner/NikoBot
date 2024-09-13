@@ -243,6 +243,10 @@ class Manga():
                     embed_var.add_field(name="Next chapter link",
                                         value=chapter.url,
                                         inline=False)
+        if embed_var.fields[-1].name != "Next chapter link" and self._manga_provider_url is not None:
+            embed_var.add_field(name="Manga provider url",
+                                value=self._manga_provider_url,
+                                inline=False)
 
         embed_var.add_field(name="MAL link",
                             value=f"https://myanimelist.net/manga/{self.mal_id}",

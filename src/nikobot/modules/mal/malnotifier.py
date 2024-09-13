@@ -29,41 +29,25 @@ class MALNotifier(commands.Cog):
         self.bot = bot
         self.users = []
 
-    # TODO: add https://myanimelist.net/apiconfig/references/api/v2#operation/manga_get
-    @util.discord.normal_command(
-        name="search",
-        description="",
-        hidden=True
+    @util.discord.grouped_hybrid_command(
+            name="manga",
+            description="Search for a manga on MyAnimeList",
+            command_group=command_group
     )
-    @commands.is_owner()
-    async def search(self, ctx: commands.context.Context, *manga_name: list[str]):
-        """The discord command 'niko.search'"""
+    async def manga(self, ctx: commands.context.Context | discord.interactions.Interaction, *title: list[str]):
+        """The discord command 'niko.mal.manga'"""
 
-        recombined_name = " ".join(["".join(item) for item in manga_name])
+        recombined_title = " ".join(["".join(item) for item in title])
 
-        manga_url = manganato_helper.get_manga_url(recombined_name)
-        if manga_url is None:
-            await util.discord.reply(ctx,
-                                     embed=discord.Embed(title="Manga not found",
-                                                         color=discord.Color.orange()))
-            return
-
-        chapters = manganato_helper.get_chapters(manga_url)
-        latest_chap = max(chapters, key=lambda x: x.number)
-
-        print(len(chapters))
-        print(latest_chap.number)
-
-        await util.discord.reply(ctx, manga_url)
-
-    @util.discord.normal_command(
-        name="search2",
-        description="",
-        hidden=True
-    )
-    @commands.is_owner()
-    async def search2(self, ctx: commands.context.Context, mal_id: int):
-        """The discord command 'niko.search2'"""
+        if recombined_title.isdecimal():
+            mal_id = int(recombined_title)
+        else:
+            mal_id = mal_helper.search_for_manga(recombined_title)
+            if mal_id is None:
+                await util.discord.reply(ctx,
+                                        embed=discord.Embed(title="Manga not found on MyAnimeList",
+                                                            color=discord.Color.orange()))
+                return
 
         manga = None
 
@@ -78,11 +62,11 @@ class MALNotifier(commands.Cog):
         if manga is None:
             try:
                 manga = Manga.from_mal_id(mal_id)
-            except error.MangaNotFound:
-                await util.discord.reply(ctx, "Manga not found on MAL")
-                return
             except error.MediaTypeError:
-                await util.discord.reply(ctx, "Currently only supports manga and not light novel/novel")
+                await util.discord.reply(ctx,
+                                         embed=discord.Embed(title="Currently only supports manga "
+                                                             + "and not light novel/novel",
+                                                             color=discord.Color.orange()))
                 return
 
         # pylint: disable-next=redefined-outer-name
@@ -97,10 +81,7 @@ class MALNotifier(commands.Cog):
     async def register(self, ctx: commands.context.Context | discord.interactions.Interaction, username: str):
         """The discord command 'niko.mal.register'"""
 
-        if util.discord.is_slash_command(ctx):
-            user_id = ctx.user.id
-        else:
-            user_id = ctx.author.id
+        user_id = util.discord.get_user_id(ctx)
 
         if util.VolatileStorage.contains("mal.user", str(user_id)):
             await util.discord.reply(ctx, embed=discord.Embed(title="You are already registered",

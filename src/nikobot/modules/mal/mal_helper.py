@@ -26,7 +26,7 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
 
         raise error.CustomException(r.json()["error"])
 
-    if r.json()["media_type"] != "manga" and r.json()["media_type"] != "manhwa":
+    if not _supported_media_type(r.json()["media_type"]):
         raise error.MediaTypeError("Currently only supports manga/manhwa and not light novel/novel")
 
     to_return = {
@@ -74,6 +74,37 @@ def get_manga_list_from_username(mal_username: str) -> list[dict[str, str | int]
         })
 
     return return_data
+
+def search_for_manga(title: str) -> int | None:
+    """
+    Search for the given manga name
+
+    Return the MyAnimeList id for the manga or None
+    """
+
+    title_sanitized = title.lower()
+
+    r = requests.get(f"{BASE_URL}/manga?nsfw=true&fields=media_type&q={title_sanitized}&limit=5",
+                     headers=HEADERS,
+                     timeout=30)
+
+    if "error" in r.json():
+        raise error.CustomException(r.json()["error"])
+    
+    try:
+        for manga in r.json()["data"]:
+            if _supported_media_type(manga["node"]["media_type"]):
+                return int(manga["node"]["id"])
+    except Exception:
+        return None
+
+def _supported_media_type(media_type) -> bool:
+    if media_type == "manga":
+        return True
+    if media_type == "manhwa":
+        return True
+    
+    return False
 
 def _setup():
     HEADERS["X-MAL-CLIENT-ID"] = util.VolatileStorage["mal"]["CLIENT-ID"]
