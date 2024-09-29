@@ -99,6 +99,10 @@ class DiscordBot(commands.Bot):
 # fix clear command for private messages
 # fix clear command message deletion on cancel
 # save clear command data in storage
+# create command to set manga provider url
+# fix manganato search for: oshi no ko, solo leveling
+# create command to list manga with reading status
+# github action to build and release to docker hub
 
 # pylint: disable=protected-access
 if __name__ == "__main__":
