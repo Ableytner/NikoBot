@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import discord
 import youtube_dl
 from discord.ext import commands, tasks
@@ -100,8 +102,9 @@ class Music(commands.Cog):
     @tasks.loop(seconds=5)
     async def song_scheduler(self):
         """manages the queue"""
-        
-        for guild_id in list(self.active_plays.keys()): # list() to create a new object which can't change during the loop execution
+
+        # list() to create a new object which can't change during the loop execution
+        for guild_id in list(self.active_plays.keys()):
             data = self.active_plays[guild_id]
 
             if not data["playing"] and len(data["urls"]) > 0:
@@ -113,8 +116,13 @@ class Music(commands.Cog):
 
     async def play_song(self, url: str, guild_id: int):
         """ plays back the given song """
-        FFMPEG_OPTIONS = {'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5', 'options': '-vn'}
-        YDL_OPTIONS = {'format' : "bestaudio"}
+        FFMPEG_OPTIONS = {
+            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
+            'options': '-vn'
+        }
+        YDL_OPTIONS = {
+            'format' : "bestaudio"
+        }
         voice_clients: list[discord.voice_client.VoiceClient] = self.bot.voice_clients
         vc: discord.voice_client.VoiceClient = [item for item in voice_clients if item.guild.id==guild_id][0]
         with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:

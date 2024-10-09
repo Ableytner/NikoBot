@@ -8,7 +8,7 @@ from enum import Enum
 
 import requests
 from PIL import Image
-from discord import Embed, File, Color
+from discord import Embed, File
 
 from . import error, mal_helper, manganato_helper
 from .chapter import Chapter
@@ -165,7 +165,7 @@ class Manga():
 
         path = os.path.join(util.VolatileStorage["cache_dir"], "mal")
         os.makedirs(path, exist_ok=True)
-        path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit(".", maxsplit=1)[1]}")
+        path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
 
         if os.path.isfile(path):
             return path
