@@ -5,7 +5,7 @@ RUN apt-get update \
   && mkdir /home/nikobot/src \
   && chown nikobot /home/nikobot/src
 
-COPY --chown=nikobot --chmod=755 src/* /home/nikobot/src/
+COPY --chown=nikobot --chmod=755 src/ /home/nikobot/src/
 COPY --chown=nikobot --chmod=755 requirements.txt /home/nikobot/requirements.txt
 
 # install pip packages
