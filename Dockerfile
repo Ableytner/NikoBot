@@ -10,4 +10,4 @@ RUN pip install -r /home/nikobot/requirements.txt
 
 USER nikobot
 
-ENTRYPOINT [ "python3 src/main.py" ]
+ENTRYPOINT [ "python3", "src/main.py" ]

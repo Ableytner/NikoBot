@@ -13,13 +13,14 @@ jobs:
   pylint:
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     uses: ./.github/workflows/define-pylint.yml
     with:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
   build:
+    needs: [pylint]
     uses: ./.github/workflows/define-build-image.yml
     secrets: inherit
 
