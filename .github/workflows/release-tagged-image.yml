@@ -1,0 +1,89 @@
+name: Release tagged image
+
+on: [workflow_dispatch]
+
+env:
+  CURRENT_VERSION: 0.0.1
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pylint:
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    uses: ./.github/workflows/define-pylint.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
+  build:
+    uses: ./.github/workflows/define-build-image.yml
+    secrets: inherit
+
+  tag:
+    runs-on: self-hosted
+    steps:
+    - uses: mukunku/tag-exists-action@v1.6.0
+      id: check-tag
+      with: 
+        tag: ${{ env.CURRENT_VERSION }}
+    - name: Fail if tag exists
+      if: steps.check-tag.outputs.exists == 'true' 
+      run: |
+        echo "Tag ${{ env.CURRENT_VERSION }} exists!"
+        exit 1
+    - name: Print tag if it doesn't exist
+      if: steps.check-tag.outputs.exists == 'false' 
+      run: |
+        echo "Tag ${{ env.CURRENT_VERSION }} doesn't yet exist and can be created"
+
+  push:
+    needs: [tag, build]
+    runs-on: [self-hosted, linux]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+    - name: Login to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.repository_owner }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    - name: lowercase github.repository
+      run: |
+        echo "IMAGE_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
+    - name: Download image artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: image
+        path: /tmp
+    - name: Load image
+      run: |
+        docker load --input /tmp/image.tar
+    - name: Push
+      run: |
+        docker tag ${{ env.IMAGE_NAME }}:latest ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }}
+        docker push ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }}
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }} ghcr.io/${{ env.IMAGE_NAME }}:latest
+        docker push ghcr.io/${{ env.IMAGE_NAME }}:latest
+
+  release:
+    needs: [push]
+    runs-on: [self-hosted, linux]
+    permissions:
+      contents: write
+    steps:
+    - name: Add body.md
+      run: |
+        touch body.md
+    - name: Create new release
+      uses: ncipollo/release-action@v1
+      with:
+        bodyFile: "body.md"
+        tag: "${{ env.CURRENT_VERSION }}"
+        commit: "main"
+        token: ${{ secrets.GITHUB_TOKEN }}
