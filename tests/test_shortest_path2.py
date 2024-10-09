@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from src.modules.tc4 import AspectParser
 from src.modules.tc4.shortest_path import ShortestPath
 from src.modules.tc4.shortest_path2 import ShortestPath2

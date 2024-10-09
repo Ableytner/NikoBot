@@ -27,7 +27,8 @@ disable=too-many-arguments,
         no-name-in-module,
         isinstance-second-argument-not-valid-type,
         multiple-statements,
-        relative-beyond-top-level
+        relative-beyond-top-level,
+        too-many-positional-arguments
 
 [FORMAT]
 

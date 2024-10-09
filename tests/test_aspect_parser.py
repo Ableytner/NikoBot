@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from src.modules.tc4 import AspectParser
 
 def test_create():
