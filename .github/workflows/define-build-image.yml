@@ -20,7 +20,7 @@ jobs:
     - name: Build
       uses: docker/build-push-action@v6
       with:
-        context: ./linux
+        context: .
         push: false
         tags: ${{ env.IMAGE_NAME }}:latest
         outputs: type=docker,dest=/tmp/image.tar
