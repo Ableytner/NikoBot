@@ -14,6 +14,7 @@ confidence=
 # no Warning level messages displayed, use "--disable=all --enable=classes
 # --disable=W".
 disable=too-many-arguments,
+        too-many-positional-arguments,
         invalid-name,
         fixme,
         bare-except,
