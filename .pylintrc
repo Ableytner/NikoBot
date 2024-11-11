@@ -1,3 +1,7 @@
+[MASTER]
+
+ignore=tests
+
 [MESSAGES CONTROL]
 
 # Only show warnings with the listed confidence levels. Leave empty to show
@@ -22,7 +26,9 @@ disable=too-many-arguments,
         too-many-instance-attributes,
         no-name-in-module,
         isinstance-second-argument-not-valid-type,
-        multiple-statements
+        multiple-statements,
+        relative-beyond-top-level,
+        too-many-positional-arguments
 
 [FORMAT]
 

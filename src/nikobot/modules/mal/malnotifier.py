@@ -1,5 +1,6 @@
 """A module containing MyAnimeList-related commands"""
 
+import os
 from datetime import datetime, timedelta
 from threading import Thread
 
@@ -13,9 +14,6 @@ from .manga import Manga
 from ... import util
 
 # pylint: disable=protected-access
-
-with open("client_id.txt", "r", encoding="utf8") as file:
-    CLIENT_ID = file.readlines()[0]
 
 command_group = app_commands.Group(
     name="mal",
@@ -204,7 +202,7 @@ class MALNotifier(commands.Cog):
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
-    util.VolatileStorage["mal.CLIENT-ID"] = CLIENT_ID
+    util.VolatileStorage["mal.CLIENT-ID"] = os.environ["MAL_CLIENT_ID"]
 
     mal_helper._setup()
     manganato_helper._setup()

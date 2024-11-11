@@ -25,9 +25,7 @@ class DiscordBot(commands.Bot):
     def start_bot(self):
         """Start the discord bot"""
 
-        with open("dc_token.txt", "r", encoding="utf8") as file:
-            token = file.readlines()[0]
-        self.run(token)
+        self.run(os.environ["DISCORD_TOKEN"])
 
     async def setup_hook(self) -> None:
         util.VolatileStorage["modules"] = []
