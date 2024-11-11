@@ -156,6 +156,7 @@ class Manga():
             print(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, " +
                   "removing and trying again later")
             self.set_manga_provider(None, None)
+            return
 
         self.chapters = chapters
 
