@@ -153,7 +153,8 @@ class Manga():
                 raise error.UnknownProvider()
 
         if len(chapters) == 0:
-            print(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, removing and trying again later")
+            print(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, " + 
+                  "removing and trying again later")
             self.set_manga_provider(None, None)
 
         self.chapters = chapters
