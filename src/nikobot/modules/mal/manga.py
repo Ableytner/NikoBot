@@ -199,10 +199,12 @@ class Manga():
     def set_manga_provider(self, manga_provider: MangaProvider | None, manga_provider_url: str | None) -> None:
         """Set the manga_provider and its url to the current ``Manga``"""
 
-        if not isinstance(manga_provider, (MangaProvider, None)):
+        if not isinstance(manga_provider, MangaProvider) and manga_provider is not None:
             raise TypeError()
-        if not isinstance(manga_provider_url, (str, None)) or manga_provider_url == "":
+        if not isinstance(manga_provider_url, str) and manga_provider is not None:
             raise TypeError()
+        if manga_provider_url == "":
+            raise ValueError()
 
         self._manga_provider = manga_provider
         self._manga_provider_url = manga_provider_url
