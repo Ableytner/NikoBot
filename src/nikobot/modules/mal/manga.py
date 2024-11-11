@@ -145,11 +145,16 @@ class Manga():
 
     def _fetch_chapters(self) -> None:
         chapters: list[Chapter] = None
-        if self._manga_provider == MangaProvider.MANGANATO:
-            chapters = manganato_helper.get_chapters(self._manga_provider_url)
+        match self._manga_provider:
+            case MangaProvider.MANGANATO:
+                chapters = manganato_helper.get_chapters(self._manga_provider_url)
+            # default case
+            case _:
+                raise error.UnknownProvider()
 
-        if chapters is None:
-            raise error.UnknownProvider()
+        if len(chapters) == 0:
+            print(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, removing and trying again later")
+            self.set_manga_provider(None, None)
 
         self.chapters = chapters
 
