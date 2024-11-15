@@ -22,6 +22,8 @@ jobs:
   build:
     needs: [pylint]
     uses: ./.github/workflows/define-build-image.yml
+    with:
+      upload: true
     secrets: inherit
 
   tag:
