@@ -227,7 +227,7 @@ def is_private_channel(ctx: commands.context.Context | discord.interactions.Inte
 
     if is_slash_command(ctx):
         return isinstance(ctx.channel, discord.channel.DMChannel)
-    
+
     return isinstance(ctx.channel, discord.channel.DMChannel)
 
 def is_slash_command(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
