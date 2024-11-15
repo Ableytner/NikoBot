@@ -22,6 +22,10 @@ class Clear(commands.Cog):
         """Discord command that deletes the given amount of messages,
         as well as the message containing the initial command"""
 
+        if util.discord.is_private_channel(ctx):
+            await util.discord.reply(ctx, "Cannot delete messages here")
+            return
+
         accept_decline = await util.discord.reply(ctx, f"Are you sure you want to delete {amount} messages?")
         await accept_decline.add_reaction(self._yes_emoji)
         await accept_decline.add_reaction(self._no_emoji)
@@ -42,16 +46,20 @@ class Clear(commands.Cog):
             return
         if str(reaction.message.id) not in util.PersistentStorage["clear"]:
             return
+        if reaction.emoji not in [self._yes_emoji, self._no_emoji]:
+            return
 
         data = util.PersistentStorage[f"clear.{reaction.message.id}"]
 
+        channel = util.discord.get_bot().get_channel(data["channel_id"])
+        if channel is None:
+            raise util.error.NoneTypeException()
+
         if reaction.emoji == self._yes_emoji:
-            await self.bot.get_channel(data["channel_id"]).purge(limit=data["amount"])
-        elif reaction.emoji == self._no_emoji:
-            await self.bot.get_channel(data["channel_id"]).get_partial_message(data["message_id"]).clear_reactions()
+            await channel.purge(limit=data["amount"])
         else:
-            return
-        
+            await channel.get_partial_message(data["message_id"]).clear_reactions()
+
         del util.PersistentStorage[f"clear.{reaction.message.id}"]
 
 async def setup(bot: commands.Bot):

@@ -222,6 +222,14 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         return wrapper
     return decorator
 
+def is_private_channel(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
+    """Checks whether the message related to ``ctx`` was received as a private / direct message"""
+
+    if is_slash_command(ctx):
+        return isinstance(ctx.channel, discord.channel.DMChannel)
+    
+    return isinstance(ctx.channel, discord.channel.DMChannel)
+
 def is_slash_command(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
     """Checks whether the ``ctx`` was received from a 'normal' text command or a slash command"""
 
@@ -237,7 +245,7 @@ def is_slash_command(ctx: commands.context.Context | discord.interactions.Intera
 
 def is_sent_by_owner(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
     """
-    Checks whether the message relating to the ``ctx`` is sent by one of the bot's owners
+    Checks whether the message related to the ``ctx`` is sent by one of the bot's owners
     
     This is really only used for testing
     """
