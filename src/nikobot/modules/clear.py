@@ -45,9 +45,9 @@ class Clear(commands.Cog):
 
         data = util.PersistentStorage[f"clear.{reaction.message.id}"]
 
-        if reaction.emoji == "✅":
+        if reaction.emoji == self._yes_emoji:
             await self.bot.get_channel(data["channel_id"]).purge(limit=data["amount"])
-        elif reaction.emoji == "❌":
+        elif reaction.emoji == self._no_emoji:
             await self.bot.get_channel(data["channel_id"]).get_partial_message(data["message_id"]).clear_reactions()
         else:
             return
