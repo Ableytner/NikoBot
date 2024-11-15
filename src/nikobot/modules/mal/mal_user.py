@@ -67,7 +67,7 @@ class MALUser():
 
         manga_list = mal_helper.get_manga_list_from_username(self.username)
         for entry in manga_list:
-            mal_id = entry["mal_id"]
+            mal_id = int(entry["mal_id"])
             if mal_id in self.manga:
                 self.manga[mal_id].set_chapters_read(entry["read_chapters"])
             else:
@@ -77,6 +77,13 @@ class MALUser():
                     self.manga[mal_id] = manga
                 except error.MediaTypeError:
                     pass
+
+        # remove manga that no longer have the 'Reading' status on MAL
+        correct_mal_ids = [int(entry["mal_id"]) for entry in manga_list]
+        for mal_id in list(self.manga.keys()):
+            if mal_id not in correct_mal_ids:
+                self.manga.pop(mal_id)
+
         self.save_to_storage()
 
     def save_to_storage(self) -> None:
