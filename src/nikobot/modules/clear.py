@@ -35,7 +35,8 @@ class Clear(commands.Cog):
         util.PersistentStorage[f"clear.{accept_decline.id}"] = {
             "channel_id": ctx.channel.id,
             "message_id": accept_decline.id,
-            "amount": amount
+            "amount": amount,
+            "is_slash_command": util.discord.is_slash_command(ctx)
         }
 
     @commands.Cog.listener()
@@ -58,7 +59,10 @@ class Clear(commands.Cog):
         if reaction.emoji == self._yes_emoji:
             await channel.purge(limit=data["amount"])
         else:
-            await channel.get_partial_message(data["message_id"]).clear_reactions()
+            if data["is_slash_command"]:
+                await channel.purge(limit=1)
+            else:
+                await channel.purge(limit=2)
 
         del util.PersistentStorage[f"clear.{reaction.message.id}"]
 

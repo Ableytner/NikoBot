@@ -110,7 +110,6 @@ class DiscordBot(commands.Bot):
 # tests (maybe with a second discord bot for testing purposes)
 # add README
 # create sing module with all music commands
-# fix clear command message deletion on cancel
 # create command to set manga provider url
 # fix manganato search for: oshi no ko, solo leveling
 # create command to list manga with reading status
