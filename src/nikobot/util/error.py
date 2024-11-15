@@ -24,6 +24,11 @@ class MultipleReplies(CustomException):
 
     default_message = "Commands can only be replied once to"
 
+class NoneTypeException(CustomException):
+    """Exception raised when a value is unexpectedly None"""
+
+    default_message = "DIdn't expect None as a value here"
+
 class SingletonInstantiation(CustomException):
     """Exception raised when a singleton classi sinstantiated twice"""
 

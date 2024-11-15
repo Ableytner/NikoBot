@@ -11,7 +11,6 @@ class Clear(commands.Cog):
     def __init__(self, bot: commands.Bot) -> None:
         self.bot = bot
 
-        self._to_clear = {}
         self._yes_emoji = "✅"
         self._no_emoji = "❌"
 
@@ -23,16 +22,21 @@ class Clear(commands.Cog):
         """Discord command that deletes the given amount of messages,
         as well as the message containing the initial command"""
 
+        if util.discord.is_private_channel(ctx):
+            await util.discord.reply(ctx, "Cannot delete messages here")
+            return
+
         accept_decline = await util.discord.reply(ctx, f"Are you sure you want to delete {amount} messages?")
         await accept_decline.add_reaction(self._yes_emoji)
         await accept_decline.add_reaction(self._no_emoji)
 
         amount += 1 if util.discord.is_slash_command(ctx) else 2
 
-        self._to_clear[accept_decline.id] = {
+        util.PersistentStorage[f"clear.{accept_decline.id}"] = {
             "channel_id": ctx.channel.id,
             "message_id": accept_decline.id,
-            "amount": amount
+            "amount": amount,
+            "is_slash_command": util.discord.is_slash_command(ctx)
         }
 
     @commands.Cog.listener()
@@ -41,19 +45,26 @@ class Clear(commands.Cog):
 
         if user.id == util.discord.get_bot().user.id:
             return
-        if reaction.message.id not in self._to_clear:
+        if str(reaction.message.id) not in util.PersistentStorage["clear"]:
+            return
+        if reaction.emoji not in [self._yes_emoji, self._no_emoji]:
             return
 
-        data = self._to_clear[reaction.message.id]
+        data = util.PersistentStorage[f"clear.{reaction.message.id}"]
 
-        if reaction.emoji == "✅":
-            await self.bot.get_channel(data["channel_id"]).purge(limit=data["amount"])
-            self._to_clear.pop(reaction.message.id)
-        elif reaction.emoji == "❌":
-            await self.bot.get_channel(data["channel_id"]).get_partial_message(data["message_id"]).clear_reactions()
-            self._to_clear.pop(reaction.message.id)
+        channel = util.discord.get_bot().get_channel(data["channel_id"])
+        if channel is None:
+            raise util.error.NoneTypeException()
+
+        if reaction.emoji == self._yes_emoji:
+            await channel.purge(limit=data["amount"])
         else:
-            return
+            if data["is_slash_command"]:
+                await channel.purge(limit=1)
+            else:
+                await channel.purge(limit=2)
+
+        del util.PersistentStorage[f"clear.{reaction.message.id}"]
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
