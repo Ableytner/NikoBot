@@ -12,6 +12,12 @@ from discord.ext import commands
 from . import error
 from .storage import VolatileStorage
 
+def get_command_name(ctx: commands.context.Context | discord.interactions.Interaction) -> str:
+    if not is_slash_command(ctx):
+        return ctx.command.qualified_name
+    else:
+        return ctx.command.qualified_name
+
 def get_bot() -> commands.Bot:
     """Return the ``DiscordBot`` instance"""
 
@@ -24,6 +30,23 @@ def get_bot() -> commands.Bot:
         raise TypeError()
 
     return bot
+
+def get_owner_id() -> int:
+    return 650587171375284226
+
+async def get_reply(ctx: commands.context.Context | discord.interactions.Interaction) \
+          -> discord.Message | discord.interactions.InteractionMessage | None:
+    if not is_slash_command(ctx):
+        ctx: commands.context.Context = ctx
+        async for message in ctx.channel.history(limit=100):
+            if message.reference is not None and message.reference.message_id == ctx.message.id:
+                return message
+        return None
+
+    if not ctx.response.is_done():
+        return None
+
+    return await ctx.original_response()
 
 def get_user_id(ctx: commands.context.Context | discord.interactions.Interaction) -> int:
     """Get discords user id from the message's sender"""
@@ -193,7 +216,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         return wrapper
     return decorator
 
-def is_slash_command(ctx: commands.context.Context | discord.interactions.Interaction):
+def is_slash_command(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
     """Checks whether the ``ctx`` was received from a 'normal' text command or a slash command"""
 
     # for slash commands

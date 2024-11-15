@@ -2,6 +2,7 @@
 
 import pathlib
 import shutil
+import traceback
 import os
 
 import asyncio
@@ -77,6 +78,21 @@ class DiscordBot(commands.Bot):
 
             await util.discord.reply(context, embed=embed)
             return
+
+        # all other commands
+        # code from https://stackoverflow.com/a/73706008/15436169
+        user = await util.discord.get_bot().fetch_user(util.discord.get_user_id(context))
+        full_error = traceback.format_exception(exception)
+        msg_text = f"User {user} used command {util.discord.get_command_name(context)}:\n```py\n{''.join(full_error)}\n```"
+        await util.discord.private_message(util.discord.get_owner_id(),
+                                           msg_text)
+        embed = discord.Embed(title="An error occured!",
+                              color=discord.Color.red())
+        message = await util.discord.get_reply(context)
+        if message is not None:
+            await message.edit(embed=embed)
+        else:
+            await util.discord.reply(context, embed=embed)
 
         return await super().on_command_error(context, exception)
 
