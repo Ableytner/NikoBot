@@ -133,6 +133,39 @@ class MALNotifier(commands.Cog):
                                  embed=discord.Embed(title="Successfully deregistered from release notifications",
                                                      color=discord.Color.blue()))
 
+    @util.discord.grouped_hybrid_command(
+        name="update",
+        description="Check for new manga chapters for the MyAnimeList account connected to your discord account",
+        command_group=command_group
+    )
+    async def update(self, ctx: commands.context.Context | discord.interactions.Interaction):
+        """The discord command 'niko.mal.update'"""
+
+        if util.discord.is_slash_command(ctx):
+            user_id = ctx.user.id
+        else:
+            user_id = ctx.author.id
+
+        if not util.VolatileStorage.contains("mal.user", str(user_id)):
+            await util.discord.reply(ctx,
+                                     embed=discord.Embed(title="You are not yet registered",
+                                                         color=discord.Color.orange()))
+            return
+
+        embed = discord.Embed(title="Checking for new chapters...",
+                              color=discord.Color.blue())
+        embed.add_field(name="\u200b",
+                        value="Please wait a few minutes",
+                        inline=True)
+        message = await util.discord.reply(ctx, embed=embed)
+
+        maluser = util.VolatileStorage[f"mal.user.{user_id}"]
+        await self.notify_user(int(user_id), maluser)
+
+        await message.edit(ctx,
+                           embed=discord.Embed(title="Finished checking!",
+                                               color=discord.Color.blue()))
+
     @tasks.loop(hours=1, reconnect=True, name="notify-users-task")
     async def notify_users(self):
         """A method responsible for notifying users if a new manga chapter was released"""
