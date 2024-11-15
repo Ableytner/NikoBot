@@ -162,8 +162,7 @@ class MALNotifier(commands.Cog):
         maluser = util.VolatileStorage[f"mal.user.{user_id}"]
         await self.notify_user(int(user_id), maluser)
 
-        await message.edit(ctx,
-                           embed=discord.Embed(title="Finished checking!",
+        await message.edit(embed=discord.Embed(title="Finished checking!",
                                                color=discord.Color.blue()))
 
     @tasks.loop(hours=1, reconnect=True, name="notify-users-task")
