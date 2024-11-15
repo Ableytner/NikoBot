@@ -94,6 +94,9 @@ class Manga():
     def from_mal_id(mal_id: int) -> Manga:
         """Factory method creating a new Manga object using the MyAnimeList id"""
 
+        if not isinstance(mal_id, int):
+            raise TypeError()
+
         data = mal_helper.get_manga_from_id(mal_id)
         manga = Manga(mal_id,
                       data["title"],
