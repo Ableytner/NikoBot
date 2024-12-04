@@ -166,10 +166,10 @@ class _PersistentStorage(_BaseStorage):
         return super().__setitem__(key, item)
 
     def _load_from_disk(self) -> None:
-        if "storage_file" not in self:
+        if "storage_file" not in StorageView:
             raise error.KeyNotFound()
 
-        path = self["storage_file"]
+        path = StorageView["storage_file"]
         if not os.path.isfile(path):
             print("Storage file doesn't yet exist")
             return
@@ -178,10 +178,10 @@ class _PersistentStorage(_BaseStorage):
             self._store = json.load(f)
 
     def _save_to_disk(self) -> None:
-        if "storage_file" not in self:
+        if "storage_file" not in StorageView:
             raise error.KeyNotFound()
 
-        path = self["storage_file"]
+        path = StorageView["storage_file"]
         if len(self._store) == 0 and os.path.isfile(path):
             print("Not overwriting existing storage file with empty storage")
             return
@@ -192,14 +192,24 @@ class _PersistentStorage(_BaseStorage):
 class _StorageView():
     """A read-only view on both the PersistentStorage and VolatileStorage"""
 
+    def __init__(self, storages: list[_BaseStorage]):
+        for storage in storages:
+            if not isinstance(storage, _BaseStorage):
+                raise TypeError()
+            self._storages.append(storage)
+
+    _storages = []
+
     def contains_item(self, key: str, item: Any) -> bool:
         """
         Checks whether a key within the storage contains an item
         If 'key' contains a '.', also checks if all sub-dicts exist
         """
 
-        return PersistentStorage.contains_item(key, item) \
-               or VolatileStorage.contains_item(key, item)
+        for storage in self._storages:
+            if storage.contains_item(key, item):
+                return True
+        return False
 
     def contains(self, key: str) -> bool:
         """
@@ -207,20 +217,23 @@ class _StorageView():
         If 'key' contains a '.', also checks if all sub-dicts exist
         """
 
-        return PersistentStorage.contains(key) \
-               or VolatileStorage.contains(key)
+        for storage in self._storages:
+            if storage.contains(key):
+                return True
+        return False
 
     def __getitem__(self, key: str) -> Any:
-        if key in PersistentStorage:
-            return PersistentStorage[key]
-        return VolatileStorage[key]
+        for storage in self._storages:
+            if key in storage:
+                return storage[key]
+        raise error.KeyNotFound()
 
     def __contains__(self, key: str) -> bool:
         return self.contains(key)
 
 VolatileStorage = _VolatileStorage()
 PersistentStorage = _PersistentStorage()
-StorageView = _StorageView()
+StorageView = _StorageView([VolatileStorage, PersistentStorage])
 
 # save persistent storage before program exits
 # pylint: disable-next=protected-access
