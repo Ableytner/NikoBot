@@ -1,4 +1,6 @@
-# pylint: disable=protected-access, missing-class-docstring, pointless-statement
+"""Module containing tests for the different types of Storage"""
+
+# pylint: disable=protected-access, missing-class-docstring, pointless-statement, expression-not-assigned
 
 import json
 import pathlib
@@ -218,7 +220,7 @@ def test_basestorage_contains():
     BaseStorage._store = {}
 
     assert not BaseStorage.contains("key1")
-    assert not "key1" in BaseStorage
+    assert "key1" not in BaseStorage
 
     BaseStorage["key1"] = "value"
     assert BaseStorage.contains("key1")
@@ -231,7 +233,7 @@ def test_basestorage_contains_multi():
     BaseStorage._store = {}
 
     assert not BaseStorage.contains("key1.key2")
-    assert not "key1.key2" in BaseStorage
+    assert "key1.key2" not in BaseStorage
 
     BaseStorage["key1.key2"] = "value2"
     assert BaseStorage.contains("key1.key2")
@@ -240,7 +242,7 @@ def test_basestorage_contains_multi():
     del BaseStorage["key1"]
 
     assert not BaseStorage.contains("key1.key2.key3.key4.key5.key6")
-    assert not "key1.key2.key3.key4.key5.key6" in BaseStorage
+    assert "key1.key2.key3.key4.key5.key6" not in BaseStorage
 
     BaseStorage["key1.key2.key3.key4.key5.key6"] = "values"
     assert BaseStorage.contains("key1.key2.key3.key4.key5.key6")
@@ -377,7 +379,7 @@ def test_persistentstorage_load_file():
     pathlib.Path.unlink(filepath, missing_ok=True)
     PersistentStorage["storage_file"] = filepath
 
-    with open(filepath, "w") as f:
+    with open(filepath, "w", encoding="utf8") as f:
         json.dump({
             "key1": "value",
             "key2": [
@@ -417,7 +419,7 @@ def test_persistentstorage_save_file():
     PersistentStorage._save_to_disk()
 
     assert os.path.isfile(filepath)
-    with open(filepath, "w") as f:
+    with open(filepath, "w", encoding="utf8") as f:
         data = json.load(f)
     assert data["key1"] == "value"
     assert data["key2"] == ["value21", "value22", "value23"]
