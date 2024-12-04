@@ -50,7 +50,7 @@ class MALNotifier(commands.Cog):
         manga = None
 
         user_id = util.discord.get_user_id(ctx)
-        if util.VolatileStorage.exists(f"mal.user.{user_id}"):
+        if util.VolatileStorage.contains(f"mal.user.{user_id}"):
             maluser: MALUser = util.VolatileStorage[f"mal.user.{user_id}"]
             maluser.fetch_manga_list()
             if mal_id in maluser.manga:
@@ -81,7 +81,7 @@ class MALNotifier(commands.Cog):
 
         user_id = util.discord.get_user_id(ctx)
 
-        if util.VolatileStorage.contains("mal.user", str(user_id)):
+        if util.VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx, embed=discord.Embed(title="You are already registered",
                                                               color=discord.Color.orange()))
             return
@@ -122,7 +122,7 @@ class MALNotifier(commands.Cog):
         else:
             user_id = ctx.author.id
 
-        if not util.VolatileStorage.contains("mal.user", str(user_id)):
+        if not util.VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
                                      embed=discord.Embed(title="You are not yet registered",
                                                          color=discord.Color.orange()))
@@ -146,7 +146,7 @@ class MALNotifier(commands.Cog):
         else:
             user_id = ctx.author.id
 
-        if not util.VolatileStorage.contains("mal.user", str(user_id)):
+        if not util.VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
                                      embed=discord.Embed(title="You are not yet registered",
                                                          color=discord.Color.orange()))
@@ -169,7 +169,7 @@ class MALNotifier(commands.Cog):
     async def notify_users(self):
         """A method responsible for notifying users if a new manga chapter was released"""
 
-        if not util.VolatileStorage.exists("mal.user"):
+        if not util.VolatileStorage.contains("mal.user"):
             return
 
         for user_id, maluser in util.VolatileStorage["mal.user"].items():
@@ -223,7 +223,7 @@ class MALNotifier(commands.Cog):
         """Import all MALUsers from ``util.PersistentStorage``"""
 
         c = 0
-        if util.PersistentStorage.exists("mal.user"):
+        if util.PersistentStorage.contains("mal.user"):
             for user_id, maluser_json in util.PersistentStorage["mal.user"].items():
                 maluser = MALUser.from_export(int(user_id), maluser_json)
                 maluser.fetch_manga_chapters()
