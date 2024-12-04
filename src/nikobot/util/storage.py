@@ -69,7 +69,7 @@ class _BaseStorage():
         curr_dict = self._store
         for c, part in enumerate(parts):
             if part not in curr_dict:
-                raise error.KeyNotFound("Key not found in storage: " + 
+                raise error.KeyNotFound("Key not found in storage: " +
                                         ".".join([item if item != part else f"'{item}'" for item in parts]))
             # if it isn't the last part
             if c < len(parts) - 1:
@@ -120,7 +120,7 @@ class _BaseStorage():
         curr_dict = self._store
         for c, part in enumerate(parts):
             if part not in curr_dict:
-                raise error.KeyNotFound("Key not found in storage: " + 
+                raise error.KeyNotFound("Key not found in storage: " +
                                         ".".join([item if item != part else f"'{item}'" for item in parts]))
 
             # if it isn't the last part
