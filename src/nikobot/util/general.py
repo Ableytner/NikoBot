@@ -11,6 +11,11 @@ def levenshtein_distance(token1: str, token2: str) -> int:
     Represents the edit distance between two strings
     """
 
+    if not isinstance(token1, str):
+        raise TypeError(f"Expected {type(str)}, got {type(token1)} for token1")
+    if not isinstance(token2, str):
+        raise TypeError(f"Expected {type(str)}, got {type(token2)} for token2")
+
     distances = numpy.zeros((len(token1) + 1, len(token2) + 1))
 
     for t1 in range(len(token1) + 1):
