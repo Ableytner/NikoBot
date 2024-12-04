@@ -1,11 +1,9 @@
-# pylint: disable=unused-wildcard-import
-# pylint: disable=wildcard-import
-# Needed for making pytest fixtures working correctly
-# pylint: disable=wrong-import-position
-
 """
     Pytest configuration
 """
+
+# pylint: disable=unused-wildcard-import, wildcard-import, wrong-import-position, wrong-import-order
+
 import atexit
 import os
 import sys
@@ -19,7 +17,8 @@ sys.path.append(f"{pathlib.Path(__file__).parent}")
 from .fixtures import *
 
 from src.nikobot.util.storage import PersistentStorage
-#pylint: enable=wrong-import-position
+#pylint: enable=unused-wildcard-import, wildcard-import, wrong-import-position, wrong-import-order
 
 # disable atexit storage saving
+# pylint: disable-next=protected-access
 atexit.unregister(PersistentStorage._save_to_disk)

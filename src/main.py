@@ -9,7 +9,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
-from nikobot import util
+from src.nikobot import util
 
 MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "mal.malnotifier"]
 STORAGE_DIR = str(pathlib.Path(os.path.dirname(__file__), "..", "storage").resolve())
