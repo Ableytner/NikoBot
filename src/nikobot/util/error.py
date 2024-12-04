@@ -30,7 +30,7 @@ class NoneTypeException(CustomException):
     default_message = "DIdn't expect None as a value here"
 
 class SingletonInstantiation(CustomException):
-    """Exception raised when a singleton classi sinstantiated twice"""
+    """Exception raised when a singleton class is instantiated twice"""
 
     default_message = "The singleton class can only be instantiated once"
 
