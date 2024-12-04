@@ -1,6 +1,6 @@
 [MASTER]
 
-ignore=tests
+# ignore=test
 
 [MESSAGES CONTROL]
 

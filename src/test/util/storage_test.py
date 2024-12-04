@@ -11,6 +11,8 @@ import pytest
 from src.nikobot.util import error, storage
 
 def test_basestorage_instantiation():
+    """Ensure that BaseStorage cannot be initialized"""
+
     with pytest.raises(NotImplementedError):
         storage._BaseStorage()
 
@@ -328,6 +330,8 @@ def test_volatilestorage_inheritance():
     assert not isinstance(VolatileStorage, storage._PersistentStorage)
 
 def test_volatilestorage_instantiation():
+    """Ensure that VolatileStorage behaves like a singleton"""
+
     storage._VolatileStorage._store = None
 
     storage._VolatileStorage()
@@ -363,6 +367,8 @@ def test_persistentstorage_inheritance():
     assert not isinstance(PersistentStorage, storage._VolatileStorage)
 
 def test_persistentstorage_instantiation():
+    """Ensure that PersistentStorage behaves like a singleton"""
+
     storage._PersistentStorage._store = None
 
     storage._PersistentStorage()
@@ -475,6 +481,8 @@ def test_persistentstorage_save_file_empty():
         assert json.load(f)["key1"] == "newvalue"
 
 def test_storageview_instantiation():
+    """Ensure that instantiating StorageView only works with valid arguments"""
+
     VolatileStorage = storage._VolatileStorage.__new__(storage._VolatileStorage)
     VolatileStorage._store = {}
     PersistentStorage = storage._PersistentStorage.__new__(storage._PersistentStorage)
@@ -501,6 +509,8 @@ def test_storageview_instantiation():
         ])
 
 def test_storageview_getitem():
+    """Test the Storage.__getitem__() method"""
+
     VolatileStorage = storage._VolatileStorage.__new__(storage._VolatileStorage)
     VolatileStorage._store = {}
     PersistentStorage = storage._PersistentStorage.__new__(storage._PersistentStorage)
@@ -524,6 +534,8 @@ def test_storageview_getitem():
     assert StorageView["key2.key3.key4.key5.key6.key7"] == "value2"
 
 def test_storageview_contains():
+    """Test the Storage.contains() method"""
+
     VolatileStorage = storage._VolatileStorage.__new__(storage._VolatileStorage)
     VolatileStorage._store = {}
     PersistentStorage = storage._PersistentStorage.__new__(storage._PersistentStorage)
@@ -551,6 +563,8 @@ def test_storageview_contains():
     assert "key2.key3.key4.key5.key6.key7" in StorageView
 
 def test_storageview_contains_item():
+    """Test the Storage.contains_item() method"""
+
     VolatileStorage = storage._VolatileStorage.__new__(storage._VolatileStorage)
     VolatileStorage._store = {}
     PersistentStorage = storage._PersistentStorage.__new__(storage._PersistentStorage)
