@@ -195,7 +195,7 @@ class _StorageView():
     def __init__(self, storages: list[_BaseStorage]):
         for storage in storages:
             if not isinstance(storage, _BaseStorage):
-                raise TypeError()
+                raise error.MissingInheritanceException(f"Storage {type(storage)} does not inherit from _BaseStorage")
             self._storages.append(storage)
 
     _storages = []
