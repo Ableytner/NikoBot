@@ -13,6 +13,8 @@ from discord.ext import commands
 # setup logging
 discordpy.utils.setup_logging(level=logging.INFO, root=True)
 
+# logging needs to be setup before any local imports
+# pylint: disable-next=wrong-import-position
 from nikobot import util
 
 MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "mal.malnotifier"]

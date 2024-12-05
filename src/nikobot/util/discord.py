@@ -275,7 +275,8 @@ async def reply(ctx: commands.context.Context | discordpy.interactions.Interacti
     await ctx.response.send_message(*args, **kwargs)
     return await ctx.original_response()
 
-async def private_message(user_id: int, *args, **kwargs) -> discordpy.Message | discordpy.interactions.InteractionMessage:
+async def private_message(user_id: int, *args, **kwargs) \
+          -> discordpy.Message | discordpy.interactions.InteractionMessage:
     """
     Send a private message to a discord user, specified via his user id
     
