@@ -1,6 +1,6 @@
 """A module containing the clear command"""
 
-import discord
+import discord as discordpy
 from discord.ext import commands
 
 from .. import util
@@ -18,7 +18,7 @@ class Clear(commands.Cog):
         "clear",
         "Delete the given amount of messages"
     )
-    async def clear(self, ctx: commands.context.Context | discord.interactions.Interaction, amount: int):
+    async def clear(self, ctx: commands.context.Context | discordpy.interactions.Interaction, amount: int):
         """Discord command that deletes the given amount of messages,
         as well as the message containing the initial command"""
 
@@ -40,7 +40,7 @@ class Clear(commands.Cog):
         }
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
+    async def on_reaction_add(self, reaction: discordpy.reaction.Reaction, user: discordpy.member.Member):
         """Discord listener that is called when a reaction is added to any message"""
 
         if user.id == util.discord.get_bot().user.id:

@@ -2,7 +2,7 @@
 
 import os
 
-import discord
+import discord as discordpy
 import requests
 from discord.ext import commands
 
@@ -18,12 +18,12 @@ class Avatar(commands.Cog):
         "avatar",
         "Send back the mentioned users avatar"
     )
-    async def avatar(self, ctx: commands.context.Context | discord.interactions.Interaction, *user: list[str]):
+    async def avatar(self, ctx: commands.context.Context | discordpy.interactions.Interaction, *user: list[str]):
         """Send back the mentioned users avatar"""
 
         recombined_user = " ".join(["".join(item) for item in user])
 
-        user_obj: discord.member.Member | None = await util.discord.parse_user(ctx, recombined_user)
+        user_obj: discordpy.member.Member | None = await util.discord.parse_user(ctx, recombined_user)
         if user_obj is None:
             await util.discord.reply(ctx, "User could not be found!")
             return
@@ -42,7 +42,7 @@ class Avatar(commands.Cog):
             await util.discord.reply(ctx, "Failed to download avatar.")
 
         # send the avatar
-        avatar_file = discord.File(f"{util.VolatileStorage['cache_dir']}/avatars/{user_obj}.png",
+        avatar_file = discordpy.File(f"{util.VolatileStorage['cache_dir']}/avatars/{user_obj}.png",
                                    filename=f"{user_obj}.png")
         await util.discord.reply(ctx,
                                  f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:",

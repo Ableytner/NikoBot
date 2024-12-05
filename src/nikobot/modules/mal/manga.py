@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 from datetime import datetime
 from enum import Enum
@@ -13,6 +14,8 @@ from discord import Embed, File
 from . import error, mal_helper, manganato_helper
 from .chapter import Chapter
 from ... import util
+
+logger = logging.getLogger('discord')
 
 class MangaProvider(Enum):
     """
@@ -134,7 +137,7 @@ class Manga():
         else:
             manga_url = manganato_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
             if manga_url is None:
-                print(f"Manga {self.mal_id} could not be found automatically")
+                logger.warning(f"Manga {self.mal_id} could not be found automatically")
                 return False
             self.set_manga_provider(MangaProvider.MANGANATO, manga_url)
 
@@ -156,7 +159,7 @@ class Manga():
                 raise error.UnknownProvider()
 
         if len(chapters) == 0:
-            print(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, " +
+            logger.warning(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, " +
                   "removing and trying again later")
             self.set_manga_provider(None, None)
             return
