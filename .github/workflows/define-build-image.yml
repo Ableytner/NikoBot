@@ -17,18 +17,16 @@ jobs:
     runs-on: [self-hosted, linux]
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3
     - name: lowercase github.repository
       run: |
         echo "IMAGE_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
     - name: Build
-      uses: docker/build-push-action@v6
-      with:
-        context: .
-        push: false
-        tags: ${{ env.IMAGE_NAME }}:latest
-        outputs: type=docker,dest=/tmp/image.tar
+      run: |
+        docker build -t ${{ env.IMAGE_NAME }}:latest .
+    - name: Export
+      if: ${{ inputs.upload == true }}
+      run: |
+        docker save -o /tmp/image.tar ${{ env.IMAGE_NAME }}:latest
     - name: Upload image artifact
       if: ${{ inputs.upload == true }}
       uses: actions/upload-artifact@v4
