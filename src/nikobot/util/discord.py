@@ -3,6 +3,7 @@
 import asyncio
 import functools
 import inspect
+import logging
 import re
 
 import discord as discordpy
@@ -11,6 +12,8 @@ from discord.ext import commands
 
 from . import error
 from .storage import VolatileStorage
+
+logger = logging.getLogger('discord')
 
 def get_command_name(ctx: commands.context.Context | discordpy.interactions.Interaction) -> str:
     """Return the full name of the contexts' command"""
@@ -83,7 +86,7 @@ def normal_command(name: str, description: str, hidden: str = False):
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
-            # print(f"Command {name} is already registered, skipping...")
+#           logger.warning(f"Command {name} is already registered, skipping...")
             return wrapper
 
         # add hidden attribute to hide command from help
@@ -99,7 +102,7 @@ def normal_command(name: str, description: str, hidden: str = False):
             description=desc
         )(wrapper)
 
-        # print(f"Registered command {name}")
+        logger.debug(f"Registered command {name}")
 
         return wrapper
     return decorator
@@ -125,7 +128,7 @@ def hybrid_command(name: str, description: str):
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
-            # print(f"Command {name} is already registered, skipping...")
+#           logger.warning(f"Command {name} is already registered, skipping...")
             return wrapper
 
         # register normal command
@@ -155,7 +158,7 @@ def hybrid_command(name: str, description: str):
             description=description
         )(wrapper_for_slash_command)
 
-        # print(f"Registered command {name}")
+        logger.debug(f"Registered command {name}")
 
         return wrapper
     return decorator
@@ -181,7 +184,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if f"{command_group.name}.{name}" in [item.name for item in list(get_bot().commands)]:
-            # print(f"Command {command_group.name}.{name} is already registered, skipping...")
+#           logger.warning(f"Command {command_group.name}.{name} is already registered, skipping...")
             return wrapper
 
         # register normal command
@@ -217,7 +220,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         except discordpy.app_commands.CommandAlreadyRegistered:
             pass
 
-        # print(f"Registered command {command_group.name}.{name}")
+        logger.debug(f"Registered command {command_group.name}.{name}")
 
         return wrapper
     return decorator

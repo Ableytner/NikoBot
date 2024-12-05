@@ -1,5 +1,6 @@
 """A module containing the ``DiscordBot`` class"""
 
+import logging
 import pathlib
 import shutil
 import traceback
@@ -9,6 +10,9 @@ import asyncio
 import discord as discordpy
 from discord.ext import commands
 
+# setup logging
+discordpy.utils.setup_logging(level=logging.INFO, root=True)
+
 from nikobot import util
 
 MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "mal.malnotifier"]
@@ -16,6 +20,8 @@ STORAGE_DIR = str(pathlib.Path(os.path.dirname(__file__), "..", "storage").resol
 STORAGE_FILE = os.path.join(STORAGE_DIR, "storage.json")
 CACHE_DIR = os.path.join(STORAGE_DIR, "cache")
 TEMP_DIR = os.path.join(STORAGE_DIR, "temp")
+
+logger = logging.getLogger('discord')
 
 class DiscordBot(commands.Bot):
     """The main ``discord.commands.Bot`` which is the center of the application"""
@@ -26,19 +32,19 @@ class DiscordBot(commands.Bot):
     def start_bot(self):
         """Start the discord bot"""
 
-        self.run(os.environ["DISCORD_TOKEN"])
+        self.run(os.environ["DISCORD_TOKEN"], log_handler=None)
 
     async def setup_hook(self) -> None:
         util.VolatileStorage["modules"] = []
         for module in MODULES:
             await self.load_extension(f"nikobot.modules.{module}")
             util.VolatileStorage["modules"].append(module)
-            print(f"Loaded module {module}")
+            logger.info(f"Loaded module {module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
 
-        print(f"{self.user} is now online")
+        logger.info(f"{self.user} is now online")
 
     async def on_command_error(self,
                                context: commands.context.Context,

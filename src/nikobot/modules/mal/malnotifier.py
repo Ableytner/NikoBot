@@ -1,5 +1,6 @@
 """A module containing MyAnimeList-related commands"""
 
+import logging
 import os
 from datetime import datetime, timedelta
 from threading import Thread
@@ -14,6 +15,8 @@ from .manga import Manga
 from ... import util
 
 # pylint: disable=protected-access
+
+logger = logging.getLogger('discord')
 
 command_group = app_commands.Group(
     name="mal",
@@ -229,7 +232,7 @@ class MALNotifier(commands.Cog):
                 maluser.fetch_manga_chapters()
                 util.VolatileStorage[f"mal.user.{user_id}"] = maluser
                 c += 1
-        print(f"Finished importing {c} MAL user(s)")
+        logger.info(f"Finished importing {c} MAL user(s)")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
