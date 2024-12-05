@@ -5,14 +5,14 @@ import functools
 import inspect
 import re
 
-import discord
+import discord as discordpy
 from discord import app_commands
 from discord.ext import commands
 
 from . import error
 from .storage import VolatileStorage
 
-def get_command_name(ctx: commands.context.Context | discord.interactions.Interaction) -> str:
+def get_command_name(ctx: commands.context.Context | discordpy.interactions.Interaction) -> str:
     """Return the full name of the contexts' command"""
 
     if not is_slash_command(ctx):
@@ -38,8 +38,8 @@ def get_owner_id() -> int:
 
     return 650587171375284226
 
-async def get_reply(ctx: commands.context.Context | discord.interactions.Interaction) \
-          -> discord.Message | discord.interactions.InteractionMessage | None:
+async def get_reply(ctx: commands.context.Context | discordpy.interactions.Interaction) \
+          -> discordpy.Message | discordpy.interactions.InteractionMessage | None:
     """Return the reply message for the given context, or None if the bot didn't reply yet"""
 
     if not is_slash_command(ctx):
@@ -54,7 +54,7 @@ async def get_reply(ctx: commands.context.Context | discord.interactions.Interac
 
     return await ctx.original_response()
 
-def get_user_id(ctx: commands.context.Context | discord.interactions.Interaction) -> int:
+def get_user_id(ctx: commands.context.Context | discordpy.interactions.Interaction) -> int:
     """Get discords user id from the message's sender"""
 
     if not is_slash_command(ctx):
@@ -148,7 +148,7 @@ def hybrid_command(name: str, description: str):
         fakefunc_code = compile(fakefunc, "fakesource", "exec")
         fakeglobals = {}
         # pylint: disable-next=eval-used
-        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discord}, fakeglobals)
+        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discordpy}, fakeglobals)
         wrapper_for_slash_command = fakeglobals["func"]
         get_bot().tree.command(
             name=name,
@@ -204,7 +204,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         fakefunc_code = compile(fakefunc, "fakesource", "exec")
         fakeglobals = {}
         # pylint: disable-next=eval-used
-        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discord}, fakeglobals)
+        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discordpy}, fakeglobals)
         wrapper_for_slash_command = fakeglobals["func"]
         command_group.command(
             name=name,
@@ -214,7 +214,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         # register group of not yet registered
         try:
             get_bot().tree.add_command(command_group)
-        except discord.app_commands.CommandAlreadyRegistered:
+        except discordpy.app_commands.CommandAlreadyRegistered:
             pass
 
         # print(f"Registered command {command_group.name}.{name}")
@@ -222,19 +222,19 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         return wrapper
     return decorator
 
-def is_private_channel(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
+def is_private_channel(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """Checks whether the message related to ``ctx`` was received as a private / direct message"""
 
     if is_slash_command(ctx):
-        return isinstance(ctx.channel, discord.channel.DMChannel)
+        return isinstance(ctx.channel, discordpy.channel.DMChannel)
 
-    return isinstance(ctx.channel, discord.channel.DMChannel)
+    return isinstance(ctx.channel, discordpy.channel.DMChannel)
 
-def is_slash_command(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
+def is_slash_command(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """Checks whether the ``ctx`` was received from a 'normal' text command or a slash command"""
 
     # for slash commands
-    if isinstance(ctx, discord.interactions.Interaction):
+    if isinstance(ctx, discordpy.interactions.Interaction):
         return True
 
     # for normal commands
@@ -243,7 +243,7 @@ def is_slash_command(ctx: commands.context.Context | discord.interactions.Intera
 
     raise TypeError(f"Unknown context type {type(ctx)}")
 
-def is_sent_by_owner(ctx: commands.context.Context | discord.interactions.Interaction) -> bool:
+def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """
     Checks whether the message related to the ``ctx`` is sent by one of the bot's owners
     
@@ -255,8 +255,8 @@ def is_sent_by_owner(ctx: commands.context.Context | discord.interactions.Intera
 
     return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.author), get_bot().loop)
 
-async def reply(ctx: commands.context.Context | discord.interactions.Interaction, *args, **kwargs) \
-          -> discord.Message | discord.interactions.InteractionMessage:
+async def reply(ctx: commands.context.Context | discordpy.interactions.Interaction, *args, **kwargs) \
+          -> discordpy.Message | discordpy.interactions.InteractionMessage:
     """
     Send a reply in the current context
     
@@ -272,7 +272,7 @@ async def reply(ctx: commands.context.Context | discord.interactions.Interaction
     await ctx.response.send_message(*args, **kwargs)
     return await ctx.original_response()
 
-async def private_message(user_id: int, *args, **kwargs) -> discord.Message | discord.interactions.InteractionMessage:
+async def private_message(user_id: int, *args, **kwargs) -> discordpy.Message | discordpy.interactions.InteractionMessage:
     """
     Send a private message to a discord user, specified via his user id
     
@@ -285,8 +285,8 @@ async def private_message(user_id: int, *args, **kwargs) -> discord.Message | di
 
     await user.send(*args, **kwargs)
 
-async def parse_user(ctx: commands.context.Context | discord.interactions.Interaction, user: str) \
-          -> discord.member.Member | None:
+async def parse_user(ctx: commands.context.Context | discordpy.interactions.Interaction, user: str) \
+          -> discordpy.member.Member | None:
     """
     Convert a given string to a ``discord.member.Member``
     
@@ -319,7 +319,7 @@ async def parse_user(ctx: commands.context.Context | discord.interactions.Intera
         pass
 
     try:
-        user: discord.user.User = get_bot().get_user(int(user))
+        user: discordpy.user.User = get_bot().get_user(int(user))
         return user
     except:
         pass

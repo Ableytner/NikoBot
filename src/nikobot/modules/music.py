@@ -1,6 +1,6 @@
 # pylint: skip-file
 
-import discord
+import discord as discordpy
 import youtube_dl
 from discord.ext import commands, tasks
 
@@ -13,7 +13,7 @@ class Music(commands.Cog):
         self.song_scheduler.start()
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
+    async def on_reaction_add(self, reaction: discordpy.reaction.Reaction, user: discordpy.member.Member):
         if reaction.message.id not in self.active_plays.keys():
             return
 
@@ -123,12 +123,12 @@ class Music(commands.Cog):
         YDL_OPTIONS = {
             'format' : "bestaudio"
         }
-        voice_clients: list[discord.voice_client.VoiceClient] = self.bot.voice_clients
-        vc: discord.voice_client.VoiceClient = [item for item in voice_clients if item.guild.id==guild_id][0]
+        voice_clients: list[discordpy.voice_client.VoiceClient] = self.bot.voice_clients
+        vc: discordpy.voice_client.VoiceClient = [item for item in voice_clients if item.guild.id==guild_id][0]
         with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(url, download = False)
             url2 = info['formats'][0]['url']
-            source = await discord.FFmpegOpusAudio.from_probe(url2, **FFMPEG_OPTIONS)
+            source = await discordpy.FFmpegOpusAudio.from_probe(url2, **FFMPEG_OPTIONS)
             vc.play(source, after=lambda *x:self.song_finished(guild_id))
 
     def song_finished(self, guild_id: int):

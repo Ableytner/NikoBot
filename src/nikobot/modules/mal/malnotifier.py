@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timedelta
 from threading import Thread
 
-import discord
+import discord as discordpy
 from discord import app_commands
 from discord.ext import commands, tasks
 
@@ -32,7 +32,7 @@ class MALNotifier(commands.Cog):
             description="Search for a manga on MyAnimeList",
             command_group=command_group
     )
-    async def manga(self, ctx: commands.context.Context | discord.interactions.Interaction, *title: list[str]):
+    async def manga(self, ctx: commands.context.Context | discordpy.interactions.Interaction, *title: list[str]):
         """The discord command 'niko.mal.manga'"""
 
         recombined_title = " ".join(["".join(item) for item in title])
@@ -43,8 +43,8 @@ class MALNotifier(commands.Cog):
             mal_id = mal_helper.search_for_manga(recombined_title)
             if mal_id is None:
                 await util.discord.reply(ctx,
-                                        embed=discord.Embed(title="Manga not found on MyAnimeList",
-                                                            color=discord.Color.orange()))
+                                        embed=discordpy.Embed(title="Manga not found on MyAnimeList",
+                                                            color=discordpy.Color.orange()))
                 return
 
         manga = None
@@ -62,9 +62,9 @@ class MALNotifier(commands.Cog):
                 manga = Manga.from_mal_id(mal_id)
             except error.MediaTypeError:
                 await util.discord.reply(ctx,
-                                         embed=discord.Embed(title="Currently only supports manga "
+                                         embed=discordpy.Embed(title="Currently only supports manga "
                                                              + "and not light novel/novel",
-                                                             color=discord.Color.orange()))
+                                                             color=discordpy.Color.orange()))
                 return
 
         # pylint: disable-next=redefined-outer-name
@@ -76,35 +76,35 @@ class MALNotifier(commands.Cog):
         description="Register an existing MyAnimeList account for use with the discord bot",
         command_group=command_group
     )
-    async def register(self, ctx: commands.context.Context | discord.interactions.Interaction, username: str):
+    async def register(self, ctx: commands.context.Context | discordpy.interactions.Interaction, username: str):
         """The discord command 'niko.mal.register'"""
 
         user_id = util.discord.get_user_id(ctx)
 
         if util.VolatileStorage.contains(f"mal.user.{user_id}"):
-            await util.discord.reply(ctx, embed=discord.Embed(title="You are already registered",
-                                                              color=discord.Color.orange()))
+            await util.discord.reply(ctx, embed=discordpy.Embed(title="You are already registered",
+                                                              color=discordpy.Color.orange()))
             return
 
-        message = await util.discord.reply(ctx, embed=discord.Embed(title="Fetching manga list from MyAnimeList",
-                                                                    color=discord.Color.blue()))
+        message = await util.discord.reply(ctx, embed=discordpy.Embed(title="Fetching manga list from MyAnimeList",
+                                                                    color=discordpy.Color.blue()))
 
         try:
             maluser = MALUser(username.lower(), user_id)
-            await message.edit(embed=discord.Embed(title="Fetching manga list from MyAnimeList",
-                                                   color=discord.Color.blue()))
+            await message.edit(embed=discordpy.Embed(title="Fetching manga list from MyAnimeList",
+                                                   color=discordpy.Color.blue()))
             maluser.fetch_manga_list()
-            await message.edit(embed=discord.Embed(title="Fetching manga chapters from Manganato",
-                                                   color=discord.Color.blue()))
+            await message.edit(embed=discordpy.Embed(title="Fetching manga chapters from Manganato",
+                                                   color=discordpy.Color.blue()))
             maluser.fetch_manga_chapters()
         except error.UserNotFound:
-            await message.edit(embed=discord.Embed(title="MyAnimeList user wasn't found",
-                                                   color=discord.Color.dark_orange()))
+            await message.edit(embed=discordpy.Embed(title="MyAnimeList user wasn't found",
+                                                   color=discordpy.Color.dark_orange()))
             return
 
         util.VolatileStorage[f"mal.user.{user_id}"] = maluser
-        await message.edit(embed=discord.Embed(title="Successfully registered for new release notifications",
-                                               color=discord.Color.blue()))
+        await message.edit(embed=discordpy.Embed(title="Successfully registered for new release notifications",
+                                               color=discordpy.Color.blue()))
 
         # force-update the user once after registration
         await self.notify_user(user_id, maluser)
@@ -114,7 +114,7 @@ class MALNotifier(commands.Cog):
         description="Deregister the connected MyAnimeList account from your discord account",
         command_group=command_group
     )
-    async def deregister(self, ctx: commands.context.Context | discord.interactions.Interaction):
+    async def deregister(self, ctx: commands.context.Context | discordpy.interactions.Interaction):
         """The discord command 'niko.mal.dergister'"""
 
         if util.discord.is_slash_command(ctx):
@@ -124,21 +124,21 @@ class MALNotifier(commands.Cog):
 
         if not util.VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
-                                     embed=discord.Embed(title="You are not yet registered",
-                                                         color=discord.Color.orange()))
+                                     embed=discordpy.Embed(title="You are not yet registered",
+                                                         color=discordpy.Color.orange()))
             return
 
         del util.VolatileStorage[f"mal.user.{user_id}"]
         await util.discord.reply(ctx,
-                                 embed=discord.Embed(title="Successfully deregistered from release notifications",
-                                                     color=discord.Color.blue()))
+                                 embed=discordpy.Embed(title="Successfully deregistered from release notifications",
+                                                     color=discordpy.Color.blue()))
 
     @util.discord.grouped_hybrid_command(
         name="update",
         description="Check for new manga chapters for the MyAnimeList account connected to your discord account",
         command_group=command_group
     )
-    async def update(self, ctx: commands.context.Context | discord.interactions.Interaction):
+    async def update(self, ctx: commands.context.Context | discordpy.interactions.Interaction):
         """The discord command 'niko.mal.update'"""
 
         if util.discord.is_slash_command(ctx):
@@ -148,12 +148,12 @@ class MALNotifier(commands.Cog):
 
         if not util.VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
-                                     embed=discord.Embed(title="You are not yet registered",
-                                                         color=discord.Color.orange()))
+                                     embed=discordpy.Embed(title="You are not yet registered",
+                                                         color=discordpy.Color.orange()))
             return
 
-        embed = discord.Embed(title="Checking for new chapters...",
-                              color=discord.Color.blue())
+        embed = discordpy.Embed(title="Checking for new chapters...",
+                              color=discordpy.Color.blue())
         embed.add_field(name="\u200b",
                         value="Please wait a few minutes",
                         inline=True)
@@ -162,8 +162,8 @@ class MALNotifier(commands.Cog):
         maluser = util.VolatileStorage[f"mal.user.{user_id}"]
         await self.notify_user(int(user_id), maluser)
 
-        await message.edit(embed=discord.Embed(title="Finished checking!",
-                                               color=discord.Color.blue()))
+        await message.edit(embed=discordpy.Embed(title="Finished checking!",
+                                               color=discordpy.Color.blue()))
 
     @tasks.loop(hours=1, reconnect=True, name="notify-users-task")
     async def notify_users(self):

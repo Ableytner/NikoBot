@@ -1,6 +1,6 @@
 """A module containing the help command"""
 
-import discord
+import discord as discordpy
 from discord.ext import commands
 
 from .. import util
@@ -16,7 +16,7 @@ class Help(commands.Cog):
         "Show information about a command or module, or list all available commands"
     )
     async def help(self,
-                   ctx: commands.context.Context | discord.interactions.Interaction,
+                   ctx: commands.context.Context | discordpy.interactions.Interaction,
                    command_name: str | None = None):
         """
         Discord command displaying all commands
@@ -39,7 +39,7 @@ class Help(commands.Cog):
 
         await util.discord.reply(ctx, embed=answer)
 
-    def _generate_help_general_normal(self, sent_by_owner: bool = False) -> discord.Embed:
+    def _generate_help_general_normal(self, sent_by_owner: bool = False) -> discordpy.Embed:
         cmds_grouped: dict[str, list[tuple[str, str]]] = {}
         cmds_grouped["General"] = []
 
@@ -59,7 +59,7 @@ class Help(commands.Cog):
             # sort using the lowercase command name
             cmds.sort(key=lambda x: x[0].lower())
 
-        answer = discord.Embed(title="All available commands")
+        answer = discordpy.Embed(title="All available commands")
         for groupname, cmds in cmds_grouped.items():
             commands_texts = []
             for name, desc in cmds:
@@ -69,7 +69,7 @@ class Help(commands.Cog):
 
         return answer
 
-    def _generate_help_general_slash(self, sent_by_owner: bool = False) -> discord.Embed:
+    def _generate_help_general_slash(self, sent_by_owner: bool = False) -> discordpy.Embed:
         cmds_grouped: dict[str, list[tuple[str, str]]] = {}
         cmds_grouped["General"] = []
 
@@ -77,9 +77,9 @@ class Help(commands.Cog):
             if cmd.description.startswith("__hidden__") and not sent_by_owner:
                 continue
 
-            if isinstance(cmd, discord.app_commands.Group):
+            if isinstance(cmd, discordpy.app_commands.Group):
                 cmds_grouped[cmd.name] = [(item.name, item.description) for item in cmd.commands]
-            elif isinstance(cmd, discord.app_commands.Command):
+            elif isinstance(cmd, discordpy.app_commands.Command):
                 cmds_grouped["General"].append((cmd.name, cmd.description))
             else:
                 raise TypeError(f"Unexpected type {type(cmd)}")
@@ -88,7 +88,7 @@ class Help(commands.Cog):
             # sort using the lowercase command name
             cmds.sort(key=lambda x: x[0].lower())
 
-        answer = discord.Embed(title="All available commands")
+        answer = discordpy.Embed(title="All available commands")
         for groupname, cmds in cmds_grouped.items():
             commands_texts = []
             for name, desc in cmds:
@@ -98,13 +98,13 @@ class Help(commands.Cog):
 
         return answer
 
-    def _generate_help_specific_normal(self, command_name: str) -> discord.Embed:
+    def _generate_help_specific_normal(self, command_name: str) -> discordpy.Embed:
         for cmd in self.bot.commands:
             # help for module
             if "." in cmd.name \
                and cmd.name.split(".", maxsplit=1)[0].lower() == command_name.lower():
                 module_name = cmd.name.split(".", maxsplit=1)[0].lower()
-                answer = discord.Embed(title=f"Help for module '{module_name}'")
+                answer = discordpy.Embed(title=f"Help for module '{module_name}'")
 
                 answer.add_field(name="Description", value=cmd.description)
 
@@ -121,7 +121,7 @@ class Help(commands.Cog):
             if cmd.name.lower() == command_name.lower() \
                or ("." in cmd.name \
                and cmd.name.split(".", maxsplit=1)[1].lower() == command_name.lower()):
-                answer = discord.Embed(title=f"Help for '{cmd.name}'")
+                answer = discordpy.Embed(title=f"Help for '{cmd.name}'")
 
                 desc = cmd.description.strip("__hidden__")
                 if "." in cmd.name:
@@ -130,14 +130,14 @@ class Help(commands.Cog):
 
                 return answer
 
-        return discord.Embed(title=f"Command '{command_name}' not found")
+        return discordpy.Embed(title=f"Command '{command_name}' not found")
 
-    def _generate_help_specific_slash(self, command_name: str) -> discord.Embed:
+    def _generate_help_specific_slash(self, command_name: str) -> discordpy.Embed:
         for cmd in self.bot.tree.walk_commands():
             if cmd.name == command_name:
                 # help for module
-                if isinstance(cmd, discord.app_commands.Group):
-                    answer = discord.Embed(title=f"Help for module '{cmd.name}'")
+                if isinstance(cmd, discordpy.app_commands.Group):
+                    answer = discordpy.Embed(title=f"Help for module '{cmd.name}'")
 
                     answer.add_field(name="Description", value=cmd.description)
 
@@ -150,7 +150,7 @@ class Help(commands.Cog):
                     return answer
 
                 # help for command
-                answer = discord.Embed(title=f"Help for '{cmd.name}'")
+                answer = discordpy.Embed(title=f"Help for '{cmd.name}'")
 
                 desc = cmd.description.strip("__hidden__")
                 if cmd.parent is not None:
@@ -159,7 +159,7 @@ class Help(commands.Cog):
 
                 return answer
 
-        return discord.Embed(title=f"Command '{command_name}' not found")
+        return discordpy.Embed(title=f"Command '{command_name}' not found")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
