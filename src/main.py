@@ -1,14 +1,20 @@
 """A module containing the ``DiscordBot`` class"""
 
+import logging
 import pathlib
 import shutil
 import traceback
 import os
 
 import asyncio
-import discord
+import discord as discordpy
 from discord.ext import commands
 
+# setup logging
+discordpy.utils.setup_logging(level=logging.INFO, root=True)
+
+# logging needs to be setup before any local imports
+# pylint: disable-next=wrong-import-position
 from src.nikobot import util
 
 MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "mal.malnotifier"]
@@ -17,35 +23,37 @@ STORAGE_FILE = os.path.join(STORAGE_DIR, "storage.json")
 CACHE_DIR = os.path.join(STORAGE_DIR, "cache")
 TEMP_DIR = os.path.join(STORAGE_DIR, "temp")
 
+logger = logging.getLogger('discord')
+
 class DiscordBot(commands.Bot):
     """The main ``discord.commands.Bot`` which is the center of the application"""
 
     def __init__(self) -> None:
-        super().__init__(command_prefix = 'niko.', help_command=None, intents = discord.Intents.all())
+        super().__init__(command_prefix = 'niko.', help_command=None, intents = discordpy.Intents.all())
 
     def start_bot(self):
         """Start the discord bot"""
 
-        self.run(os.environ["DISCORD_TOKEN"])
+        self.run(os.environ["DISCORD_TOKEN"], log_handler=None)
 
     async def setup_hook(self) -> None:
         util.VolatileStorage["modules"] = []
         for module in MODULES:
             await self.load_extension(f"nikobot.modules.{module}")
             util.VolatileStorage["modules"].append(module)
-            print(f"Loaded module {module}")
+            logger.info(f"Loaded module {module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
 
-        print(f"{self.user} is now online")
+        logger.info(f"{self.user} is now online")
 
     async def on_command_error(self,
                                context: commands.context.Context,
                                exception: commands.errors.CommandError, /) -> None:
         # owner-only commands
         if isinstance(exception, commands.errors.NotOwner):
-            embed = discord.Embed(title="Not allowed to use this command", color=discord.Color.red())
+            embed = discordpy.Embed(title="Not allowed to use this command", color=discordpy.Color.red())
             await util.discord.reply(context, embed=embed)
             return
 
@@ -61,7 +69,7 @@ class DiscordBot(commands.Bot):
                 await context.message.reply(embed=answer)
                 return
 
-            embed = discord.Embed(title=f"Command '{user_command}' not found!\n")
+            embed = discordpy.Embed(title=f"Command '{user_command}' not found!\n")
 
             cmds: list[tuple[commands.Command, int]] = []
             for cmd in self.commands:
@@ -72,9 +80,9 @@ class DiscordBot(commands.Bot):
             if len(cmds) > 0:
                 cmds.sort(key=lambda x:x[1])
                 embed.add_field(name="Did you mean:", value="\n".join([f"- {cmd[0].name}" for cmd in cmds]))
-                embed.color = discord.Color.orange()
+                embed.color = discordpy.Color.orange()
             else:
-                embed.color = discord.Color.dark_orange()
+                embed.color = discordpy.Color.dark_orange()
 
             await util.discord.reply(context, embed=embed)
             return
@@ -87,8 +95,8 @@ class DiscordBot(commands.Bot):
                    + f"```py\n{''.join(full_error)}\n```"
         await util.discord.private_message(util.discord.get_owner_id(),
                                            msg_text)
-        embed = discord.Embed(title="An error occured!",
-                              color=discord.Color.red())
+        embed = discordpy.Embed(title="An error occured!",
+                              color=discordpy.Color.red())
         message = await util.discord.get_reply(context)
         if message is not None:
             await message.edit(embed=embed)
@@ -97,7 +105,7 @@ class DiscordBot(commands.Bot):
 
         return await super().on_command_error(context, exception)
 
-    def send_to_channel(self, channel_id: int, text: str) -> discord.Message:
+    def send_to_channel(self, channel_id: int, text: str) -> discordpy.Message:
         """Send the given text to the given channel"""
 
         send_fut = asyncio.run_coroutine_threadsafe(self.get_channel(channel_id).send(text), self.loop)

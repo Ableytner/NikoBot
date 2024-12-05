@@ -28,7 +28,9 @@ disable=too-many-arguments,
         isinstance-second-argument-not-valid-type,
         multiple-statements,
         relative-beyond-top-level,
-        too-many-positional-arguments
+        too-many-positional-arguments,
+        logging-fstring-interpolation,
+        logging-not-lazy
 
 [FORMAT]
 

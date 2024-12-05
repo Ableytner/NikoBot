@@ -1,8 +1,12 @@
 # pylint: skip-file
 
-import discord
+import logging
+
+import discord as discordpy
 import youtube_dl
 from discord.ext import commands, tasks
+
+logger = logging.getLogger('discord')
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -13,7 +17,7 @@ class Music(commands.Cog):
         self.song_scheduler.start()
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: discord.reaction.Reaction, user: discord.member.Member):
+    async def on_reaction_add(self, reaction: discordpy.reaction.Reaction, user: discordpy.member.Member):
         if reaction.message.id not in self.active_plays.keys():
             return
 
@@ -29,10 +33,10 @@ class Music(commands.Cog):
         new_voice_channel = ctx.author.voice.channel
 
         if ctx.voice_client is None:
-            print(f"Joining channel: {new_voice_channel.name}")
+            logger.debug(f"Joining channel: {new_voice_channel.name}")
             await new_voice_channel.connect()
         elif ctx.voice_client.channel.id != new_voice_channel.id:
-            print(f"Moving to channel: {new_voice_channel.name}")
+            logger.debug(f"Moving to channel: {new_voice_channel.name}")
             await ctx.voice_client.move_to(new_voice_channel)
 
     @commands.command()
@@ -111,7 +115,7 @@ class Music(commands.Cog):
                 data["playing"] = True
                 url = data["urls"].pop(0)
 
-                print("Playing next song...")
+                logger.debug("Playing next song...")
                 await self.play_song(url, guild_id)
 
     async def play_song(self, url: str, guild_id: int):
@@ -123,19 +127,19 @@ class Music(commands.Cog):
         YDL_OPTIONS = {
             'format' : "bestaudio"
         }
-        voice_clients: list[discord.voice_client.VoiceClient] = self.bot.voice_clients
-        vc: discord.voice_client.VoiceClient = [item for item in voice_clients if item.guild.id==guild_id][0]
+        voice_clients: list[discordpy.voice_client.VoiceClient] = self.bot.voice_clients
+        vc: discordpy.voice_client.VoiceClient = [item for item in voice_clients if item.guild.id==guild_id][0]
         with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(url, download = False)
             url2 = info['formats'][0]['url']
-            source = await discord.FFmpegOpusAudio.from_probe(url2, **FFMPEG_OPTIONS)
+            source = await discordpy.FFmpegOpusAudio.from_probe(url2, **FFMPEG_OPTIONS)
             vc.play(source, after=lambda *x:self.song_finished(guild_id))
 
     def song_finished(self, guild_id: int):
         """callback for when a song finishes playing"""
 
         self.active_plays[guild_id]["playing"] = False
-        print("Song finished")
+        logger.debug("Song finished")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""

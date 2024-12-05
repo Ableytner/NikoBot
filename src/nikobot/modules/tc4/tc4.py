@@ -1,5 +1,6 @@
 """contains the cog of the tc4 module"""
 
+import logging
 import os
 from threading import Thread
 
@@ -12,6 +13,8 @@ from .shortest_path3 import Graph
 from ... import util
 
 PATH = __file__.rsplit(os.sep, maxsplit=1)[0]
+
+logger = logging.getLogger('discord')
 
 command_group = app_commands.Group(
     name="tc4",
@@ -30,7 +33,7 @@ class TC4(commands.Cog):
         for aspect in self.aspects.values():
             aspect.construct_neighbors(self.aspects)
             if not os.path.isfile(f"{PATH}/assets/{aspect.name.lower()}.png"):
-                print(f"Icon for aspect {aspect.name} not found!")
+                logger.error(f"Icon for aspect {aspect.name} not found!")
 
         self.graph = Graph(list(self.aspects.values()))
 

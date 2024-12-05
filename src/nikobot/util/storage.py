@@ -4,10 +4,13 @@ from __future__ import annotations
 
 import atexit
 import json
+import logging
 import os
 from typing import Any
 
 from . import error
+
+logger = logging.getLogger('discord')
 
 class _BaseStorage():
     def __init__(self) -> None:
@@ -171,7 +174,7 @@ class _PersistentStorage(_BaseStorage):
 
         path = StorageView["storage_file"]
         if not os.path.isfile(path):
-            print("Storage file doesn't yet exist")
+            logger.warning("Storage file doesn't yet exist")
             return
 
         with open(path, "r", encoding="utf8") as f:
@@ -183,7 +186,7 @@ class _PersistentStorage(_BaseStorage):
 
         path = StorageView["storage_file"]
         if len(self._store) == 0 and os.path.isfile(path):
-            print("Not overwriting existing storage file with empty storage")
+            logger.warning("Not overwriting existing storage file with empty storage")
             return
 
         with open(path, "w", encoding="utf8") as f:
