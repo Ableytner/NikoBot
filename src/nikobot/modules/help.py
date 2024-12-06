@@ -125,7 +125,7 @@ class Help(commands.Cog):
 
                 desc = cmd.description.strip("__hidden__")
                 if "." in cmd.name:
-                    desc += f"\nCommand is a part of the '{cmd.name.split('.', maxsplit=1)[0]}' module"
+                    desc += f"\nCommand is a part of the '{cmd.name.split(".", maxsplit=1)[0]}' module"
                 answer.add_field(name="Description", value=desc)
 
                 return answer

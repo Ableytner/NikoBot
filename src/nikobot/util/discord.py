@@ -301,7 +301,7 @@ async def parse_user(ctx: commands.context.Context | discordpy.interactions.Inte
         return None
 
     if isinstance(user, str):
-        user = user.strip('"')
+        user = user.strip("\"")
 
     try:
         # convert string to user

@@ -31,18 +31,18 @@ class Avatar(commands.Cog):
             await util.discord.reply(ctx, "User has a default avatar, which can't be downloadad.")
             return
 
-        os.makedirs(f"{util.VolatileStorage['cache_dir']}/avatars", exist_ok=True)
+        os.makedirs(f"{util.VolatileStorage["cache_dir"]}/avatars", exist_ok=True)
 
         # Download the user's avatar
         response = requests.get(user_obj.avatar.url, timeout=30)
         if response.status_code == 200:
-            with open(f"{util.VolatileStorage['cache_dir']}/avatars/{user_obj}.png", "wb") as f:
+            with open(f"{util.VolatileStorage["cache_dir"]}/avatars/{user_obj}.png", "wb") as f:
                 f.write(response.content)
         else:
             await util.discord.reply(ctx, "Failed to download avatar.")
 
         # send the avatar
-        avatar_file = discordpy.File(f"{util.VolatileStorage['cache_dir']}/avatars/{user_obj}.png",
+        avatar_file = discordpy.File(f"{util.VolatileStorage["cache_dir"]}/avatars/{user_obj}.png",
                                    filename=f"{user_obj}.png")
         await util.discord.reply(ctx,
                                  f"Profile picture of {user_obj.nick or user_obj.display_name or user_obj.name}:",

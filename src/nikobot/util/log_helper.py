@@ -13,7 +13,7 @@ def setup():
                                   level=logging.INFO,
                                   root=True)
 
-    file_handler = logging.FileHandler(filename='latest.log', encoding='utf-8', mode='w')
+    file_handler = logging.FileHandler(filename="latest.log", encoding="utf-8", mode="w")
     discordpy.utils.setup_logging(handler=file_handler,
                                   level=logging.INFO,
                                   root=True)
