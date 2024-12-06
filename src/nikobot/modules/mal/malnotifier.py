@@ -16,7 +16,7 @@ from ... import util
 
 # pylint: disable=protected-access
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("mal")
 
 command_group = app_commands.Group(
     name="mal",

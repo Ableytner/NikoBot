@@ -14,7 +14,7 @@ from ... import util
 
 PATH = __file__.rsplit(os.sep, maxsplit=1)[0]
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("tc4")
 
 command_group = app_commands.Group(
     name="tc4",

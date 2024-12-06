@@ -6,7 +6,7 @@ import discord as discordpy
 import youtube_dl
 from discord.ext import commands, tasks
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("music")
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):
@@ -120,18 +120,20 @@ class Music(commands.Cog):
 
     async def play_song(self, url: str, guild_id: int):
         """ plays back the given song """
+
         FFMPEG_OPTIONS = {
-            'before_options': '-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5',
-            'options': '-vn'
+            "before_options": "-reconnect 1 -reconnect_streamed 1 -reconnect_delay_max 5",
+            "options": "-vn"
         }
         YDL_OPTIONS = {
-            'format' : "bestaudio"
+            "format" : "bestaudio"
         }
+
         voice_clients: list[discordpy.voice_client.VoiceClient] = self.bot.voice_clients
         vc: discordpy.voice_client.VoiceClient = [item for item in voice_clients if item.guild.id==guild_id][0]
         with youtube_dl.YoutubeDL(YDL_OPTIONS) as ydl:
             info = ydl.extract_info(url, download = False)
-            url2 = info['formats'][0]['url']
+            url2 = info["formats"][0]["url"]
             source = await discordpy.FFmpegOpusAudio.from_probe(url2, **FFMPEG_OPTIONS)
             vc.play(source, after=lambda *x:self.song_finished(guild_id))
 
