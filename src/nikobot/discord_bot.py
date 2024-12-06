@@ -53,7 +53,7 @@ class DiscordBot(commands.Bot):
 
         # command wasn't found
         if isinstance(exception, commands.errors.CommandNotFound):
-            user_command: str = exception.args[0].split("\"")[1]
+            user_command: str = exception.args[0].split('"')[1]
 
             # call help command if command ends with '.help'
             if user_command.endswith(".help"):
@@ -86,7 +86,7 @@ class DiscordBot(commands.Bot):
         user = await discord.get_bot().fetch_user(discord.get_user_id(context))
         full_error = traceback.format_exception(exception)
         msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
-                   + f"```py\n{"".join(full_error)}\n```"
+                   + f"```py\n{''.join(full_error)}\n```"
         await discord.private_message(discord.get_owner_id(),
                                            msg_text)
         embed = discordpy.Embed(title="An error occured!",

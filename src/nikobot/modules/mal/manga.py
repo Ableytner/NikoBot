@@ -178,7 +178,7 @@ class Manga():
 
         path = os.path.join(util.VolatileStorage["cache_dir"], "mal")
         os.makedirs(path, exist_ok=True)
-        path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit(".", maxsplit=1)[1]}")
+        path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
 
         if os.path.isfile(path):
             return path
@@ -242,7 +242,7 @@ class Manga():
 
         if self._chapters_read is not None or self._chapters_total is not None:
             embed_var.add_field(name="Chapters read",
-                                value=f"{self._chapters_read or "?"} / {self._chapters_total or "?"}",
+                                value=f"{self._chapters_read or '?'} / {self._chapters_total or '?'}",
                                 inline=False)
 
         embed_var.add_field(name="Score",
