@@ -10,7 +10,7 @@ from typing import Any
 
 from . import error
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("core")
 
 class _BaseStorage():
     def __init__(self) -> None:
@@ -66,15 +66,19 @@ class _BaseStorage():
 
         if "." not in key:
             if key not in self._store:
-                raise error.KeyNotFound("Key not found in storage: " + key)
+                raise error.KeyNotFound(f"Key '{key}' not found in storage")
             return self._store[key]
 
         parts = key.split(".")
         curr_dict = self._store
         for c, part in enumerate(parts):
             if part not in curr_dict:
-                raise error.KeyNotFound("Key not found in storage: " +
-                                        ".".join([item if item != part else f"'{item}'" for item in parts]))
+                invalid_key = ""
+                for item in parts:
+                    invalid_key += f"{item}" if invalid_key == "" else f".{item}"
+                    if item == part:
+                        break
+                raise error.KeyNotFound(f"Key '{invalid_key}' not found in storage")
             # if it isn't the last part
             if c < len(parts) - 1:
                 curr_dict = curr_dict[part]
@@ -116,7 +120,7 @@ class _BaseStorage():
 
         if "." not in key:
             if key not in self._store:
-                raise error.KeyNotFound("Key not found in storage: " + key)
+                raise error.KeyNotFound(f"Key '{key}' not found in storage")
             del self._store[key]
             return
 
@@ -124,8 +128,12 @@ class _BaseStorage():
         curr_dict = self._store
         for c, part in enumerate(parts):
             if part not in curr_dict:
-                raise error.KeyNotFound("Key not found in storage: " +
-                                        ".".join([item if item != part else f"'{item}'" for item in parts]))
+                invalid_key = ""
+                for item in parts:
+                    invalid_key += f"{item}" if invalid_key == "" else f".{item}"
+                    if item == part:
+                        break
+                raise error.KeyNotFound(f"Key '{invalid_key}' not found in storage")
 
             # if it isn't the last part
             if c < len(parts) - 1:
