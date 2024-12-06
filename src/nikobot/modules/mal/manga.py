@@ -15,7 +15,7 @@ from . import error, mal_helper, manganato_helper
 from .chapter import Chapter
 from ... import util
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("mal")
 
 class MangaProvider(Enum):
     """

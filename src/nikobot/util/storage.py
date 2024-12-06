@@ -10,7 +10,7 @@ from typing import Any
 
 from . import error
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("core")
 
 class _BaseStorage():
     def __init__(self) -> None:

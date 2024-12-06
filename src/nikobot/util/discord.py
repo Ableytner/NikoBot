@@ -13,7 +13,7 @@ from discord.ext import commands
 from . import error
 from .storage import VolatileStorage
 
-logger = logging.getLogger('discord')
+logger = logging.getLogger("core")
 
 def get_command_name(ctx: commands.context.Context | discordpy.interactions.Interaction) -> str:
     """Return the full name of the contexts' command"""
