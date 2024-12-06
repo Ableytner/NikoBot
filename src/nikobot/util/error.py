@@ -19,10 +19,15 @@ class KeyNotFound(CustomException):
 
     default_message = "The requested key could not be found"
 
-class MissingInheritanceException(CustomException):
+class MissingInheritance(CustomException):
     """Exception raised when a class is expected to inherit from another class"""
 
     default_message = "The class is missing an inheritance from another class"
+
+class MissingToken(CustomException):
+    """Exception raised when the discord bots' token is missing"""
+
+    default_message = "The discord bots' token is missing. Visit https://discord.com/developers to create a new one."
 
 class MultipleReplies(CustomException):
     """Exception raised when replying multiple times to the same discord command"""

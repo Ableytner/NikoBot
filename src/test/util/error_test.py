@@ -4,7 +4,7 @@
 
 import pytest
 
-from src.nikobot.util import error
+from nikobot.util import error
 
 def test_customexception_inheritance():
     """Ensure that CustomException inherits from Exception"""

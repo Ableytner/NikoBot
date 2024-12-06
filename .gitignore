@@ -8,5 +8,8 @@
 *.db
 perf_*.txt
 dc_token.txt
+dc_token_test.txt
+dc_token_testingbot.txt
 client_id.txt
 latest.log
+test.log

@@ -1,5 +1,7 @@
 """Module containing VolatileStorage and PersistentStorage"""
 
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import atexit
@@ -250,5 +252,4 @@ PersistentStorage = _PersistentStorage() if _PersistentStorage._instance is None
 StorageView = _StorageView([VolatileStorage, PersistentStorage])
 
 # save persistent storage before program exits
-# pylint: disable-next=protected-access
 atexit.register(PersistentStorage._save_to_disk)

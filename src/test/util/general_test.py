@@ -4,7 +4,7 @@
 
 import pytest
 
-from src.nikobot.util import general
+from nikobot.util import general
 
 def test_levenshthein_input_types():
     """Ensures the levenshtein_distance() function doesn't allow invalid inputs"""

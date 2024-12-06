@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from src.nikobot.util import error, storage
+from nikobot.util import error, storage
 
 def test_basestorage_instantiation():
     """Ensure that BaseStorage cannot be initialized"""
@@ -332,10 +332,6 @@ def test_volatilestorage_inheritance():
 def test_volatilestorage_instantiation():
     """Ensure that VolatileStorage behaves like a singleton"""
 
-    storage._VolatileStorage._store = None
-
-    storage._VolatileStorage()
-
     with pytest.raises(error.SingletonInstantiation):
         storage._VolatileStorage()
 
@@ -368,10 +364,6 @@ def test_persistentstorage_inheritance():
 
 def test_persistentstorage_instantiation():
     """Ensure that PersistentStorage behaves like a singleton"""
-
-    storage._PersistentStorage._store = None
-
-    storage._PersistentStorage()
 
     with pytest.raises(error.SingletonInstantiation):
         storage._PersistentStorage()
@@ -407,9 +399,6 @@ def test_persistentstorage_load_file():
     PersistentStorage._store = {}
 
     filepath = str(pathlib.Path(os.path.dirname(__file__), "..", "..", "..", "test_run", "storage.json").resolve())
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    pathlib.Path.unlink(filepath, missing_ok=True)
-    storage.VolatileStorage["storage_file"] = filepath
 
     with open(filepath, "w", encoding="utf8") as f:
         json.dump({
@@ -437,9 +426,6 @@ def test_persistentstorage_save_file():
     PersistentStorage._store = {}
 
     filepath = str(pathlib.Path(os.path.dirname(__file__), "..", "..", "..", "test_run", "storage.json").resolve())
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    pathlib.Path.unlink(filepath, missing_ok=True)
-    storage.VolatileStorage["storage_file"] = filepath
 
     PersistentStorage["key1"] = "value"
     PersistentStorage["key2"] = ["value21", "value22", "value23"]
@@ -466,9 +452,6 @@ def test_persistentstorage_save_file_empty():
     PersistentStorage._store = {}
 
     filepath = str(pathlib.Path(os.path.dirname(__file__), "..", "..", "..", "test_run", "storage.json").resolve())
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    pathlib.Path.unlink(filepath, missing_ok=True)
-    storage.VolatileStorage["storage_file"] = filepath
 
     with open(filepath, "w", encoding="utf8") as f:
         json.dump({
@@ -496,12 +479,12 @@ def test_storageview_instantiation():
     class FakeStorage():
         pass
 
-    with pytest.raises(error.MissingInheritanceException):
+    with pytest.raises(error.MissingInheritance):
         storage._StorageView([
             FakeStorage
         ])
 
-    with pytest.raises(error.MissingInheritanceException):
+    with pytest.raises(error.MissingInheritance):
         storage._StorageView([
             PersistentStorage,
             VolatileStorage,

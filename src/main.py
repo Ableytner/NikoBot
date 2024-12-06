@@ -1,4 +1,4 @@
-"""A module containing the ``DiscordBot`` class"""
+"""A module to start the discord bot"""
 
 # pylint: disable=protected-access, wrong-import-position, wrong-import-order
 

@@ -33,9 +33,9 @@ class DiscordBot(commands.Bot):
         storage.VolatileStorage["modules"] = []
 
         for module in modules_to_load:
+            logger.info(f"Loading module {module}")
             await self.load_extension(f"nikobot.modules.{module}")
             storage.VolatileStorage["modules"].append(module)
-            logger.info(f"Loaded module {module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
