@@ -1,5 +1,7 @@
 """Module containing VolatileStorage and PersistentStorage"""
 
+# pylint: disable=protected-access
+
 from __future__ import annotations
 
 import atexit
@@ -16,6 +18,7 @@ class _BaseStorage():
     def __init__(self) -> None:
         raise NotImplementedError()
 
+    _instance: _BaseStorage = None
     _store: dict[str, Any] = None
 
     def contains_item(self, key: str, item: Any) -> bool:
@@ -154,21 +157,23 @@ class _VolatileStorage(_BaseStorage):
     """Storage that is not saved across restarts"""
 
     def __init__(self) -> None:
-        if _VolatileStorage._store is not None:
+        if _VolatileStorage._instance is not None:
             raise error.SingletonInstantiation
 
+        logger.debug("Initializing VolatileStorage")
         _VolatileStorage._store = self._store = {}
+        _VolatileStorage._instance = self
 
 class _PersistentStorage(_BaseStorage):
     """Storage that is persistent across restarts"""
 
     def __init__(self) -> None:
-        if _PersistentStorage._store is not None:
+        if _PersistentStorage._instance is not None:
             raise error.SingletonInstantiation
 
+        logger.debug("Initializing PersistentStorage")
         _PersistentStorage._store = self._store = {}
-
-    _store: dict[str, Any] = None
+        _PersistentStorage._instance = self
 
     def __setitem__(self, key: str, item: Any) -> None:
         if not isinstance(item, (str, int, list, dict)):
@@ -206,7 +211,7 @@ class _StorageView():
     def __init__(self, storages: list[_BaseStorage]):
         for storage in storages:
             if not isinstance(storage, _BaseStorage):
-                raise TypeError()
+                raise error.MissingInheritance(f"Storage {type(storage)} does not inherit from _BaseStorage")
             self._storages.append(storage)
 
     _storages = []
@@ -242,10 +247,9 @@ class _StorageView():
     def __contains__(self, key: str) -> bool:
         return self.contains(key)
 
-VolatileStorage = _VolatileStorage()
-PersistentStorage = _PersistentStorage()
+VolatileStorage = _VolatileStorage() if _VolatileStorage._instance is None else _VolatileStorage._instance
+PersistentStorage = _PersistentStorage() if _PersistentStorage._instance is None else _PersistentStorage._instance
 StorageView = _StorageView([VolatileStorage, PersistentStorage])
 
 # save persistent storage before program exits
-# pylint: disable-next=protected-access
 atexit.register(PersistentStorage._save_to_disk)

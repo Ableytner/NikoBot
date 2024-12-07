@@ -3,9 +3,14 @@
 *\.vscode
 *\venv
 *\storage
+*\test_run
 *.pyc
 *.db
 perf_*.txt
 dc_token.txt
+dc_token_test.txt
+dc_token_testingbot.txt
+test_channel_id.txt
 client_id.txt
 latest.log
+test.log
