@@ -431,6 +431,11 @@ def _remove_type_hints(signature: str) -> str:
 
     return ", ".join(args)
 
+def is_cog_loaded(name: str) -> bool:
+    """Checks whether the cog with the given name is loaded"""
+
+    return name.lower() in (cog.lower() for cog in get_bot().cogs)
+
 def is_private_channel(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """Checks whether the message related to ``ctx`` was received as a private / direct message"""
 

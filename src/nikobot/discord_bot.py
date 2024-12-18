@@ -56,7 +56,7 @@ class DiscordBot(commands.Bot):
             user_command: str = exception.args[0].split('"')[1]
 
             # call help command if command ends with '.help'
-            if user_command.endswith(".help"):
+            if discord.is_cog_loaded("help") and user_command.endswith(".help"):
                 help_cog = self.cogs["Help"]
                 # pylint: disable-next=protected-access
                 answer = help_cog._generate_help_specific_normal(user_command.replace(".help", ""))
