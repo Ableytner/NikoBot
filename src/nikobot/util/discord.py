@@ -203,7 +203,9 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
 def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) -> typing.Callable:
     """Wrap a given function for use with normal command registration"""
 
-    # the signature looks like this:
+    # ----------------------------------------------------------------------------------------------------
+    # setup warpping function signature
+    # the original signature looks like this:
     # (self, ctx, <some_arg>: <some_type>, <another_arg>: <another_type>)
     sig = str(inspect.signature(func))
 
@@ -212,6 +214,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
     args = sig.split(",")
 
+    # ----------------------------------------------------------------------------------------------------
     # clean up type hints for later replacements
     for c, arg in enumerate(args):
         arg = arg.strip()
@@ -226,17 +229,18 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
         [": str | None = None", 0]
     ]
     for arg in args:
-        # optional parameters can't be placed before normal parameters
+        # optional parameters can't be placed before required parameters
         if valid_strings[1][1] > 0 \
            and valid_strings[1][0] not in arg \
            and valid_strings[0][0] in arg:
-            raise SyntaxError(f"Command {command_name} contains optional str parameter before normal str parameter")
+            raise SyntaxError(f"Command {command_name} contains optional str parameter before required str parameter")
 
         if valid_strings[1][0] in arg:
             valid_strings[1][1] += 1
         elif valid_strings[0][0] in arg:
             valid_strings[0][1] += 1
 
+    # ----------------------------------------------------------------------------------------------------
     # replace str type hints
     num_of_strings = sum((item[1] for item in valid_strings))
     if num_of_strings > 0:
@@ -262,13 +266,13 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                 arg = "*" + arg.replace(": str", ": list[str]")
 
             args[-1] = arg
-
     sig = ", ".join(args)
+
+    # ----------------------------------------------------------------------------------------------------
+    # create wrapping function which recombines string arguments
     sig_without_types = _remove_type_hints(sig)
 
-    fakefunc = [
-        f"async def func({sig}):"
-    ]
+    fakefunc = [f"async def func({sig}):"]
 
     # check if sig contains a string that has to be recombined
     if num_of_strings == 1:
@@ -289,7 +293,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
         else:
             fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
     elif num_of_strings > 1:
-        # if all str parameters are normal
+        # if all str parameters are required
         if valid_strings[1][1] == 0:
             arg_names = re.findall(r"([^ ]+): str", sig)
             arg_names += re.findall(r"\*(.+): list\[str\]", sig)
@@ -357,6 +361,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
     fakefunc.append(f"    return await original_func({sig_without_types})")
 
+    # ----------------------------------------------------------------------------------------------------
+    # compile the wrapping function
     # code from https://stackoverflow.com/a/1409496/15436169
     fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
     fakefunc_locals = {}
@@ -375,13 +381,17 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -> typing.Callable:
     """Wrap a given function for use with slash command registration"""
 
-    # the signature looks like this:
+    # ----------------------------------------------------------------------------------------------------
+    # setup warpping function signature
+    # the original signature looks like this:
     # (self, ctx, <some_arg>: <some_type>, <another_arg>: <another_type>)
     sig = str(inspect.signature(func))
 
     # remove self from args and remove brackets
     sig = sig.replace("self, ", "").strip("()")
 
+    # ----------------------------------------------------------------------------------------------------
+    # create wrapping function
     sig_without_types = _remove_type_hints(sig)
 
     fakefunc = [
@@ -389,6 +399,8 @@ def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -
         f"    return await original_func({sig_without_types})"
     ]
 
+    # ----------------------------------------------------------------------------------------------------
+    # compile the wrapping function
     # code from https://stackoverflow.com/a/1409496/15436169
     fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
     fakefunc_locals = {}
