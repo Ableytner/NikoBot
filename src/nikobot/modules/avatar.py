@@ -1,5 +1,6 @@
 """A module containing the avatar command"""
 
+import logging
 import os
 import pathlib
 
@@ -8,6 +9,8 @@ import requests
 from discord.ext import commands
 
 from .. import util
+
+logger = logging.getLogger("avatar")
 
 class Avatar(commands.Cog):
     """A ``discord.commands.Cog`` containing the avatar command"""
@@ -19,12 +22,12 @@ class Avatar(commands.Cog):
         "avatar",
         "Send back the mentioned users avatar"
     )
-    async def avatar(self, ctx: commands.context.Context | discordpy.interactions.Interaction, *user: list[str]):
+    async def avatar(self, ctx: commands.context.Context | discordpy.interactions.Interaction, user: str):
         """Send back the mentioned users avatar"""
 
-        recombined_user = " ".join(["".join(item) for item in user])
+        logger.debug(f"Searching for avatar of user {user}")
 
-        user_obj: discordpy.member.Member | None = await util.discord.parse_user(ctx, recombined_user)
+        user_obj: discordpy.member.Member | None = await util.discord.parse_user(ctx, user)
         if user_obj is None:
             await util.discord.reply(ctx, "User could not be found!")
             return
