@@ -227,7 +227,9 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
     ]
     for arg in args:
         # optional parameters can't be placed before normal parameters
-        if valid_strings[1][1] > 0 and valid_strings[0][0] in arg:
+        if valid_strings[1][1] > 0 \
+           and valid_strings[1][0] not in arg \
+           and valid_strings[0][0] in arg:
             raise SyntaxError(f"Command {command_name} contains optional str parameter before normal str parameter")
 
         if valid_strings[1][0] in arg:
@@ -310,10 +312,9 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                 fakefunc.append(f"    if {c} >= len(parts):")
                 fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
                 fakefunc.append(f"    {arg_name}_recombined = parts[{c}]")
-
         # if the last str parameter is optional
         elif valid_strings[1][1] == 1:
-            arg_names = re.findall(r"\*(.+): str", sig)
+            arg_names = re.findall(r"([^ ]+): str", sig)
             arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
             if len(arg_names) != valid_strings[0][1] + valid_strings[1][1]:
                 raise RuntimeError()
@@ -323,7 +324,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                 if arg_name != arg_names[-1]:
                     fakefunc.append(f"    parts.append({arg_name})")
                 else:
-                    fakefunc.append(f"    parts += {arg_name}")
+                    fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
 
             for c, arg_name in enumerate(arg_names):
                 sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
@@ -335,27 +336,24 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                     fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:])")
         # if multiple str parameters are optional
         else:
-            raise NotImplementedError("Multiple optional str parameters are not yet supported")
-            # pylint: disable-next=unreachable
-            arg_names = re.findall(r"\*(.+): str", sig)
-#            arg_names += re.findall(r"\*(.+): str \| None", sig)
+            arg_names = re.findall(r"([^ ]+): str", sig)
             arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
             if len(arg_names) != valid_strings[0][1] + valid_strings[1][1]:
-                raise RuntimeError()
+                raise RuntimeError(len(arg_names), valid_strings[0][1] + valid_strings[1][1])
 
             fakefunc.append(f"    parts = []")
             for arg_name in arg_names:
                 if arg_name != arg_names[-1]:
                     fakefunc.append(f"    parts.append({arg_name})")
                 else:
-                    fakefunc.append(f"    parts += {arg_name}")
+                    fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
 
             for c, arg_name in enumerate(arg_names):
                 sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
                 if c < len(arg_names) - 1:
                     fakefunc.append(f"    {arg_name}_recombined = parts[{c}] if len(parts) > {c} else None")
                 else:
-                    fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:])")
+                    fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:]) if len(parts) > {c} else None")
 
     fakefunc.append(f"    return await original_func({sig_without_types})")
 
