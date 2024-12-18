@@ -80,16 +80,17 @@ class DiscordBot(commands.Bot):
 
             await discord.reply(context, embed=embed)
             return
-        
+
         # command was misused by the user
         if isinstance(exception, commands.errors.UserInputError):
             if isinstance(exception, commands.MissingRequiredArgument):
                 required_arg: str = exception.args[0].split(' ', maxsplit=1)[0]
-                embed = discordpy.Embed(title=f"Missing required argument '{required_arg}'!", color=discordpy.Color.red())
+                embed = discordpy.Embed(title=f"Missing required argument '{required_arg}'!",
+                                        color=discordpy.Color.red())
                 await discord.reply(context, embed=embed)
                 return
             if isinstance(exception, commands.TooManyArguments):
-                embed = discordpy.Embed(title=f"Too many arguments!", color=discordpy.Color.red())
+                embed = discordpy.Embed(title="Too many arguments!", color=discordpy.Color.red())
                 await discord.reply(context, embed=embed)
                 return
 
@@ -102,6 +103,7 @@ class DiscordBot(commands.Bot):
                     + f"```py\n{''.join(full_error[:1500])}\n```"
             await discord.private_message(discord.get_owner_id(),
                                             msg_text)
+        # pylint: disable-next=broad-exception-caught
         except Exception:
             logger.warning("Couldn't notify owner about command error!")
 

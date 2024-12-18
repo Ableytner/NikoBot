@@ -197,6 +197,9 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
         return wrapper
     return decorator
 
+# pylint: disable=f-string-without-interpolation
+
+# pylint: disable-next=too-many-statements
 def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) -> typing.Callable:
     """Wrap a given function for use with normal command registration"""
 
@@ -210,9 +213,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
     args = sig.split(",")
 
     # clean up type hints for later replacements
-    for c in range(len(args)):
-        arg = args[c]
-
+    for c, arg in enumerate(args):
         arg = arg.strip()
 
         if "None | str" in arg:
@@ -235,12 +236,10 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
             valid_strings[0][1] += 1
 
     # replace str type hints
-    num_of_strings = sum([item[1] for item in valid_strings])
+    num_of_strings = sum((item[1] for item in valid_strings))
     if num_of_strings > 0:
         if num_of_strings == 1:
-            for c in range(len(args)):
-                arg = args[c]
-
+            for c, arg in enumerate(args):
                 # replace '<some_arg>: str | None = None' with '*<some_arg>: list[str] | None'
                 if ": str | None = None" in arg:
                     arg = "*" + arg.replace(": str | None = None", ": list[str] | None")
@@ -303,7 +302,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                     fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
 
             fakefunc.append(f"    if len(parts) > {len(arg_names)}:")
-            fakefunc.append(f"        raise error.TooManyArguments('Command ' + str(ctx.invoked_with) + ' received ' + str(len(parts)) + ' arguments, but only expected {len(arg_names)}')")
+            fakefunc.append(f"        raise error.TooManyArguments('Command ' + str(ctx.invoked_with)"
+                            + f" + ' received ' + str(len(parts)) + ' arguments, but only expects {len(arg_names)}')")
 
             for c, arg_name in enumerate(arg_names):
                 sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
@@ -336,6 +336,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
         # if multiple str parameters are optional
         else:
             raise NotImplementedError("Multiple optional str parameters are not yet supported")
+            # pylint: disable-next=unreachable
             arg_names = re.findall(r"\*(.+): str", sig)
 #            arg_names += re.findall(r"\*(.+): str \| None", sig)
             arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
@@ -360,7 +361,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
     # code from https://stackoverflow.com/a/1409496/15436169
     fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
-    locals = {}
+    fakefunc_locals = {}
     # pylint: disable-next=eval-used
     eval(fakefunc_code,
         {
@@ -368,10 +369,11 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
             "discord": discordpy,
             "error": error
         },
-        locals
+        fakefunc_locals
     )
-    return locals["func"]
+    return fakefunc_locals["func"]
 
+# pylint: disable-next=unused-argument
 def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -> typing.Callable:
     """Wrap a given function for use with slash command registration"""
 
@@ -391,7 +393,7 @@ def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -
 
     # code from https://stackoverflow.com/a/1409496/15436169
     fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
-    locals = {}
+    fakefunc_locals = {}
     # pylint: disable-next=eval-used
     eval(fakefunc_code,
         {
@@ -399,18 +401,18 @@ def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -
             "discord": discordpy,
             "get_bot": get_bot
         },
-        locals
+        fakefunc_locals
     )
-    return locals["func"]
+    return fakefunc_locals["func"]
+
+# pylint: enable=f-string-without-interpolation
 
 def _remove_type_hints(signature: str) -> str:
     """Remove all type hints from a function signature"""
 
     args = signature.split(",")
 
-    for c in range(len(args)):
-        arg = args[c]
-
+    for c, arg in enumerate(args):
         arg = arg.strip()
         arg = arg.replace("*", "")
         arg = arg.split(":")[0]
