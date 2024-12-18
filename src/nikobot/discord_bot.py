@@ -83,12 +83,16 @@ class DiscordBot(commands.Bot):
 
         # all other commands
         # code from https://stackoverflow.com/a/73706008/15436169
-        user = await discord.get_bot().fetch_user(discord.get_user_id(context))
-        full_error = traceback.format_exception(exception)
-        msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
-                   + f"```py\n{''.join(full_error)}\n```"
-        await discord.private_message(discord.get_owner_id(),
-                                           msg_text)
+        try:
+            user = await discord.get_bot().fetch_user(discord.get_user_id(context))
+            full_error = traceback.format_exception(exception)
+            msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
+                    + f"```py\n{''.join(full_error[:1500])}\n```"
+            await discord.private_message(discord.get_owner_id(),
+                                            msg_text)
+        except Exception:
+            logger.warning("Couldn't notify owner about command error!")
+
         embed = discordpy.Embed(title="An error occured!",
                               color=discordpy.Color.red())
         message = await discord.get_reply(context)

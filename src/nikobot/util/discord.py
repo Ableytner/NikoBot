@@ -5,6 +5,7 @@ import functools
 import inspect
 import logging
 import re
+import typing
 
 import discord as discordpy
 from discord import app_commands
@@ -100,7 +101,7 @@ def normal_command(name: str, description: str, hidden: str = False):
             name=name,
             brief=desc,
             description=desc
-        )(wrapper)
+        )(_wrap_function_for_normal_command(name, wrapper))
 
         logger.debug(f"Registered command {name}")
 
@@ -136,27 +137,12 @@ def hybrid_command(name: str, description: str):
             name=name,
             brief=description,
             description=description
-        )(wrapper)
+        )(_wrap_function_for_normal_command(name, wrapper))
 
-        # register slash command
-        # replace signature
-        sig = str(inspect.signature(wrapper)).replace("self, ", "")
-        # replace *<some_arg>: list[str] with <some_arg>: str
-        sig = re.sub(r"\*(.+): list\[str\]", r"\1: str", sig).strip("()")
-        sig_without_types = re.sub(r": .+[,]", ",", sig)
-        sig_without_types = re.sub(r": .+[\006]", "", sig_without_types + "\006")
-        # eval function with new signature
-        # code from https://stackoverflow.com/a/1409496/15436169
-        fakefunc = f"async def func({sig}):\n    return await fakefunc({sig_without_types})"
-        fakefunc_code = compile(fakefunc, "fakesource", "exec")
-        fakeglobals = {}
-        # pylint: disable-next=eval-used
-        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discordpy}, fakeglobals)
-        wrapper_for_slash_command = fakeglobals["func"]
         get_bot().tree.command(
             name=name,
             description=description
-        )(wrapper_for_slash_command)
+        )(_wrap_function_for_slash_command(name, wrapper))
 
         logger.debug(f"Registered command {name}")
 
@@ -192,27 +178,13 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             name=f"{command_group.name}.{name}",
             brief=description,
             description=description
-        )(wrapper)
+        )(_wrap_function_for_normal_command(f"{command_group.name}.{name}", wrapper))
 
         # register slash command
-        # replace signature
-        sig = str(inspect.signature(wrapper)).replace("self, ", "")
-        # replace *<some_arg>: list[str] with <some_arg>: str
-        sig = re.sub(r"\*(.+): list\[str\]", r"\1: str", sig).strip("()")
-        sig_without_types = re.sub(r": .+[,]", ",", sig)
-        sig_without_types = re.sub(r": .+[\006]", "", sig_without_types + "\006")
-        # eval function with new signature
-        # code from https://stackoverflow.com/a/1409496/15436169
-        fakefunc = f"async def func({sig}):\n    return await fakefunc({sig_without_types})"
-        fakefunc_code = compile(fakefunc, "fakesource", "exec")
-        fakeglobals = {}
-        # pylint: disable-next=eval-used
-        eval(fakefunc_code, {"fakefunc": wrapper, "discord": discordpy}, fakeglobals)
-        wrapper_for_slash_command = fakeglobals["func"]
         command_group.command(
             name=name,
             description=description
-        )(wrapper_for_slash_command)
+        )(_wrap_function_for_slash_command(f"{command_group.name}.{name}", wrapper))
 
         # register group of not yet registered
         try:
@@ -224,6 +196,274 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
 
         return wrapper
     return decorator
+
+def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) -> typing.Callable:
+    """Wrap a given function for use with normal command registration"""
+
+    # the signature looks like this:
+    # (self, ctx, <some_arg>: <some_type>, <another_arg>: <another_type>)
+    sig = str(inspect.signature(func))
+
+    # remove self from args and remove brackets
+    sig = sig.replace("self, ", "").strip("()")
+
+    args = sig.split(",")
+
+    # clean up type hints for later replacements
+    for c in range(len(args)):
+        arg = args[c]
+
+        arg = arg.strip()
+
+        if "None | str" in arg:
+            arg = arg.replace("None | str", "str | None")
+
+        args[c] = arg
+
+    valid_strings = [
+        [": str", 0],
+        [": str | None = None", 0]
+    ]
+    for arg in args:
+        # optional parameters can't be placed before normal parameters
+        if valid_strings[1][1] > 0 and valid_strings[0][0] in arg:
+            raise SyntaxError(f"Command {command_name} contains optional str parameter before normal str parameter")
+
+        if valid_strings[1][0] in arg:
+            valid_strings[1][1] += 1
+        elif valid_strings[0][0] in arg:
+            valid_strings[0][1] += 1
+
+#    if valid_strings[1][1] > 1:
+#        raise SyntaxError(f"Command {command_name} contains more than one optional str parameters")
+
+    # replace str type hints
+    num_of_strings = sum([item[1] for item in valid_strings])
+    if num_of_strings > 0:
+        if num_of_strings == 1:
+            for c in range(len(args)):
+                arg = args[c]
+
+                # replace '<some_arg>: str | None = None' with '*<some_arg>: list[str] | None'
+                if ": str | None = None" in arg:
+                    arg = "*" + arg.replace(": str | None = None", ": list[str] | None")
+                # replace '<some_arg>: str' with '*<some_arg>: list[str]'
+                elif ": str" in arg:
+                    arg = "*" + arg.replace(": str", ": list[str]")
+
+                args[c] = arg
+        # if multiple str parameters are present, only replace the last one
+        else:
+            arg = args[-1]
+
+            # replace '<some_arg>: str | None = None' with '*<some_arg>: list[str] | None'
+            if ": str | None = None" in arg:
+                arg = "*" + arg.replace(": str | None = None", ": list[str] | None")
+            # replace '<some_arg>: str' with '*<some_arg>: list[str]'
+            elif ": str" in arg:
+                arg = "*" + arg.replace(": str", ": list[str]")
+
+            args[-1] = arg
+
+    sig = ", ".join(args)
+    sig_without_types = _remove_type_hints(sig)
+
+    fakefunc = [
+        f"async def func({sig}):"
+    ]
+
+    # check if sig contains a string that has to be recombined
+    if num_of_strings == 1:
+        name_matches = re.search(r"\*(.+): list\[str\]", sig)
+        if name_matches is None:
+            raise RuntimeError()
+
+        arg_name = name_matches.group(1)
+
+        sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+
+        fakefunc.append(f"    if len({arg_name}) > 0:")
+        fakefunc.append(f"        {arg_name}_recombined = ' '.join([''.join(item) for item in {arg_name}])")
+        fakefunc.append(f"    else:")
+
+        if re.search(r"\*(.+): list\[str\] \| None", sig):
+            fakefunc.append(f"        {arg_name}_recombined = None")
+        else:
+            fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
+#           fakefunc.append(f"        get_bot().dispatch('command_error', ctx, exc)")
+    elif num_of_strings > 1:
+        # if all str parameters are normal
+        if valid_strings[1][1] == 0:
+            arg_names = re.findall(r"([^ ]+): str", sig)
+            arg_names += re.findall(r"\*(.+): list\[str\]", sig)
+            if len(arg_names) != valid_strings[0][1]:
+                raise RuntimeError()
+
+            fakefunc.append(f"    parts = []")
+            for arg_name in arg_names:
+                if arg_name != arg_names[-1]:
+                    fakefunc.append(f"    parts.append({arg_name})")
+                else:
+                    fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
+                    fakefunc.append(f"    logger.info(parts)")
+
+            fakefunc.append(f"    if len(parts) > {len(arg_names)}:")
+            fakefunc.append(f"        raise error.TooManyArguments('Command ' + str(ctx.invoked_with) + ' received ' + str(len(parts)) + ' arguments, but only expected {len(arg_names)}')")
+
+            for c, arg_name in enumerate(arg_names):
+                sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+                fakefunc.append(f"    if {c} >= len(parts):")
+                fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
+                fakefunc.append(f"    {arg_name}_recombined = parts[{c}]")
+
+        # if the last str parameter is optional
+        elif valid_strings[1][1] == 1:
+            arg_names = re.findall(r"\*(.+): str", sig)
+            arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
+            if len(arg_names) != valid_strings[0][1] + valid_strings[1][1]:
+                raise RuntimeError()
+
+            fakefunc.append(f"    parts = []")
+            for arg_name in arg_names:
+                if arg_name != arg_names[-1]:
+                    fakefunc.append(f"    parts.append({arg_name})")
+                else:
+                    fakefunc.append(f"    parts += {arg_name}")
+
+            for c, arg_name in enumerate(arg_names):
+                sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+                if c < len(arg_names) - 1:
+                    fakefunc.append(f"    if {c} >= len(parts):")
+                    fakefunc.append(f"        raise error.MissingRequiredArgument({arg_name})")
+                    fakefunc.append(f"    {arg_name}_recombined = parts[{c}]")
+                else:
+                    fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:])")
+        # if multiple str parameters are optional
+        else:
+            arg_names = re.findall(r"\*(.+): str", sig)
+#            arg_names += re.findall(r"\*(.+): str \| None", sig)
+            arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
+            if len(arg_names) != valid_strings[0][1] + valid_strings[1][1]:
+                raise RuntimeError()
+
+            fakefunc.append(f"    parts = []")
+            for arg_name in arg_names:
+                if arg_name != arg_names[-1]:
+                    fakefunc.append(f"    parts.append({arg_name})")
+                else:
+                    fakefunc.append(f"    parts += {arg_name}")
+
+            for c, arg_name in enumerate(arg_names):
+                sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+                if c < len(arg_names) - 1:
+                    fakefunc.append(f"    {arg_name}_recombined = parts[{c}] if len(parts) > {c} else None")
+                else:
+                    fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:])")
+
+    fakefunc.append(f"    return await original_func({sig_without_types})")
+
+    fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
+    locals = {}
+    # pylint: disable-next=eval-used
+    eval(fakefunc_code,
+        {
+            "original_func": func,
+            "discord": discordpy,
+            "error": error,
+            "logger": logger,
+            "get_bot": get_bot
+        },
+        locals
+    )
+    return locals["func"]
+
+def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -> typing.Callable:
+    """Wrap a given function for use with slash command registration"""
+
+    # the signature looks like this:
+    # (self, ctx, <some_arg>: <some_type>, <another_arg>: <another_type>)
+    sig = str(inspect.signature(func))
+
+    # remove self from args and remove brackets
+    sig = sig.replace("self, ", "").strip("()")
+
+    sig_without_types = _remove_type_hints(sig)
+
+    fakefunc = [
+        f"async def func({sig}):",
+        f"    return await original_func({sig_without_types})"
+    ]
+
+    fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
+    locals = {}
+    # pylint: disable-next=eval-used
+    eval(fakefunc_code,
+        {
+            "original_func": func,
+            "discord": discordpy,
+            "get_bot": get_bot
+        },
+        locals
+    )
+    return locals["func"]
+
+def _compile_func(func: typing.Callable, signature: str) -> typing.Callable:
+    """
+    Compile the given signature to a function calling func
+    Base code from https://stackoverflow.com/a/1409496/15436169
+    """
+
+    sig_without_types = _remove_type_hints(signature)
+
+    fakefunc = [
+        f"async def func({signature}):"
+    ]
+
+    # check if sig contains a string which has to be recombined
+    name_matches = re.match(r"\*(.+): list\[str\]", signature)
+    if name_matches is not None:
+        arg_name = name_matches.string
+
+        sig_without_types = sig_without_types.replace(arg_name, f"{arg_name}_recombined")
+
+        fakefunc.append(f"    if len({arg_name}) > 0:")
+        fakefunc.append(f"        {arg_name}_recombined = ' '.join([''.join(item) for item in {arg_name}])")
+        fakefunc.append(f"    else:")
+
+        if re.match(r"\*(.+): list\[str\] \| None", signature):
+            fakefunc.append(f"        {arg_name}_recombined = None")
+        else:
+            fakefunc.append(f"        exc = discordpy.errors.CommandNotFound('Command ' + str(ctx.invoked_with) + ' is not found')")
+            fakefunc.append(f"        get_bot().dispatch('command_error', ctx, exc)")
+
+    fakefunc.append(f"    return await original_func({sig_without_types})")
+
+    fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
+    locals = {}
+    # pylint: disable-next=eval-used
+    eval(fakefunc_code,
+        {
+            "original_func": func,
+            "discord": discordpy,
+            "get_bot": get_bot
+        },
+        locals
+    )
+    return locals["func"]
+
+def _remove_type_hints(signature: str) -> str:
+    args = signature.split(",")
+
+    for c in range(len(args)):
+        arg = args[c]
+
+        arg = arg.strip()
+        arg = arg.replace("*", "")
+        arg = arg.split(":")[0]
+
+        args[c] = arg
+
+    return ", ".join(args)
 
 def is_private_channel(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """Checks whether the message related to ``ctx`` was received as a private / direct message"""

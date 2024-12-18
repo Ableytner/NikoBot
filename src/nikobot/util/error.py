@@ -1,5 +1,7 @@
 """Custom esceptions for general usage"""
 
+from discord.ext import commands
+
 class CustomException(Exception):
     """The base class for all custom exceptions"""
 
@@ -38,3 +40,9 @@ class UserNotFound(CustomException):
     """Exception raised when the discord user wasn't found"""
 
     default_message = "The discord user couldn't be found"
+
+class MissingRequiredArgument(commands.MissingRequiredArgument):
+    """Exception raised when a command was called without a required argument"""
+
+class TooManyArguments(commands.TooManyArguments):
+    """Exception raised when a command was called with too many arguments"""
