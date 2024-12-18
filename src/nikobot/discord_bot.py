@@ -63,7 +63,7 @@ class DiscordBot(commands.Bot):
                 await context.message.reply(embed=answer)
                 return
 
-            embed = discordpy.Embed(title=f"Command '{user_command}' not found!\n")
+            embed = discordpy.Embed(title=f"Command '{user_command}' not found!", color=discordpy.Color.red())
 
             cmds: list[tuple[commands.Command, int]] = []
             for cmd in self.commands:
@@ -80,6 +80,18 @@ class DiscordBot(commands.Bot):
 
             await discord.reply(context, embed=embed)
             return
+        
+        # command was misused by the user
+        if isinstance(exception, commands.errors.UserInputError):
+            if isinstance(exception, commands.MissingRequiredArgument):
+                required_arg: str = exception.args[0].split(' ', maxsplit=1)[0]
+                embed = discordpy.Embed(title=f"Missing required argument '{required_arg}'!", color=discordpy.Color.red())
+                await discord.reply(context, embed=embed)
+                return
+            if isinstance(exception, commands.TooManyArguments):
+                embed = discordpy.Embed(title=f"Too many arguments!", color=discordpy.Color.red())
+                await discord.reply(context, embed=embed)
+                return
 
         # all other commands
         # code from https://stackoverflow.com/a/73706008/15436169

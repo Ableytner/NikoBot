@@ -234,9 +234,6 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
         elif valid_strings[0][0] in arg:
             valid_strings[0][1] += 1
 
-#    if valid_strings[1][1] > 1:
-#        raise SyntaxError(f"Command {command_name} contains more than one optional str parameters")
-
     # replace str type hints
     num_of_strings = sum([item[1] for item in valid_strings])
     if num_of_strings > 0:
@@ -290,7 +287,6 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
             fakefunc.append(f"        {arg_name}_recombined = None")
         else:
             fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
-#           fakefunc.append(f"        get_bot().dispatch('command_error', ctx, exc)")
     elif num_of_strings > 1:
         # if all str parameters are normal
         if valid_strings[1][1] == 0:
@@ -305,7 +301,6 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                     fakefunc.append(f"    parts.append({arg_name})")
                 else:
                     fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
-                    fakefunc.append(f"    logger.info(parts)")
 
             fakefunc.append(f"    if len(parts) > {len(arg_names)}:")
             fakefunc.append(f"        raise error.TooManyArguments('Command ' + str(ctx.invoked_with) + ' received ' + str(len(parts)) + ' arguments, but only expected {len(arg_names)}')")
@@ -340,6 +335,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
                     fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:])")
         # if multiple str parameters are optional
         else:
+            raise NotImplementedError("Multiple optional str parameters are not yet supported")
             arg_names = re.findall(r"\*(.+): str", sig)
 #            arg_names += re.findall(r"\*(.+): str \| None", sig)
             arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
@@ -362,6 +358,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
     fakefunc.append(f"    return await original_func({sig_without_types})")
 
+    # code from https://stackoverflow.com/a/1409496/15436169
     fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
     locals = {}
     # pylint: disable-next=eval-used
@@ -369,9 +366,7 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
         {
             "original_func": func,
             "discord": discordpy,
-            "error": error,
-            "logger": logger,
-            "get_bot": get_bot
+            "error": error
         },
         locals
     )
@@ -394,50 +389,7 @@ def _wrap_function_for_slash_command(command_name: str, func: typing.Callable) -
         f"    return await original_func({sig_without_types})"
     ]
 
-    fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
-    locals = {}
-    # pylint: disable-next=eval-used
-    eval(fakefunc_code,
-        {
-            "original_func": func,
-            "discord": discordpy,
-            "get_bot": get_bot
-        },
-        locals
-    )
-    return locals["func"]
-
-def _compile_func(func: typing.Callable, signature: str) -> typing.Callable:
-    """
-    Compile the given signature to a function calling func
-    Base code from https://stackoverflow.com/a/1409496/15436169
-    """
-
-    sig_without_types = _remove_type_hints(signature)
-
-    fakefunc = [
-        f"async def func({signature}):"
-    ]
-
-    # check if sig contains a string which has to be recombined
-    name_matches = re.match(r"\*(.+): list\[str\]", signature)
-    if name_matches is not None:
-        arg_name = name_matches.string
-
-        sig_without_types = sig_without_types.replace(arg_name, f"{arg_name}_recombined")
-
-        fakefunc.append(f"    if len({arg_name}) > 0:")
-        fakefunc.append(f"        {arg_name}_recombined = ' '.join([''.join(item) for item in {arg_name}])")
-        fakefunc.append(f"    else:")
-
-        if re.match(r"\*(.+): list\[str\] \| None", signature):
-            fakefunc.append(f"        {arg_name}_recombined = None")
-        else:
-            fakefunc.append(f"        exc = discordpy.errors.CommandNotFound('Command ' + str(ctx.invoked_with) + ' is not found')")
-            fakefunc.append(f"        get_bot().dispatch('command_error', ctx, exc)")
-
-    fakefunc.append(f"    return await original_func({sig_without_types})")
-
+    # code from https://stackoverflow.com/a/1409496/15436169
     fakefunc_code = compile("\n".join(fakefunc), "fakesource", "exec")
     locals = {}
     # pylint: disable-next=eval-used
@@ -452,6 +404,8 @@ def _compile_func(func: typing.Callable, signature: str) -> typing.Callable:
     return locals["func"]
 
 def _remove_type_hints(signature: str) -> str:
+    """Remove all type hints from a function signature"""
+
     args = signature.split(",")
 
     for c in range(len(args)):
