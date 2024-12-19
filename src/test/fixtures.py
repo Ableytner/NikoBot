@@ -74,7 +74,7 @@ def bot():
        or config["test"]["test_channel_id"] == "":
         raise ValueError("Missing test_channel_id for use with integration tests. " +
                          "Refer to the README for more information.")
-    storage.VolatileStorage["test_channel_id"] = config["test"]["test_channel_id"]
+    storage.VolatileStorage["test_channel_id"] = int(config["test"]["test_channel_id"])
 
     if "mal.malnotifier" in config["modules"]:
         if "malnotifier" not in config \
