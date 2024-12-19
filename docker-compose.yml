@@ -1,0 +1,9 @@
+services:
+  nikobot:
+    container_name: nikobot
+    hostname: nikobot
+    image: ghcr.io/ableytner/nikobot:latest
+    volumes:
+      - ./config.json:/home/nikobot/config.json
+      - ./storage:/home/nikobot/storage
+    restart: unless-stopped
