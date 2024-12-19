@@ -32,8 +32,8 @@ from nikobot.discord_bot import DiscordBot
 if __name__ == "__main__":
     # https://stackoverflow.com/a/4480202/15436169
     parser = argparse.ArgumentParser("nikobot")
-    parser.add_argument("config",
-                        nargs='?',
+    parser.add_argument("--config",
+                        type=str,
                         default="./config.json",
                         help="A config file in json format. A template is contained in the repository.")
     args = parser.parse_args()
