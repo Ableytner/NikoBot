@@ -11,6 +11,8 @@ COPY --chown=nikobot --chmod=755 requirements.txt /home/nikobot/requirements.txt
 # install pip packages
 RUN pip install -r /home/nikobot/requirements.txt
 
+WORKDIR /home/nikobot
+
 USER nikobot
 
-ENTRYPOINT [ "python3", "/home/nikobot/src/main.py" ]
+ENTRYPOINT [ "python3", "src/main.py", "--config", "./config.json" ]
