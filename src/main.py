@@ -8,18 +8,15 @@ log_helper.setup()
 
 # pylint: enable=wrong-import-position, wrong-import-order
 
+import argparse
+import json
+import os
 import pathlib
 import shutil
-import os
+import typing
 
 from nikobot import util
 from nikobot.discord_bot import DiscordBot
-
-MODULES = ["general", "help", "clear", "music", "avatar", "owner", "tc4.tc4", "mal.malnotifier"]
-STORAGE_DIR = str(pathlib.Path(os.path.dirname(__file__), "..", "storage").resolve())
-STORAGE_FILE = os.path.join(STORAGE_DIR, "storage.json")
-CACHE_DIR = os.path.join(STORAGE_DIR, "cache")
-TEMP_DIR = os.path.join(STORAGE_DIR, "temp")
 
 # TODO:
 # combine some parts of the mcserver-tools bot and roxy waifu bot
@@ -33,20 +30,44 @@ TEMP_DIR = os.path.join(STORAGE_DIR, "temp")
 # create command to list manga with reading status
 
 if __name__ == "__main__":
-    util.VolatileStorage["storage_file"] = STORAGE_FILE
+    # https://stackoverflow.com/a/4480202/15436169
+    parser = argparse.ArgumentParser("nikobot")
+    parser.add_argument("config",
+                        nargs='?',
+                        default="./config.json",
+                        help="A config file in json format. A template is contained in the repository.")
+    args = parser.parse_args()
+    config_file = args.config
+    if not os.path.isfile(config_file):
+        raise FileNotFoundError("Config file couldn't be found")
+    with open(config_file, "r", encoding="utf8") as cf:
+        config: dict[str, typing.Any] = json.load(cf)
+
+    STORAGE_DIR = str(pathlib.Path(config["storage_dir"]).resolve())
+
+    util.VolatileStorage["storage_file"] = os.path.join(STORAGE_DIR, "storage.json")
     util.PersistentStorage._load_from_disk()
 
-    util.VolatileStorage["cache_dir"] = CACHE_DIR
+    util.VolatileStorage["cache_dir"] = os.path.join(STORAGE_DIR, "cache")
     os.makedirs(util.VolatileStorage["cache_dir"], exist_ok=True)
 
-    util.VolatileStorage["temp_dir"] = TEMP_DIR
+    util.VolatileStorage["temp_dir"] = os.path.join(STORAGE_DIR, "temp")
     shutil.rmtree(util.VolatileStorage["temp_dir"], ignore_errors=True)
     os.makedirs(util.VolatileStorage["temp_dir"], exist_ok=True)
 
-    util.VolatileStorage["modules_to_load"] = MODULES
+    util.VolatileStorage["modules_to_load"] = config["modules"]
+
+    util.VolatileStorage["discord_token"] = config["discord_token"]
+
+    if "mal.malnotifier" in config["modules"]:
+        if "malnotifier" not in config \
+           or "client_id" not in config["malnotifier"] \
+           or config["malnotifier"]["client_id"] == "":
+            raise ValueError("Missing client_id for use with the malnotifier module. " +
+                             "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
+
+        util.VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
 
     bot = DiscordBot()
-
     util.VolatileStorage["bot"] = bot
-
     bot.start_bot()

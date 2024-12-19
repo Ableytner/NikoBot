@@ -111,4 +111,4 @@ def _supported_media_type(media_type) -> bool:
     return False
 
 def _setup():
-    HEADERS["X-MAL-CLIENT-ID"] = util.VolatileStorage["mal"]["CLIENT-ID"]
+    HEADERS["X-MAL-CLIENT-ID"] = util.VolatileStorage["mal.client_id"]

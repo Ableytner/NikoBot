@@ -5,7 +5,6 @@
 *\storage
 *.pyc
 *.db
-perf_*.txt
-dc_token.txt
-client_id.txt
+config.json
 latest.log
+perf_*.txt

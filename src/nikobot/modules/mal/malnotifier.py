@@ -235,8 +235,6 @@ class MALNotifier(commands.Cog):
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
-    util.VolatileStorage["mal.CLIENT-ID"] = os.environ["MAL_CLIENT_ID"]
-
     mal_helper._setup()
     manganato_helper._setup()
 
