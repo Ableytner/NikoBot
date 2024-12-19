@@ -22,8 +22,9 @@ class DiscordBot(commands.Bot):
     def start_bot(self):
         """Start the discord bot"""
 
-        self.run(storage.VolatileStorage["discord_token"], log_handler=None)
+        token = storage.VolatileStorage["discord_token"]
         del storage.VolatileStorage["discord_token"]
+        self.run(token, log_handler=None)
 
     async def setup_hook(self) -> None:
         modules_to_load = []

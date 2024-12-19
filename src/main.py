@@ -37,26 +37,14 @@ if __name__ == "__main__":
                         default="./config.json",
                         help="A config file in json format. A template is contained in the repository.")
     args = parser.parse_args()
-    config_file = args.config
-    if not os.path.isfile(config_file):
+    util.VolatileStorage["config_file"] = args.config
+
+    if not os.path.isfile(util.VolatileStorage["config_file"]):
         raise FileNotFoundError("Config file couldn't be found")
-    with open(config_file, "r", encoding="utf8") as cf:
+    with open(util.VolatileStorage["config_file"], "r", encoding="utf8") as cf:
         config: dict[str, typing.Any] = json.load(cf)
 
-    STORAGE_DIR = str(pathlib.Path(config["storage_dir"]).resolve())
-
-    util.VolatileStorage["storage_file"] = os.path.join(STORAGE_DIR, "storage.json")
-    util.PersistentStorage._load_from_disk()
-
-    util.VolatileStorage["cache_dir"] = os.path.join(STORAGE_DIR, "cache")
-    os.makedirs(util.VolatileStorage["cache_dir"], exist_ok=True)
-
-    util.VolatileStorage["temp_dir"] = os.path.join(STORAGE_DIR, "temp")
-    shutil.rmtree(util.VolatileStorage["temp_dir"], ignore_errors=True)
-    os.makedirs(util.VolatileStorage["temp_dir"], exist_ok=True)
-
     util.VolatileStorage["modules_to_load"] = config["modules"]
-
     util.VolatileStorage["discord_token"] = config["discord_token"]
 
     if "mal.malnotifier" in config["modules"]:
@@ -67,6 +55,19 @@ if __name__ == "__main__":
                              "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
 
         util.VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
+
+    # setup storage
+    storage_dir = str(pathlib.Path(config["storage_dir"]).resolve())
+
+    util.VolatileStorage["storage_file"] = os.path.join(storage_dir, "storage.json")
+    util.PersistentStorage._load_from_disk()
+
+    util.VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
+    os.makedirs(util.VolatileStorage["cache_dir"], exist_ok=True)
+
+    util.VolatileStorage["temp_dir"] = os.path.join(storage_dir, "temp")
+    shutil.rmtree(util.VolatileStorage["temp_dir"], ignore_errors=True)
+    os.makedirs(util.VolatileStorage["temp_dir"], exist_ok=True)
 
     bot = DiscordBot()
     util.VolatileStorage["bot"] = bot

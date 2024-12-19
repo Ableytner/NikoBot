@@ -82,7 +82,7 @@ def normal_command(name: str, description: str, hidden: str = False):
             return await func(cog, *args, **kwargs)
 
         # for some reason the decorator gets called twice for every command
-        # so we skip registratin an already existing command
+        # so we skip registrating an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
 #           logger.warning(f"Command {name} is already registered, skipping...")
             return wrapper
@@ -121,7 +121,7 @@ def hybrid_command(name: str, description: str):
             return await func(cog, *args, **kwargs)
 
         # for some reason the decorator gets called twice for every command
-        # so we skip registratin an already existing command
+        # so we skip registrating an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
 #           logger.warning(f"Command {name} is already registered, skipping...")
             return wrapper
@@ -177,7 +177,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             description=description
         )(_wrap_function_for_slash_command(f"{command_group.name}.{name}", wrapper))
 
-        # register group of not yet registered
+        # register command group if not yet registered
         try:
             get_bot().tree.add_command(command_group)
         except discordpy.app_commands.CommandAlreadyRegistered:

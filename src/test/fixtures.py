@@ -5,9 +5,10 @@
 # pylint: disable=protected-access, missing-class-docstring
 
 import asyncio
+import json
 import logging
 import os
-import pathlib
+import typing
 import _thread
 from threading import Thread
 from time import sleep
@@ -17,7 +18,7 @@ import pytest
 from discord.ext import commands
 
 from nikobot.discord_bot import DiscordBot
-from nikobot.util import error, storage
+from nikobot.util import storage
 
 logger = logging.getLogger("test")
 
@@ -55,19 +56,34 @@ def setup_storages():
 def bot():
     """Setup the DiscordBot for use with tests"""
 
-    if "DISCORD_TOKEN" not in os.environ:
-        token_file = str(pathlib.Path(os.path.dirname(__file__), "..", "..", "dc_token_test.txt").resolve())
-        if not os.path.isfile(token_file):
-            raise error.MissingToken()
-        with open(token_file, "r", encoding="utf8") as file:
-            os.environ["DISCORD_TOKEN"] = file.readline()
+    # load config
+    if not os.path.isfile(storage.VolatileStorage["config_file"]):
+        raise FileNotFoundError("Config file couldn't be found")
+    with open(storage.VolatileStorage["config_file"], "r", encoding="utf8") as cf:
+        config: dict[str, typing.Any] = json.load(cf)
 
-    if "mal.malnotifier" in storage.VolatileStorage["modules_to_load"] and "MAL_CLIENT_ID" not in os.environ:
-        mal_client_file = str(pathlib.Path(os.path.dirname(__file__), "..", "..", "client_id.txt").resolve())
-        if not os.path.isfile(mal_client_file):
-            raise FileNotFoundError()
-        with open(mal_client_file, "r", encoding="utf8") as file:
-            os.environ["MAL_CLIENT_ID"] = file.readline()
+    storage.VolatileStorage["modules_to_load"] = config["modules"]
+
+    if "discord_token_testbot" not in config["test"] \
+       or config["test"]["discord_token_testbot"] == "":
+        raise ValueError("Missing discord_token_testbot for use with integration tests. " +
+                         "Refer to the README for more information.")
+    storage.VolatileStorage["discord_token"] = config["test"]["discord_token_testbot"]
+
+    if "test_channel_id" not in config["test"] \
+       or config["test"]["test_channel_id"] == "":
+        raise ValueError("Missing test_channel_id for use with integration tests. " +
+                         "Refer to the README for more information.")
+    storage.VolatileStorage["test_channel_id"] = config["test"]["test_channel_id"]
+
+    if "mal.malnotifier" in config["modules"]:
+        if "malnotifier" not in config \
+            or "client_id" not in config["malnotifier"] \
+            or config["malnotifier"]["client_id"] == "":
+            raise ValueError("Missing client_id for use with the malnotifier module. " +
+                             "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
+
+        storage.VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
 
     # don't ignore commands sent by other bots
     async def process_commands(self, message):
@@ -111,15 +127,19 @@ def bot():
 def testing_bot():
     """Setup another DiscordBot to be used in tests"""
 
-    if "TESTING_DISCORD_TOKEN" not in os.environ:
-        token_file = str(pathlib.Path(os.path.dirname(__file__), "..", "..", "dc_token_testingbot.txt").resolve())
-        if not os.path.isfile(token_file):
-            raise error.MissingToken()
-        with open(token_file, "r", encoding="utf8") as file:
-            os.environ["TESTING_DISCORD_TOKEN"] = file.readline()
+    # load config
+    if not os.path.isfile(storage.VolatileStorage["config_file"]):
+        raise FileNotFoundError("Config file couldn't be found")
+    with open(storage.VolatileStorage["config_file"], "r", encoding="utf8") as cf:
+        config: dict[str, typing.Any] = json.load(cf)
+
+    if "discord_token_helperbot" not in config["test"] \
+       or config["test"]["discord_token_helperbot"] == "":
+        raise ValueError("Missing discord_token_helperbot for use with integration tests. " +
+                         "Refer to the README for more information.")
+    storage.VolatileStorage["discord_token_helperbot"] = config["test"]["discord_token_helperbot"]
 
     bot_ready = [False]
-
     class TestingDiscordBot(commands.Bot):
         def __init__(self) -> None:
             super().__init__(command_prefix = "testing.", help_command=None, intents = discordpy.Intents.all())
@@ -127,7 +147,7 @@ def testing_bot():
         def start_bot(self):
             """Override start_bot to set the proper token"""
 
-            self.run(os.environ["TESTING_DISCORD_TOKEN"], log_handler=None)
+            self.run(storage.VolatileStorage["discord_token_helperbot"], log_handler=None)
 
         async def on_ready(self: DiscordBot):
             """Override on_ready to wait for the bot to start"""
