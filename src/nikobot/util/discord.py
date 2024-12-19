@@ -81,9 +81,6 @@ def normal_command(name: str, description: str, hidden: str = False):
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
-        if get_bot() is None:
-            raise ValueError("bot variable is not yet set")
-
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
@@ -123,9 +120,6 @@ def hybrid_command(name: str, description: str):
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
-        if get_bot() is None:
-            raise ValueError("bot variable is not yet set")
-
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
@@ -163,9 +157,6 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             cls_name = func.__qualname__.split(".", maxsplit=1)[0]
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
-
-        if get_bot() is None:
-            raise ValueError("bot variable is not yet set")
 
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command

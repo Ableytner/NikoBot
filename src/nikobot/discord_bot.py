@@ -4,6 +4,7 @@ import traceback
 
 import asyncio
 import logging
+import os
 
 import discord as discordpy
 from discord.ext import commands
@@ -33,9 +34,9 @@ class DiscordBot(commands.Bot):
         storage.VolatileStorage["modules"] = []
 
         for module in modules_to_load:
+            logger.info(f"Loading module {module}")
             await self.load_extension(f"nikobot.modules.{module}")
             storage.VolatileStorage["modules"].append(module)
-            logger.info(f"Loaded module {module}")
 
     async def on_ready(self):
         """Method called when the bot is ready"""
@@ -95,14 +96,16 @@ class DiscordBot(commands.Bot):
                 return
 
         # all other commands
+        # message me with the error traceback
         # code from https://stackoverflow.com/a/73706008/15436169
         try:
-            user = await discord.get_bot().fetch_user(discord.get_user_id(context))
-            full_error = traceback.format_exception(exception)
-            msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
-                    + f"```py\n{''.join(full_error[:1500])}\n```"
-            await discord.private_message(discord.get_owner_id(),
-                                            msg_text)
+            if "DEBUG" not in os.environ:
+                user = await discord.get_bot().fetch_user(discord.get_user_id(context))
+                full_error = traceback.format_exception(exception)
+                msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
+                        + f"```py\n{''.join(full_error[:1500])}\n```"
+                await discord.private_message(discord.get_owner_id(),
+                                                msg_text)
         # pylint: disable-next=broad-exception-caught
         except Exception:
             logger.warning("Couldn't notify owner about command error!")
