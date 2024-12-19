@@ -22,7 +22,8 @@ class DiscordBot(commands.Bot):
     def start_bot(self):
         """Start the discord bot"""
 
-        self.run(os.environ["DISCORD_TOKEN"], log_handler=None)
+        self.run(storage.VolatileStorage["discord_token"], log_handler=None)
+        del storage.VolatileStorage["discord_token"]
 
     async def setup_hook(self) -> None:
         modules_to_load = []
@@ -56,14 +57,14 @@ class DiscordBot(commands.Bot):
             user_command: str = exception.args[0].split('"')[1]
 
             # call help command if command ends with '.help'
-            if user_command.endswith(".help"):
+            if discord.is_cog_loaded("help") and user_command.endswith(".help"):
                 help_cog = self.cogs["Help"]
                 # pylint: disable-next=protected-access
                 answer = help_cog._generate_help_specific_normal(user_command.replace(".help", ""))
                 await context.message.reply(embed=answer)
                 return
 
-            embed = discordpy.Embed(title=f"Command '{user_command}' not found!\n")
+            embed = discordpy.Embed(title=f"Command '{user_command}' not found!", color=discordpy.Color.red())
 
             cmds: list[tuple[commands.Command, int]] = []
             for cmd in self.commands:
@@ -81,16 +82,33 @@ class DiscordBot(commands.Bot):
             await discord.reply(context, embed=embed)
             return
 
+        # command was misused by the user
+        if isinstance(exception, commands.errors.UserInputError):
+            if isinstance(exception, commands.MissingRequiredArgument):
+                required_arg: str = exception.args[0].split(' ', maxsplit=1)[0]
+                embed = discordpy.Embed(title=f"Missing required argument '{required_arg}'!",
+                                        color=discordpy.Color.red())
+                await discord.reply(context, embed=embed)
+                return
+            if isinstance(exception, commands.TooManyArguments):
+                embed = discordpy.Embed(title="Too many arguments!", color=discordpy.Color.red())
+                await discord.reply(context, embed=embed)
+                return
+
         # all other commands
         # message me with the error traceback
         # code from https://stackoverflow.com/a/73706008/15436169
-        if "DEBUG" not in os.environ:
-            user = await discord.get_bot().fetch_user(discord.get_user_id(context))
-            full_error = traceback.format_exception(exception)
-            msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
-                    + f"```py\n{''.join(full_error)}\n```"
-            await discord.private_message(discord.get_owner_id(),
-                                            msg_text)
+        try:
+            if "DEBUG" not in os.environ:
+                user = await discord.get_bot().fetch_user(discord.get_user_id(context))
+                full_error = traceback.format_exception(exception)
+                msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
+                        + f"```py\n{''.join(full_error[:1500])}\n```"
+                await discord.private_message(discord.get_owner_id(),
+                                                msg_text)
+        # pylint: disable-next=broad-exception-caught
+        except Exception:
+            logger.warning("Couldn't notify owner about command error!")
 
         embed = discordpy.Embed(title="An error occured!",
                               color=discordpy.Color.red())

@@ -1,0 +1,17 @@
+{
+    "modules": [
+        "general",
+        "help",
+        "clear",
+        "music",
+        "avatar",
+        "owner",
+        "tc4.tc4",
+        "mal.malnotifier"
+    ],
+    "storage_dir": "./storage",
+    "discord_token": "",
+    "malnotifier": {
+        "client_id": ""
+    }
+}

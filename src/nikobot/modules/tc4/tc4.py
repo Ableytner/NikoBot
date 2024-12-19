@@ -61,6 +61,8 @@ class TC4(commands.Cog):
     async def path(self, ctx: commands.context.Context, aspect_name_1: str, aspect_name_2: str):
         """The shortest path between two aspects"""
 
+        logger.debug(f"Calculating path between {aspect_name_1} and {aspect_name_2}")
+
         aspect_objs = [self._find_aspect(aspect_name_1), self._find_aspect(aspect_name_2)]
         if aspect_objs[0] is None:
             await util.discord.reply(ctx, f"The aspect {aspect_name_1} wasn't found!")

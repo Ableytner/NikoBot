@@ -1,7 +1,6 @@
 """A module containing MyAnimeList-related commands"""
 
 import logging
-import os
 from datetime import datetime, timedelta
 from threading import Thread
 
@@ -35,15 +34,13 @@ class MALNotifier(commands.Cog):
             description="Search for a manga on MyAnimeList",
             command_group=command_group
     )
-    async def manga(self, ctx: commands.context.Context | discordpy.interactions.Interaction, *title: list[str]):
+    async def manga(self, ctx: commands.context.Context | discordpy.interactions.Interaction, title: str):
         """The discord command 'niko.mal.manga'"""
 
-        recombined_title = " ".join(["".join(item) for item in title])
-
-        if recombined_title.isdecimal():
-            mal_id = int(recombined_title)
+        if title.isdecimal():
+            mal_id = int(title)
         else:
-            mal_id = mal_helper.search_for_manga(recombined_title)
+            mal_id = mal_helper.search_for_manga(title)
             if mal_id is None:
                 await util.discord.reply(ctx,
                                         embed=discordpy.Embed(title="Manga not found on MyAnimeList",
@@ -236,8 +233,6 @@ class MALNotifier(commands.Cog):
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
-
-    util.VolatileStorage["mal.CLIENT-ID"] = os.environ["MAL_CLIENT_ID"]
 
     mal_helper._setup()
     manganato_helper._setup()
