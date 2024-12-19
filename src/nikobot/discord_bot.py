@@ -4,7 +4,6 @@ import traceback
 
 import asyncio
 import logging
-import os
 
 import discord as discordpy
 from discord.ext import commands

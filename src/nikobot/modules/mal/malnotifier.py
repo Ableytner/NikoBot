@@ -1,7 +1,6 @@
 """A module containing MyAnimeList-related commands"""
 
 import logging
-import os
 from datetime import datetime, timedelta
 from threading import Thread
 
