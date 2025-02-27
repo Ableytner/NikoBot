@@ -30,6 +30,7 @@ def setup_storages():
 
     keys_to_keep = [
         "storage_file",
+        "config_file",
         "cache_dir",
         "temp_dir",
         "bot",

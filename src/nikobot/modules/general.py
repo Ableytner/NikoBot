@@ -58,11 +58,6 @@ class General(commands.Cog):
 
         await ctx.send("pong")
 
-        self.ctx_hook(ctx)
-
-    def ctx_hook(self, ctx: commands.context.Context):
-        """Provide the ctx for tests that overwrite this method"""
-
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 

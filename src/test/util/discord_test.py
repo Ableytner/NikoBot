@@ -10,6 +10,7 @@ from discord.ext import commands
 
 from nikobot.util import discord, storage
 from nikobot.discord_bot import DiscordBot
+from ..helpers import CTXGrabber
 
 logger = logging.getLogger("test")
 
@@ -46,16 +47,14 @@ def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot):
     testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
     assert testing_channel is not None
 
-    contexts = []
-    def ctx_hook(ctx: commands.context.Context):
-        contexts.append(ctx)
-    bot.cogs["General"].ctx_hook = ctx_hook
+    grabber = CTXGrabber()
+    grabber.wrap_command("ping")
 
     testing_bot.loop.create_task(testing_channel.send("niko.ping"))
 
-    while len(contexts) == 0:
+    while not grabber.is_context_available():
         sleep(1)
-    ctx: commands.context.Context = contexts[0]
+    ctx: commands.context.Context = grabber.get_context()
 
     assert not discord.is_private_channel(ctx)
 
