@@ -207,6 +207,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
     # setup warpping function signature
     # the original signature looks like this:
     # (self, ctx, <some_arg>: <some_type>, <another_arg>: <another_type>)
+    # a concrete example with string args:
+    # (self, ctx, firstname: str, secondname: str, extra: str | None)
     sig = str(inspect.signature(func))
 
     # remove self from args and remove brackets
@@ -216,148 +218,156 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
     # ----------------------------------------------------------------------------------------------------
     # clean up type hints for later replacements
+    # a concrete example with string args:
+    # (self, ctx, firstname: str, secondname: str, extra: str | None)
     for c, arg in enumerate(args):
         arg = arg.strip()
 
         if "None | str" in arg:
             arg = arg.replace("None | str", "str | None")
 
+        if ": str | None" in arg \
+           and ": str | None = None" not in arg:
+            arg = arg.replace(": str | None", ": str | None = None")
+
         args[c] = arg
 
-    valid_strings = [
-        [": str", 0],
-        [": str | None = None", 0]
-    ]
+    # ----------------------------------------------------------------------------------------------------
+    # count number of string arguments
+    # raises an SyntaxError if an optional argument
+    # <some_arg>: str | None
+    # is placed after a required argument
+    # <some_arg>: str
+    num_of_required_string_args = 0
+    num_of_optional_string_args = 0
     for arg in args:
-        # optional parameters can't be placed before required parameters
-        if valid_strings[1][1] > 0 \
-           and valid_strings[1][0] not in arg \
-           and valid_strings[0][0] in arg:
-            raise SyntaxError(f"Command {command_name} contains optional str parameter before required str parameter")
+        if ": str" in arg:
+            if ": str | None = None" in arg:
+                num_of_optional_string_args += 1
+            else:
+                num_of_required_string_args += 1
 
-        if valid_strings[1][0] in arg:
-            valid_strings[1][1] += 1
-        elif valid_strings[0][0] in arg:
-            valid_strings[0][1] += 1
+            # optional parameters can't be placed before required parameters
+            if num_of_optional_string_args > 0 \
+               and ": str | None = None" not in arg:
+                raise SyntaxError(f"Command {command_name} contains optional str parameter before required str parameter")
+
+    num_of_string_args = num_of_required_string_args + num_of_optional_string_args
 
     # ----------------------------------------------------------------------------------------------------
     # replace str type hints
-    num_of_strings = sum((item[1] for item in valid_strings))
-    if num_of_strings > 0:
-        if num_of_strings == 1:
-            for c, arg in enumerate(args):
-                # replace '<some_arg>: str | None = None' with '*<some_arg>: list[str] | None'
-                if ": str | None = None" in arg:
-                    arg = "*" + arg.replace(": str | None = None", ": list[str] | None")
-                # replace '<some_arg>: str' with '*<some_arg>: list[str]'
-                elif ": str" in arg:
-                    arg = "*" + arg.replace(": str", ": list[str]")
+    # a concrete example with string args:
+    # (self, ctx, firstname: str, secondname: str, *extra: list[str] | None)
+    if num_of_string_args > 0:
+        c = len(args)
+        while c > 0:
+            c -= 1
+            arg = args[c]
 
-                args[c] = arg
-        # if multiple str parameters are present, only replace the last one
-        else:
-            arg = args[-1]
-
-            # replace '<some_arg>: str | None = None' with '*<some_arg>: list[str] | None'
+            # replace
+            # <some_arg>: str | None = None
+            # with
+            # *<some_arg>: list[str] | None
             if ": str | None = None" in arg:
                 arg = "*" + arg.replace(": str | None = None", ": list[str] | None")
-            # replace '<some_arg>: str' with '*<some_arg>: list[str]'
+            # replace
+            # <some_arg>: str
+            # with
+            # *<some_arg>: list[str]
             elif ": str" in arg:
                 arg = "*" + arg.replace(": str", ": list[str]")
 
-            args[-1] = arg
+            # if the argument got replaced, break the loop
+            # this way only the last str argument gets replaced
+            if arg != args[c]:
+                args[c] = arg
+                break
+
     sig = ", ".join(args)
 
     # ----------------------------------------------------------------------------------------------------
-    # create wrapping function which recombines string arguments
+    # extract and store all argument names
+    # a concrete example with string args:
+    # (self, ctx, firstname: str, secondname: str, *extra: list[str] | None)
+    # optional_arg_names:      []
+    # required_arg_names:      ["firstname", "secondname"]
+    # optional_final_arg_name: "extra"
+    # required_final_arg_name: None
+    optional_arg_names = re.findall(r"([^ ]+): str \| None", sig)
+    required_arg_names = [arg for arg in re.findall(r"([^ ]+): str", sig) if arg not in optional_arg_names]
+
+    optional_final_arg_name = re.findall(r"\*(.+): list\[str\] \| None", sig) or None
+    required_final_arg_name = re.findall(r"\*(.+): list\[str\]", sig) or None
+    if required_final_arg_name is not None:
+        required_final_arg_name = required_final_arg_name[0]
+    if optional_final_arg_name is not None:
+        optional_final_arg_name = optional_final_arg_name[0]
+        required_final_arg_name = None
+
+    # ----------------------------------------------------------------------------------------------------
+    # initialize wrapping function
+    fakefunc = [f"async def func({sig}):"]
+    fakefunc.append(f"    parts = []")
+
+    # ----------------------------------------------------------------------------------------------------
+    # add all argument values to the parts list (as words, seperated by " ")
+    # the final list looks like this:
+    # parts = ["the", "quick", "brown", "fox", "jumps", "over"]
+    for arg_name in required_arg_names:
+        fakefunc.append(f"    parts.append({arg_name})")
+    for arg_name in optional_arg_names:
+        fakefunc.append(f"    if {arg_name} is not None:")
+        fakefunc.append(f"        parts.append({arg_name})")
+    if required_final_arg_name is not None:
+        fakefunc.append(f"    parts += [''.join(item) for item in {required_final_arg_name}]")
+    if optional_final_arg_name is not None:
+        fakefunc.append(f"    parts += [''.join(item) for item in {optional_final_arg_name} if item is not None]")
+
+    fakefunc.append("    for part in parts:")
+    fakefunc.append("        if not isinstance(part, str):")
+    fakefunc.append("            raise RuntimeError(f'argument {part} is not str in parts: {parts}')")
+
+    # ----------------------------------------------------------------------------------------------------
+    # divide argument values upon all arguments
+    parts_c = 0
     sig_without_types = _remove_type_hints(sig)
 
-    fakefunc = [f"async def func({sig}):"]
+    for arg_name in required_arg_names:
+        fakefunc.append(f"    if {parts_c} < len(parts):")
+        fakefunc.append(f"        {arg_name}_recombined = parts[{parts_c}]")
+        fakefunc.append(f"    else:")
+        fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
 
-    # check if sig contains a string that has to be recombined
-    if num_of_strings == 1:
-        name_matches = re.search(r"\*(.+): list\[str\]", sig)
-        if name_matches is None:
-            raise RuntimeError()
-
-        arg_name = name_matches.group(1)
+        parts_c += 1
 
         sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
-
-        fakefunc.append(f"    if len({arg_name}) > 0:")
-        fakefunc.append(f"        {arg_name}_recombined = ' '.join([''.join(item) for item in {arg_name}])")
+    if required_final_arg_name is not None:
+        fakefunc.append(f"    if {parts_c} < len(parts):")
+        fakefunc.append(f"        {required_final_arg_name}_recombined = ' '.join(parts[{parts_c}:])")
         fakefunc.append(f"    else:")
+        fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{required_final_arg_name}'])")
 
-        if re.search(r"\*(.+): list\[str\] \| None", sig):
-            fakefunc.append(f"        {arg_name}_recombined = None")
-        else:
-            fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
-    elif num_of_strings > 1:
-        # if all str parameters are required
-        if valid_strings[1][1] == 0:
-            arg_names = re.findall(r"([^ ]+): str", sig)
-            arg_names += re.findall(r"\*(.+): list\[str\]", sig)
-            if len(arg_names) != valid_strings[0][1]:
-                raise RuntimeError()
+        parts_c += 1
 
-            fakefunc.append(f"    parts = []")
-            for arg_name in arg_names:
-                if arg_name != arg_names[-1]:
-                    fakefunc.append(f"    parts.append({arg_name})")
-                else:
-                    fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
+        sig_without_types = sig_without_types.replace(f" {required_final_arg_name}", f" {required_final_arg_name}_recombined")
+    for arg_name in optional_arg_names:
+        fakefunc.append(f"    if {parts_c} < len(parts):")
+        fakefunc.append(f"        {arg_name}_recombined = parts[{parts_c}]")
+        fakefunc.append(f"    else:")
+        fakefunc.append(f"        {arg_name}_recombined = None")
 
-            fakefunc.append(f"    if len(parts) > {len(arg_names)}:")
-            fakefunc.append(f"        raise error.TooManyArguments('Command ' + str(ctx.invoked_with)"
-                            + f" + ' received ' + str(len(parts)) + ' arguments, but only expects {len(arg_names)}')")
+        parts_c += 1
 
-            for c, arg_name in enumerate(arg_names):
-                sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
-                fakefunc.append(f"    if {c} >= len(parts):")
-                fakefunc.append(f"        raise error.MissingRequiredArgument(ctx.command.params['{arg_name}'])")
-                fakefunc.append(f"    {arg_name}_recombined = parts[{c}]")
-        # if the last str parameter is optional
-        elif valid_strings[1][1] == 1:
-            arg_names = re.findall(r"([^ ]+): str", sig)
-            arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
-            if len(arg_names) != valid_strings[0][1] + valid_strings[1][1]:
-                raise RuntimeError()
+        sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+    if optional_final_arg_name is not None:
+        fakefunc.append(f"    if {parts_c} < len(parts):")
+        fakefunc.append(f"        {optional_final_arg_name}_recombined = ' '.join(parts[{parts_c}:])")
+        fakefunc.append(f"    else:")
+        fakefunc.append(f"        {optional_final_arg_name}_recombined = None")
 
-            fakefunc.append(f"    parts = []")
-            for arg_name in arg_names:
-                if arg_name != arg_names[-1]:
-                    fakefunc.append(f"    parts.append({arg_name})")
-                else:
-                    fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
+        parts_c += 1
 
-            for c, arg_name in enumerate(arg_names):
-                sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
-                if c < len(arg_names) - 1:
-                    fakefunc.append(f"    if {c} >= len(parts):")
-                    fakefunc.append(f"        raise error.MissingRequiredArgument({arg_name})")
-                    fakefunc.append(f"    {arg_name}_recombined = parts[{c}]")
-                else:
-                    fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:])")
-        # if multiple str parameters are optional
-        else:
-            arg_names = re.findall(r"([^ ]+): str", sig)
-            arg_names += re.findall(r"\*(.+): list\[str\] \| None", sig)
-            if len(arg_names) != valid_strings[0][1] + valid_strings[1][1]:
-                raise RuntimeError(len(arg_names), valid_strings[0][1] + valid_strings[1][1])
-
-            fakefunc.append(f"    parts = []")
-            for arg_name in arg_names:
-                if arg_name != arg_names[-1]:
-                    fakefunc.append(f"    parts.append({arg_name})")
-                else:
-                    fakefunc.append(f"    parts += [''.join(item) for item in {arg_name}]")
-
-            for c, arg_name in enumerate(arg_names):
-                sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
-                if c < len(arg_names) - 1:
-                    fakefunc.append(f"    {arg_name}_recombined = parts[{c}] if len(parts) > {c} else None")
-                else:
-                    fakefunc.append(f"    {arg_name}_recombined = ' '.join(parts[{c}:]) if len(parts) > {c} else None")
+        sig_without_types = sig_without_types.replace(f" {optional_final_arg_name}", f" {optional_final_arg_name}_recombined")
 
     fakefunc.append(f"    return await original_func({sig_without_types})")
 
