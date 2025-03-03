@@ -27,17 +27,16 @@ class DiscordBot(commands.Bot):
         self.run(token, log_handler=None)
 
     async def setup_hook(self) -> None:
-        modules_to_load = []
+        storage.VolatileStorage["modules"] = []
+
         if "modules_to_load" in storage.VolatileStorage:
             modules_to_load = storage.VolatileStorage["modules_to_load"]
             del storage.VolatileStorage["modules_to_load"]
 
-        storage.VolatileStorage["modules"] = []
-
-        for module in modules_to_load:
-            logger.info(f"Loading module {module}")
-            await self.load_extension(f"nikobot.modules.{module}")
-            storage.VolatileStorage["modules"].append(module)
+            for module in modules_to_load:
+                logger.info(f"Loading module {module}")
+                await self.load_extension(f"nikobot.modules.{module}")
+                storage.VolatileStorage["modules"].append(module)
 
     async def on_ready(self):
         """Method called when the bot is ready"""

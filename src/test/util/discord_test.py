@@ -6,6 +6,7 @@ import inspect
 import logging
 from time import sleep
 
+import pytest
 from discord.ext import commands
 
 from nikobot.util import discord, storage
@@ -23,23 +24,41 @@ def test_wrap_function_for_normal_command():
         pass
     def func3(self, ctx, username: str):
         pass
-
+    def func4(self, ctx, firstname: str, lastname: str | None):
+        pass
+    def func5(self, ctx, firstname: str, lastname: str):
+        pass
     functions = [
         func1,
         func2,
-        func3
+        func3,
+        func4,
+        func5
     ]
     signatures = [
         "(ctx, name_arg: str, price: float, *values: list[str])",
         "(ctx, *changes: list[int])",
-        "(ctx, *username: list[str])"
+        "(ctx, *username: list[str])",
+        "(ctx, firstname: str, *lastname: list[str] | None)",
+        "(ctx, firstname: str, *lastname: list[str])"
     ]
-
     for c, test_func in enumerate(functions):
         wrapped = discord._wrap_function_for_normal_command("example_command", test_func)
         assert wrapped is not None
         wrapped_sig = str(inspect.signature(wrapped))
         assert wrapped_sig == signatures[c]
+
+    def ffunc1(self, ctx, name_arg: str | None, value: str):
+        pass
+    def ffunc2(self, ctx, value: str, value2: str, name_arg: str | None, value3: str):
+        pass
+    functions = [
+        ffunc1,
+        ffunc2
+    ]
+    for c, test_func in enumerate(functions):
+        with pytest.raises(SyntaxError):
+            discord._wrap_function_for_normal_command("example_command", test_func)
 
 def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot):
     """Test the discord.is_private_channel() method"""

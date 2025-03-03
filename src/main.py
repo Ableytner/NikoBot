@@ -28,6 +28,9 @@ from nikobot.discord_bot import DiscordBot
 # create command to set manga provider url
 # fix manganato search for: oshi no ko, solo leveling
 # create command to list manga with reading status
+# add lock for threaded Storage access
+# replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
+# support multiple optional str args in normal commands
 
 if __name__ == "__main__":
     # https://stackoverflow.com/a/4480202/15436169
