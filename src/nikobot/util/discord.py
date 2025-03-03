@@ -250,7 +250,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
             # optional parameters can't be placed before required parameters
             if num_of_optional_string_args > 0 \
                and ": str | None = None" not in arg:
-                raise SyntaxError(f"Command {command_name} contains optional str parameter before required str parameter")
+                raise SyntaxError(f"Command {command_name} contains optional str"
+                                  + " parameter before required str parameter")
 
     num_of_string_args = num_of_required_string_args + num_of_optional_string_args
 
@@ -340,7 +341,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
         parts_c += 1
 
-        sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+        sig_without_types = sig_without_types.replace(f" {arg_name}",
+                                                      f" {arg_name}_recombined")
     if required_final_arg_name is not None:
         fakefunc.append(f"    if {parts_c} < len(parts):")
         fakefunc.append(f"        {required_final_arg_name}_recombined = ' '.join(parts[{parts_c}:])")
@@ -349,7 +351,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
         parts_c += 1
 
-        sig_without_types = sig_without_types.replace(f" {required_final_arg_name}", f" {required_final_arg_name}_recombined")
+        sig_without_types = sig_without_types.replace(f" {required_final_arg_name}",
+                                                      f" {required_final_arg_name}_recombined")
     for arg_name in optional_arg_names:
         fakefunc.append(f"    if {parts_c} < len(parts):")
         fakefunc.append(f"        {arg_name}_recombined = parts[{parts_c}]")
@@ -358,7 +361,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
         parts_c += 1
 
-        sig_without_types = sig_without_types.replace(f" {arg_name}", f" {arg_name}_recombined")
+        sig_without_types = sig_without_types.replace(f" {arg_name}",
+                                                      f" {arg_name}_recombined")
     if optional_final_arg_name is not None:
         fakefunc.append(f"    if {parts_c} < len(parts):")
         fakefunc.append(f"        {optional_final_arg_name}_recombined = ' '.join(parts[{parts_c}:])")
@@ -367,7 +371,8 @@ def _wrap_function_for_normal_command(command_name: str, func: typing.Callable) 
 
         parts_c += 1
 
-        sig_without_types = sig_without_types.replace(f" {optional_final_arg_name}", f" {optional_final_arg_name}_recombined")
+        sig_without_types = sig_without_types.replace(f" {optional_final_arg_name}",
+                                                      f" {optional_final_arg_name}_recombined")
 
     fakefunc.append(f"    return await original_func({sig_without_types})")
 
