@@ -33,7 +33,8 @@ disable=too-many-arguments,
         too-many-positional-arguments,
         logging-fstring-interpolation,
         logging-not-lazy,
-        too-many-branches
+        too-many-branches,
+        too-many-locals
 
 [FORMAT]
 
