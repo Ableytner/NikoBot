@@ -4,12 +4,12 @@
 
 import inspect
 import logging
-from time import sleep
 
 import pytest
+import discord as discordpy
 from discord.ext import commands
 
-from nikobot.util import discord, storage
+from nikobot.util import discord, general, storage
 from nikobot.discord_bot import DiscordBot
 from ..helpers import CTXGrabber
 
@@ -60,24 +60,94 @@ def test_wrap_function_for_normal_command():
         with pytest.raises(SyntaxError):
             discord._wrap_function_for_normal_command("example_command", test_func)
 
-def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot):
-    """Test the discord.is_private_channel() method"""
+def test_is_cog_loaded(bot: DiscordBot):
+    """Test the discord.is_cog_loaded() method"""
+
+    assert discord.is_cog_loaded("help")
+    assert discord.is_cog_loaded("owner")
+    assert not discord.is_cog_loaded("invalid")
+
+def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
+    """
+    Test the discord.is_private_channel() method
+    We cannot test if is_private_channel actually returns True in private channels
+    because private messages between discord bots aren't allowed
+    """
 
     testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
     assert testing_channel is not None
 
-    grabber = CTXGrabber()
-    grabber.wrap_command("ping")
+    ctx_grabber.wrap_command("ping")
 
-    testing_bot.loop.create_task(testing_channel.send("niko.ping"))
+    general.sync(testing_channel.send("niko.ping"), testing_bot.loop)
 
-    while not grabber.is_context_available():
-        sleep(1)
-    ctx: commands.context.Context = grabber.get_context()
+    ctx: commands.context.Context = ctx_grabber.get_context(30)
+    assert ctx is not None
 
     assert not discord.is_private_channel(ctx)
 
-    # cannot test if is_private_channel actually returns true
-    # because private messages between discord bots aren't allowed
+def test_is_slash_command(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
+    """
+    Test the discord.is_slash_command() method
+    We cannot test if is_slash_command actually returns False for slash commands
+    because discord bots can't initiate them
+    """
 
-# def test_is_slash_command
+    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    assert testing_channel is not None
+
+    ctx_grabber.wrap_command("ping")
+
+    general.sync(testing_channel.send("niko.ping"), testing_bot.loop)
+
+    ctx: commands.context.Context = ctx_grabber.get_context(30)
+    assert ctx is not None
+
+    assert not discord.is_slash_command(ctx)
+
+def test_is_sent_by_owner(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
+    """
+    Test the discord.is_sent_by_owner() method
+    We cannot test if is_sent_by_owner actually returns True
+    because the discord bot doesn't own the other bot
+    """
+
+    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    assert testing_channel is not None
+
+    ctx_grabber.wrap_command("ping")
+
+    general.sync(testing_channel.send("niko.ping"), testing_bot.loop)
+
+    ctx: commands.context.Context = ctx_grabber.get_context(30)
+    assert ctx is not None
+
+    assert not discord.is_sent_by_owner(ctx)
+
+def test_parse_user(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
+    """Test the discord.parse_user() method"""
+
+    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    assert testing_channel is not None
+
+    ctx_grabber.wrap_command("ping")
+
+    general.sync(testing_channel.send("niko.ping"), testing_bot.loop)
+
+    ctx: commands.context.Context = ctx_grabber.get_context(30)
+    assert ctx is not None
+
+    user: discordpy.Member = general.sync(discord.parse_user(ctx, "ableytner"))
+    assert user.id == 650587171375284226
+
+    user: discordpy.Member = general.sync(discord.parse_user(ctx, "Ableytner"))
+    assert user.id == 650587171375284226
+
+    user: discordpy.Member = general.sync(discord.parse_user(ctx, "\"Ableytner\""))
+    assert user.id == 650587171375284226
+
+    user: discordpy.Member = general.sync(discord.parse_user(ctx, 650587171375284226))
+    assert user.id == 650587171375284226
+
+    user: discordpy.Member = general.sync(discord.parse_user(ctx, None))
+    assert user is None
