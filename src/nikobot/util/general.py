@@ -1,9 +1,24 @@
 """General non-discord specific help functions"""
 
-from discord.ext import commands
+import asyncio
+from typing import Any
+
 import numpy
 
-bot: commands.Bot | None = None
+from nikobot.util import storage
+
+def sync(coro, loop: asyncio.AbstractEventLoop = None) -> Any:
+    """
+    Run an async coroutine synchronously
+    If no event loop is provided, use the bot's loop
+    """
+
+    if loop is None:
+        bot = storage.VolatileStorage["bot"]
+        loop = bot.loop
+
+    fut = asyncio.run_coroutine_threadsafe(coro, loop)
+    return fut.result()
 
 def levenshtein_distance(token1: str, token2: str) -> int:
     """

@@ -62,4 +62,4 @@ shutil.rmtree(storage.VolatileStorage["temp_dir"], ignore_errors=True)
 os.makedirs(storage.VolatileStorage["temp_dir"], exist_ok=True)
 
 # pylint: disable-next=unused-import
-from .fixtures import setup_storages, bot, testing_bot
+from .fixtures import setup_storages, bot, testing_bot, ctx_grabber

@@ -2,7 +2,6 @@
 
 import traceback
 
-import asyncio
 import logging
 import os
 
@@ -119,9 +118,3 @@ class DiscordBot(commands.Bot):
             await discord.reply(context, embed=embed)
 
         return await super().on_command_error(context, exception)
-
-    def send_to_channel(self, channel_id: int, text: str) -> discordpy.Message:
-        """Send the given text to the given channel"""
-
-        send_fut = asyncio.run_coroutine_threadsafe(self.get_channel(channel_id).send(text), self.loop)
-        return send_fut.result()

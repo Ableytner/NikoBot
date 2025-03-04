@@ -4,7 +4,6 @@
 
 # pylint: disable=protected-access, missing-class-docstring
 
-import asyncio
 import json
 import logging
 import os
@@ -18,7 +17,8 @@ import pytest
 from discord.ext import commands
 
 from nikobot.discord_bot import DiscordBot
-from nikobot.util import storage
+from nikobot.util import general, storage
+from .helpers import CTXGrabber
 
 logger = logging.getLogger("test")
 
@@ -121,8 +121,7 @@ def bot():
     yield bot_obj
 
     # stop discord bot after session ends
-    send_fut = asyncio.run_coroutine_threadsafe(bot_obj.close(), bot_obj.loop)
-    send_fut.result()
+    general.sync(bot_obj.close(), bot_obj.loop)
 
 @pytest.fixture(scope="session")
 def testing_bot():
@@ -174,5 +173,20 @@ def testing_bot():
     yield bot_obj
 
     # stop discord bot after session ends
-    send_fut = asyncio.run_coroutine_threadsafe(bot_obj.close(), bot_obj.loop)
-    send_fut.result()
+    general.sync(bot_obj.close(), bot_obj.loop)
+
+@pytest.fixture(scope="function")
+def ctx_grabber():
+    """Setup a CTXGrabber instance that cleans up after the test"""
+
+    grabber = CTXGrabber()
+
+    try:
+        yield grabber
+    except Exception as e:
+        try:
+            grabber.unwrap_command()
+        except:
+            pass
+
+        raise e

@@ -1,6 +1,5 @@
 """Module containing general functionality which works for both 'normal' text commands and slash commands"""
 
-import asyncio
 import functools
 import inspect
 import logging
@@ -11,7 +10,7 @@ import discord as discordpy
 from discord import app_commands
 from discord.ext import commands
 
-from . import error
+from . import error, general
 from .storage import VolatileStorage
 
 logger = logging.getLogger("core")
@@ -470,10 +469,10 @@ def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Inte
     This is really only used for testing
     """
 
-    if is_slash_command(ctx):
-        return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.user), get_bot().loop)
+    if not is_slash_command(ctx):
+        return general.sync(get_bot().is_owner(ctx.author))
 
-    return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.author), get_bot().loop)
+    return general.sync(get_bot().is_owner(ctx.user))
 
 async def reply(ctx: commands.context.Context | discordpy.interactions.Interaction, *args, **kwargs) \
           -> discordpy.Message | discordpy.interactions.InteractionMessage:
@@ -491,6 +490,16 @@ async def reply(ctx: commands.context.Context | discordpy.interactions.Interacti
 
     await ctx.response.send_message(*args, **kwargs)
     return await ctx.original_response()
+
+async def channel_message(channel_id: int, *args, **kwargs) -> discordpy.Message:
+    """
+    Send the given text to the given channel
+    
+    The ``args`` and ``kwargs`` are passed on as-is
+    """
+
+    channel = get_bot().get_channel(channel_id)
+    return channel.send(*args, **kwargs)
 
 async def private_message(user_id: int, *args, **kwargs) \
           -> discordpy.Message | discordpy.interactions.InteractionMessage:
