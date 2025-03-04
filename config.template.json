@@ -11,6 +11,11 @@
     ],
     "storage_dir": "./storage",
     "discord_token": "",
+    "test": {
+        "discord_token_testbot": "",
+        "discord_token_helperbot": "",
+        "test_channel_id": ""
+    },
     "malnotifier": {
         "client_id": ""
     }

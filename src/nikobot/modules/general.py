@@ -16,7 +16,8 @@ class General(commands.Cog):
         """
         Return the gesture
         
-        This is the most basic command that should work no matter what
+        This is the most basic command that should work no matter what.
+        It doesn't even use any custom command registration.
         """
 
         await ctx.send("UwU")
@@ -47,6 +48,15 @@ class General(commands.Cog):
         if arg5 is not None:
             embed.add_field(name="arg5", value=arg5)
         await discord.reply(ctx, embed=embed)
+
+    @discord.normal_command(
+        "ping",
+        "Send ping to the bot, which responds with pong"
+    )
+    async def ping(self, ctx: commands.context.Context):
+        """Send back pong"""
+
+        await ctx.send("pong")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""

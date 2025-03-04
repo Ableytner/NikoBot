@@ -1,6 +1,8 @@
 [MASTER]
 
-ignore=tests
+init-hook="from pylint.config import find_default_config_files; import os, sys; sys.path.append(f'{os.path.dirname(next(find_default_config_files()))}/src')"
+
+# ignore=test
 
 [MESSAGES CONTROL]
 

@@ -24,7 +24,7 @@ class Help(commands.Cog):
         If a command_name is given, display help about the command or module
         """
 
-        sent_by_owner = util.discord.is_sent_by_owner(ctx)
+        sent_by_owner = await util.discord.is_sent_by_owner(ctx)
 
         if command_name is None:
             if util.discord.is_slash_command(ctx):

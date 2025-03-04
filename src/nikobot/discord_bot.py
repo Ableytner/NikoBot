@@ -2,8 +2,8 @@
 
 import traceback
 
-import asyncio
 import logging
+import os
 
 import discord as discordpy
 from discord.ext import commands
@@ -21,21 +21,21 @@ class DiscordBot(commands.Bot):
     def start_bot(self):
         """Start the discord bot"""
 
-        self.run(storage.VolatileStorage["discord_token"], log_handler=None)
+        token = storage.VolatileStorage["discord_token"]
         del storage.VolatileStorage["discord_token"]
+        self.run(token, log_handler=None)
 
     async def setup_hook(self) -> None:
-        modules_to_load = []
+        storage.VolatileStorage["modules"] = []
+
         if "modules_to_load" in storage.VolatileStorage:
             modules_to_load = storage.VolatileStorage["modules_to_load"]
             del storage.VolatileStorage["modules_to_load"]
 
-        storage.VolatileStorage["modules"] = []
-
-        for module in modules_to_load:
-            await self.load_extension(f"nikobot.modules.{module}")
-            storage.VolatileStorage["modules"].append(module)
-            logger.info(f"Loaded module {module}")
+            for module in modules_to_load:
+                logger.info(f"Loading module {module}")
+                await self.load_extension(f"nikobot.modules.{module}")
+                storage.VolatileStorage["modules"].append(module)
 
     async def on_ready(self):
         """Method called when the bot is ready"""
@@ -95,14 +95,16 @@ class DiscordBot(commands.Bot):
                 return
 
         # all other commands
+        # message me with the error traceback
         # code from https://stackoverflow.com/a/73706008/15436169
         try:
-            user = await discord.get_bot().fetch_user(discord.get_user_id(context))
-            full_error = traceback.format_exception(exception)
-            msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
-                    + f"```py\n{''.join(full_error[:1500])}\n```"
-            await discord.private_message(discord.get_owner_id(),
-                                            msg_text)
+            if "DEBUG" not in os.environ:
+                user = await discord.get_bot().fetch_user(discord.get_user_id(context))
+                full_error = traceback.format_exception(exception)
+                msg_text = f"User {user} used command {discord.get_command_name(context)}:\n" \
+                        + f"```py\n{''.join(full_error[:1500])}\n```"
+                await discord.private_message(discord.get_owner_id(),
+                                                msg_text)
         # pylint: disable-next=broad-exception-caught
         except Exception:
             logger.warning("Couldn't notify owner about command error!")
@@ -116,9 +118,3 @@ class DiscordBot(commands.Bot):
             await discord.reply(context, embed=embed)
 
         return await super().on_command_error(context, exception)
-
-    def send_to_channel(self, channel_id: int, text: str) -> discordpy.Message:
-        """Send the given text to the given channel"""
-
-        send_fut = asyncio.run_coroutine_threadsafe(self.get_channel(channel_id).send(text), self.loop)
-        return send_fut.result()
