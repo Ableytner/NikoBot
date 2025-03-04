@@ -37,11 +37,11 @@ jobs:
         DISCORD_TOKEN_TESTBOT: ${{ secrets.DISCORD_TOKEN_TESTBOT }}
         TEST_CHANNEL_ID: ${{ secrets.TEST_CHANNEL_ID }}
       run: |
-        cat config.template.json
-        | sed 's/"discord_token_testbot": ""/"discord_token_testbot": "${{ env.DISCORD_TOKEN_TESTBOT }}"/g'
-        | sed 's/"discord_token_helperbot": ""/"discord_token_helperbot": "${{ env.DISCORD_TOKEN_HELPERBOT }}"/g'
-        | sed 's/"test_channel_id": ""/"test_channel_id": "${{ env.TEST_CHANNEL_ID }}"/g'
-        | sed 's/"client_id": ""/"client_id": "${{ env.CLIENT_ID }}"/g'
+        cat config.template.json \
+        | sed 's/"discord_token_testbot": ""/"discord_token_testbot": "${{ env.DISCORD_TOKEN_TESTBOT }}"/g' \
+        | sed 's/"discord_token_helperbot": ""/"discord_token_helperbot": "${{ env.DISCORD_TOKEN_HELPERBOT }}"/g' \
+        | sed 's/"test_channel_id": ""/"test_channel_id": "${{ env.TEST_CHANNEL_ID }}"/g' \
+        | sed 's/"client_id": ""/"client_id": "${{ env.CLIENT_ID }}"/g' \
         > config.json
     - name: Run tests with pytest
       run: |
