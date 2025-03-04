@@ -122,7 +122,7 @@ def test_is_sent_by_owner(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber:
     ctx: commands.context.Context = ctx_grabber.get_context(30)
     assert ctx is not None
 
-    assert not discord.is_sent_by_owner(ctx)
+    assert not general.sync(discord.is_sent_by_owner(ctx))
 
 def test_parse_user(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
     """Test the discord.parse_user() method"""

@@ -10,7 +10,7 @@ import discord as discordpy
 from discord import app_commands
 from discord.ext import commands
 
-from . import error, general
+from . import error
 from .storage import VolatileStorage
 
 logger = logging.getLogger("core")
@@ -462,7 +462,7 @@ def is_slash_command(ctx: commands.context.Context | discordpy.interactions.Inte
 
     raise TypeError(f"Unknown context type {type(ctx)}")
 
-def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
+async def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """
     Checks whether the message related to the ``ctx`` is sent by one of the bot's owners
     
@@ -470,9 +470,9 @@ def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Inte
     """
 
     if not is_slash_command(ctx):
-        return general.sync(get_bot().is_owner(ctx.author))
+        return await get_bot().is_owner(ctx.author)
 
-    return general.sync(get_bot().is_owner(ctx.user))
+    return await get_bot().is_owner(ctx.user)
 
 async def reply(ctx: commands.context.Context | discordpy.interactions.Interaction, *args, **kwargs) \
           -> discordpy.Message | discordpy.interactions.InteractionMessage:

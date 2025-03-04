@@ -22,7 +22,6 @@ from nikobot.discord_bot import DiscordBot
 # combine some parts of the mcserver-tools bot and roxy waifu bot
 # fix /tc4 path
 # write response message if argument is missing (implement in command_failed)
-# tests (maybe with a second discord bot for testing purposes)
 # add README
 # create sing module with all music commands
 # create command to set manga provider url
@@ -30,7 +29,6 @@ from nikobot.discord_bot import DiscordBot
 # create command to list manga with reading status
 # add lock for threaded Storage access
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
-# support multiple optional str args in normal commands
 
 if __name__ == "__main__":
     # https://stackoverflow.com/a/4480202/15436169
