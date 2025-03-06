@@ -12,6 +12,7 @@ def setup():
     """Setup the log handlers"""
 
     if "DEBUG" in os.environ:
+        # pylint: disable-next=global-statement
         global LOG_LEVEL
         LOG_LEVEL = logging.DEBUG
 
