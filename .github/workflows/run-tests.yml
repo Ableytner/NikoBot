@@ -16,6 +16,7 @@ jobs:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
   pytest:
+    needs: [pylint]
     strategy:
       matrix:
         python-version: ["3.10", "3.12"]

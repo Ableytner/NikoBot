@@ -124,6 +124,24 @@ def test_is_sent_by_owner(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber:
 
     assert not general.sync(discord.is_sent_by_owner(ctx))
 
+def test_channel_message(bot: DiscordBot, testing_bot: DiscordBot):
+    """Test the discord.channel_message() method"""
+
+    general.sync(discord.channel_message(storage.StorageView["test_channel_id"], content="the message content"))
+
+    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    assert testing_channel is not None
+
+    async def get_last_message():
+        async for message in testing_channel.history(limit=1):
+            return message
+        raise ValueError()
+    
+    last_message: discordpy.Message = general.sync(get_last_message(), testing_bot.loop)
+    assert last_message is not None
+
+    assert last_message.content == "the message content"
+
 def test_parse_user(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
     """Test the discord.parse_user() method"""
 

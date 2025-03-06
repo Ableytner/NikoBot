@@ -499,7 +499,7 @@ async def channel_message(channel_id: int, *args, **kwargs) -> discordpy.Message
     """
 
     channel = get_bot().get_channel(channel_id)
-    return channel.send(*args, **kwargs)
+    return await channel.send(*args, **kwargs)
 
 async def private_message(user_id: int, *args, **kwargs) \
           -> discordpy.Message | discordpy.interactions.InteractionMessage:
