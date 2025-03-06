@@ -118,10 +118,21 @@ def bot():
         logger.info("waiting for bot to start...")
         sleep(1)
 
-    yield bot_obj
+    exc = None
+    try:
+        yield bot_obj
+    # pylint: disable-next=broad-exception-caught
+    except Exception as e:
+        exc = e
 
-    # stop discord bot after session ends
-    general.sync(bot_obj.close(), bot_obj.loop)
+    try:
+        # stop discord bot after session ends
+        general.sync(bot_obj.close(), bot_obj.loop)
+    except:
+        pass
+
+    if exc is not None:
+        raise exc
 
 @pytest.fixture(scope="session")
 def testing_bot():
@@ -170,10 +181,21 @@ def testing_bot():
         logger.info("waiting for testing bot to start...")
         sleep(1)
 
-    yield bot_obj
+    exc = None
+    try:
+        yield bot_obj
+    # pylint: disable-next=broad-exception-caught
+    except Exception as e:
+        exc = e
 
-    # stop discord bot after session ends
-    general.sync(bot_obj.close(), bot_obj.loop)
+    try:
+        # stop discord bot after session ends
+        general.sync(bot_obj.close(), bot_obj.loop)
+    except:
+        pass
+
+    if exc is not None:
+        raise exc
 
 @pytest.fixture(scope="function")
 def ctx_grabber():
@@ -181,12 +203,17 @@ def ctx_grabber():
 
     grabber = CTXGrabber()
 
+    exc = None
     try:
         yield grabber
+    # pylint: disable-next=broad-exception-caught
     except Exception as e:
-        try:
-            grabber.unwrap_command()
-        except:
-            pass
+        exc = e
 
-        raise e
+    try:
+        grabber.unwrap_command()
+    except:
+        pass
+
+    if exc is not None:
+        raise exc
