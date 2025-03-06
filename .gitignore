@@ -3,8 +3,10 @@
 *\.vscode
 *\venv
 *\storage
+*\test_run
 *.pyc
 *.db
 config.json
 latest.log
+test.log
 perf_*.txt

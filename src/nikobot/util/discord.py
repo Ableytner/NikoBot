@@ -1,6 +1,5 @@
 """Module containing general functionality which works for both 'normal' text commands and slash commands"""
 
-import asyncio
 import functools
 import inspect
 import logging
@@ -81,11 +80,8 @@ def normal_command(name: str, description: str, hidden: str = False):
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
-        if get_bot() is None:
-            raise ValueError("bot variable is not yet set")
-
         # for some reason the decorator gets called twice for every command
-        # so we skip registratin an already existing command
+        # so we skip registrating an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
 #           logger.warning(f"Command {name} is already registered, skipping...")
             return wrapper
@@ -123,11 +119,8 @@ def hybrid_command(name: str, description: str):
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
-        if get_bot() is None:
-            raise ValueError("bot variable is not yet set")
-
         # for some reason the decorator gets called twice for every command
-        # so we skip registratin an already existing command
+        # so we skip registrating an already existing command
         if name in [item.name for item in list(get_bot().commands)]:
 #           logger.warning(f"Command {name} is already registered, skipping...")
             return wrapper
@@ -164,9 +157,6 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
-        if get_bot() is None:
-            raise ValueError("bot variable is not yet set")
-
         # for some reason the decorator gets called twice for every command
         # so we skip registratin an already existing command
         if f"{command_group.name}.{name}" in [item.name for item in list(get_bot().commands)]:
@@ -186,7 +176,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             description=description
         )(_wrap_function_for_slash_command(f"{command_group.name}.{name}", wrapper))
 
-        # register group of not yet registered
+        # register command group if not yet registered
         try:
             get_bot().tree.add_command(command_group)
         except discordpy.app_commands.CommandAlreadyRegistered:
@@ -472,17 +462,17 @@ def is_slash_command(ctx: commands.context.Context | discordpy.interactions.Inte
 
     raise TypeError(f"Unknown context type {type(ctx)}")
 
-def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
+async def is_sent_by_owner(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """
     Checks whether the message related to the ``ctx`` is sent by one of the bot's owners
     
     This is really only used for testing
     """
 
-    if is_slash_command(ctx):
-        return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.user), get_bot().loop)
+    if not is_slash_command(ctx):
+        return await get_bot().is_owner(ctx.author)
 
-    return asyncio.run_coroutine_threadsafe(get_bot().is_owner(ctx.author), get_bot().loop)
+    return await get_bot().is_owner(ctx.user)
 
 async def reply(ctx: commands.context.Context | discordpy.interactions.Interaction, *args, **kwargs) \
           -> discordpy.Message | discordpy.interactions.InteractionMessage:
@@ -500,6 +490,16 @@ async def reply(ctx: commands.context.Context | discordpy.interactions.Interacti
 
     await ctx.response.send_message(*args, **kwargs)
     return await ctx.original_response()
+
+async def channel_message(channel_id: int, *args, **kwargs) -> discordpy.Message:
+    """
+    Send the given text to the given channel
+    
+    The ``args`` and ``kwargs`` are passed on as-is
+    """
+
+    channel = get_bot().get_channel(channel_id)
+    return await channel.send(*args, **kwargs)
 
 async def private_message(user_id: int, *args, **kwargs) \
           -> discordpy.Message | discordpy.interactions.InteractionMessage:

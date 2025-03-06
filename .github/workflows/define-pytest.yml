@@ -1,0 +1,48 @@
+name: Define Pytest
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        required: true
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  pytest:
+    runs-on:
+      - ${{ matrix.os }}
+      - self-hosted
+    strategy:
+      matrix:
+        os: [Linux]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ inputs.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pylint
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+    - name: Setup config.json
+      env:
+        CLIENT_ID: ${{ secrets.CLIENT_ID }}
+        DISCORD_TOKEN_HELPERBOT: ${{ secrets.DISCORD_TOKEN_HELPERBOT }}
+        DISCORD_TOKEN_TESTBOT: ${{ secrets.DISCORD_TOKEN_TESTBOT }}
+        TEST_CHANNEL_ID: ${{ secrets.TEST_CHANNEL_ID }}
+      run: |
+        cat config.template.json \
+        | sed 's/"discord_token_testbot": ""/"discord_token_testbot": "${{ env.DISCORD_TOKEN_TESTBOT }}"/g' \
+        | sed 's/"discord_token_helperbot": ""/"discord_token_helperbot": "${{ env.DISCORD_TOKEN_HELPERBOT }}"/g' \
+        | sed 's/"test_channel_id": ""/"test_channel_id": "${{ env.TEST_CHANNEL_ID }}"/g' \
+        | sed 's/"client_id": ""/"client_id": "${{ env.CLIENT_ID }}"/g' \
+        > config.json
+    - name: Run tests with pytest
+      run: |
+        pytest src
