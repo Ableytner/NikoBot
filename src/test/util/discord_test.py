@@ -136,7 +136,7 @@ def test_channel_message(bot: DiscordBot, testing_bot: DiscordBot):
         async for message in testing_channel.history(limit=1):
             return message
         raise ValueError()
-    
+
     last_message: discordpy.Message = general.sync(get_last_message(), testing_bot.loop)
     assert last_message is not None
 
