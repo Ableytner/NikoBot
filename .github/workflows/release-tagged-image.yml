@@ -3,7 +3,7 @@ name: Release tagged image
 on: [workflow_dispatch]
 
 env:
-  CURRENT_VERSION: 0.0.10
+  CURRENT_VERSION: 0.1.0
 
 defaults:
   run:
