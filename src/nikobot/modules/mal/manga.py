@@ -85,7 +85,7 @@ class Manga():
         if "provider" in export \
            and "provider_url" in export \
            and export["provider"] != MangaProvider.MANGANATO.name:
-                manga.set_manga_provider(MangaProvider[export["provider"]], export["provider_url"])
+            manga.set_manga_provider(MangaProvider[export["provider"]], export["provider_url"])
         if "chapters_last_notified" in export:
             manga._chapters_last_notified = export["chapters_last_notified"]
 

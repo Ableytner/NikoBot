@@ -60,7 +60,10 @@ def get_manga_url(titles: str | list[str]) -> str | None:
         found_titles = []
         for item in title_objects:
             found_title_obj = item.find("a", href=True)
-            found_titles.append((util.general.levenshtein_distance(found_title_obj.contents[0], title), found_title_obj["href"]))
+            found_titles.append((
+                util.general.levenshtein_distance(found_title_obj.contents[0], title),
+                found_title_obj["href"]
+            ))
 
         found_titles.sort(key=lambda x: x[0])
         for c, item in enumerate(found_titles):
