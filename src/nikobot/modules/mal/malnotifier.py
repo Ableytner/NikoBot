@@ -190,7 +190,7 @@ class MALNotifier(commands.Cog):
             if not isinstance(manga, Manga): raise TypeError()
 
             if manga._time_next_notify < datetime.now():
-                await self.notify_manga(int(user_id), manga)
+                await self.notify_manga(user_id, manga)
 
         maluser.save_to_storage()
 
