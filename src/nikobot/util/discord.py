@@ -509,7 +509,7 @@ async def private_message(user_id: int, *args, **kwargs) \
     The ``args`` and ``kwargs`` are passed on as-is
     """
 
-    user = get_bot().get_user(user_id)
+    user = await get_bot().fetch_user(user_id)
     if user is None:
         raise error.UserNotFound()
 
@@ -549,7 +549,7 @@ async def parse_user(ctx: commands.context.Context | discordpy.interactions.Inte
         pass
 
     try:
-        user: discordpy.user.User = get_bot().get_user(int(user))
+        user: discordpy.user.User = await get_bot().fetch_user(int(user))
         return user
     except:
         pass

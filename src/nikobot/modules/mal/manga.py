@@ -11,7 +11,7 @@ import requests
 from PIL import Image
 from discord import Embed, File
 
-from . import error, mal_helper, manganato_helper
+from . import error, mal_helper, manganato_helper, natomanga_helper
 from .chapter import Chapter
 from ... import util
 
@@ -24,7 +24,8 @@ class MangaProvider(Enum):
     These are websites which provide manga chapters
     """
 
-    MANGANATO = "manganato"
+    MANGANATO = "manganato" # manganato.com is down, don't use it
+    NATOMANGA = "natomanga"
 
 class Manga():
     """
@@ -72,8 +73,6 @@ class Manga():
 
         if not isinstance(export["mal_id"], int):
             raise TypeError()
-        if not isinstance(export["time_next_notify"], float):
-            raise TypeError()
         if "provider" in export and not isinstance(export["provider"], str):
             raise TypeError()
         if "provider_url" in export and not isinstance(export["provider_url"], str):
@@ -83,10 +82,10 @@ class Manga():
 
         manga = Manga.from_mal_id(export["mal_id"])
 
-        manga._time_next_notify = datetime.fromtimestamp(export["time_next_notify"])
         if "provider" in export \
-           and "provider_url" in export:
-            manga.set_manga_provider(MangaProvider[export["provider"]], export["provider_url"])
+           and "provider_url" in export \
+           and export["provider"] != MangaProvider.MANGANATO.name:
+                manga.set_manga_provider(MangaProvider[export["provider"]], export["provider_url"])
         if "chapters_last_notified" in export:
             manga._chapters_last_notified = export["chapters_last_notified"]
 
@@ -114,8 +113,7 @@ class Manga():
         """Create a dictionary which is JSON-compliant and can be used to recreate this exact Manga"""
 
         export_data = {
-            "mal_id": self.mal_id,
-            "time_next_notify": self._time_next_notify.timestamp()
+            "mal_id": self.mal_id
         }
         if self._manga_provider is not None \
            and self._manga_provider_url is not None:
@@ -135,11 +133,12 @@ class Manga():
         if self._manga_provider is not None:
             self._fetch_chapters()
         else:
-            manga_url = manganato_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
+            manga_url = natomanga_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
             if manga_url is None:
                 logger.warning(f"Manga {self.mal_id} could not be found automatically")
                 return False
-            self.set_manga_provider(MangaProvider.MANGANATO, manga_url)
+
+            self.set_manga_provider(MangaProvider.NATOMANGA, manga_url)
 
             try:
                 self._fetch_chapters()
@@ -147,6 +146,7 @@ class Manga():
                 # reset manga_provider if fetching didn't work
                 self.set_manga_provider(None, None)
                 raise e
+
         return True
 
     def _fetch_chapters(self) -> None:
@@ -154,6 +154,8 @@ class Manga():
         match self._manga_provider:
             case MangaProvider.MANGANATO:
                 chapters = manganato_helper.get_chapters(self._manga_provider_url)
+            case MangaProvider.NATOMANGA:
+                chapters = natomanga_helper.get_chapters(self._manga_provider_url)
             # default case
             case _:
                 raise error.UnknownProvider()
