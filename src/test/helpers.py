@@ -1,16 +1,16 @@
 """Module containing the CTXGrabber class"""
 
-import logging
 import functools
 from time import sleep
 from typing import Callable
 
+from abllib.log import get_logger
+from abllib.storage import VolatileStorage
 from discord.ext.commands import Context
 
 from nikobot.discord_bot import DiscordBot
-from nikobot.util import storage
 
-logger = logging.getLogger("test")
+logger = get_logger("test")
 
 class CTXGrabber():
     """Class to obtain a :func:`~discord.ext.commands.Context` during testing"""
@@ -60,7 +60,7 @@ class CTXGrabber():
 
         self._command_name = command_name
 
-        bot: DiscordBot = storage.VolatileStorage["bot"]
+        bot: DiscordBot = VolatileStorage["bot"]
         cmd = bot.get_command(command_name)
 
         self._original_callback = cmd.callback
@@ -75,7 +75,7 @@ class CTXGrabber():
         if self._original_callback is None:
             raise TypeError()
 
-        bot: DiscordBot = storage.VolatileStorage["bot"]
+        bot: DiscordBot = VolatileStorage["bot"]
         cmd = bot.get_command(self._command_name)
 
         cmd.callback = self._original_callback

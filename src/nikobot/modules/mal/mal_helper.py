@@ -3,9 +3,9 @@
 from typing import Any
 
 import requests
+from abllib.storage import VolatileStorage
 
 from . import error
-from ... import util
 
 BASE_URL = "https://api.myanimelist.net/v2"
 HEADERS = {
@@ -111,4 +111,4 @@ def _supported_media_type(media_type) -> bool:
     return False
 
 def _setup():
-    HEADERS["X-MAL-CLIENT-ID"] = util.VolatileStorage["mal.client_id"]
+    HEADERS["X-MAL-CLIENT-ID"] = VolatileStorage["mal.client_id"]

@@ -1,9 +1,10 @@
 """A module containing MyAnimeList-related commands"""
 
-import logging
 from datetime import datetime, timedelta
 from threading import Thread
 
+from abllib.log import get_logger
+from abllib.storage import PersistentStorage, VolatileStorage
 import discord as discordpy
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -15,7 +16,7 @@ from ... import util
 
 # pylint: disable=protected-access
 
-logger = logging.getLogger("mal")
+logger = get_logger("mal")
 
 command_group = app_commands.Group(
     name="mal",
@@ -50,8 +51,8 @@ class MALNotifier(commands.Cog):
         manga = None
 
         user_id = util.discord.get_user_id(ctx)
-        if util.VolatileStorage.contains(f"mal.user.{user_id}"):
-            maluser: MALUser = util.VolatileStorage[f"mal.user.{user_id}"]
+        if VolatileStorage.contains(f"mal.user.{user_id}"):
+            maluser: MALUser = VolatileStorage[f"mal.user.{user_id}"]
             maluser.fetch_manga_list()
             if mal_id in maluser.manga:
                 manga = maluser.manga[mal_id]
@@ -81,7 +82,7 @@ class MALNotifier(commands.Cog):
 
         user_id = util.discord.get_user_id(ctx)
 
-        if util.VolatileStorage.contains(f"mal.user.{user_id}"):
+        if VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx, embed=discordpy.Embed(title="You are already registered",
                                                               color=discordpy.Color.orange()))
             return
@@ -102,7 +103,7 @@ class MALNotifier(commands.Cog):
                                                    color=discordpy.Color.dark_orange()))
             return
 
-        util.VolatileStorage[f"mal.user.{user_id}"] = maluser
+        VolatileStorage[f"mal.user.{user_id}"] = maluser
         await message.edit(embed=discordpy.Embed(title="Successfully registered for new release notifications",
                                                color=discordpy.Color.blue()))
 
@@ -122,13 +123,13 @@ class MALNotifier(commands.Cog):
         else:
             user_id = ctx.author.id
 
-        if not util.VolatileStorage.contains(f"mal.user.{user_id}"):
+        if not VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
                                      embed=discordpy.Embed(title="You are not yet registered",
                                                          color=discordpy.Color.orange()))
             return
 
-        del util.VolatileStorage[f"mal.user.{user_id}"]
+        del VolatileStorage[f"mal.user.{user_id}"]
         await util.discord.reply(ctx,
                                  embed=discordpy.Embed(title="Successfully deregistered from release notifications",
                                                      color=discordpy.Color.blue()))
@@ -146,7 +147,7 @@ class MALNotifier(commands.Cog):
         else:
             user_id = ctx.author.id
 
-        if not util.VolatileStorage.contains(f"mal.user.{user_id}"):
+        if not VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
                                      embed=discordpy.Embed(title="You are not yet registered",
                                                          color=discordpy.Color.orange()))
@@ -159,7 +160,7 @@ class MALNotifier(commands.Cog):
                         inline=True)
         message = await util.discord.reply(ctx, embed=embed)
 
-        maluser = util.VolatileStorage[f"mal.user.{user_id}"]
+        maluser = VolatileStorage[f"mal.user.{user_id}"]
         await self.notify_user(int(user_id), maluser)
 
         await message.edit(embed=discordpy.Embed(title="Finished checking!",
@@ -169,10 +170,10 @@ class MALNotifier(commands.Cog):
     async def notify_users(self):
         """A method responsible for notifying users if a new manga chapter was released"""
 
-        if not util.VolatileStorage.contains("mal.user"):
+        if not VolatileStorage.contains("mal.user"):
             return
 
-        for user_id, maluser in util.VolatileStorage["mal.user"].items():
+        for user_id, maluser in VolatileStorage["mal.user"].items():
             if not isinstance(user_id, str): raise TypeError()
             if not isinstance(maluser, MALUser): raise TypeError()
 
@@ -220,14 +221,14 @@ class MALNotifier(commands.Cog):
             manga._time_next_notify = datetime.now() + timedelta(hours=12)
 
     def import_users(self):
-        """Import all MALUsers from ``util.PersistentStorage``"""
+        """Import all MALUsers from ``abllib.PersistentStorage``"""
 
         c = 0
-        if util.PersistentStorage.contains("mal.user"):
-            for user_id, maluser_json in util.PersistentStorage["mal.user"].items():
+        if PersistentStorage.contains("mal.user"):
+            for user_id, maluser_json in PersistentStorage["mal.user"].items():
                 maluser = MALUser.from_export(int(user_id), maluser_json)
                 maluser.fetch_manga_chapters()
-                util.VolatileStorage[f"mal.user.{user_id}"] = maluser
+                VolatileStorage[f"mal.user.{user_id}"] = maluser
                 c += 1
         logger.info(f"Finished importing {c} MAL user(s)")
 
