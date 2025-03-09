@@ -2,15 +2,16 @@
 
 import traceback
 
-import logging
 import os
 
+from abllib.log import get_logger
+from abllib.storage import VolatileStorage
 import discord as discordpy
 from discord.ext import commands
 
-from nikobot.util import discord, general, storage
+from nikobot.util import discord, general
 
-logger = logging.getLogger("core")
+logger = get_logger("core")
 
 class DiscordBot(commands.Bot):
     """The main ``discord.commands.Bot`` which is the center of the application"""
@@ -21,21 +22,21 @@ class DiscordBot(commands.Bot):
     def start_bot(self):
         """Start the discord bot"""
 
-        token = storage.VolatileStorage["discord_token"]
-        del storage.VolatileStorage["discord_token"]
+        token = VolatileStorage["discord_token"]
+        del VolatileStorage["discord_token"]
         self.run(token, log_handler=None)
 
     async def setup_hook(self) -> None:
-        storage.VolatileStorage["modules"] = []
+        VolatileStorage["modules"] = []
 
-        if "modules_to_load" in storage.VolatileStorage:
-            modules_to_load = storage.VolatileStorage["modules_to_load"]
-            del storage.VolatileStorage["modules_to_load"]
+        if "modules_to_load" in VolatileStorage:
+            modules_to_load = VolatileStorage["modules_to_load"]
+            del VolatileStorage["modules_to_load"]
 
             for module in modules_to_load:
                 logger.info(f"Loading module {module}")
                 await self.load_extension(f"nikobot.modules.{module}")
-                storage.VolatileStorage["modules"].append(module)
+                VolatileStorage["modules"].append(module)
 
     async def on_ready(self):
         """Method called when the bot is ready"""

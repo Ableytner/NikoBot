@@ -1,21 +1,14 @@
 """A module to start the discord bot"""
 
-# pylint: disable=protected-access, wrong-import-position, wrong-import-order
-
-# logging needs to be setup before any local imports
-from nikobot.util import log_helper
-log_helper.setup()
-
-# pylint: enable=wrong-import-position, wrong-import-order
-
 import argparse
 import json
 import os
-import pathlib
 import shutil
 import typing
 
-from nikobot import util
+from abllib import fs, log, storage
+from abllib.storage import PersistentStorage, VolatileStorage
+
 from nikobot.discord_bot import DiscordBot
 
 # TODO:
@@ -29,8 +22,14 @@ from nikobot.discord_bot import DiscordBot
 # create command to list manga with reading status
 # add lock for threaded Storage access
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
+# move mal config loading to malnotifier module
 
 if __name__ == "__main__":
+    # setup logging
+    log.initialize()
+    log.add_console_handler()
+    log.add_file_handler()
+
     # https://stackoverflow.com/a/4480202/15436169
     parser = argparse.ArgumentParser("nikobot")
     parser.add_argument("--config",
@@ -38,15 +37,19 @@ if __name__ == "__main__":
                         default="./config.json",
                         help="A config file in json format. A template is contained in the repository.")
     args = parser.parse_args()
-    util.VolatileStorage["config_file"] = args.config
 
-    if not os.path.isfile(util.VolatileStorage["config_file"]):
+    #setup storage
+    storage.initialize()
+
+    VolatileStorage["config_file"] = args.config
+
+    if not os.path.isfile(VolatileStorage["config_file"]):
         raise FileNotFoundError("Config file couldn't be found")
-    with open(util.VolatileStorage["config_file"], "r", encoding="utf8") as cf:
+    with open(VolatileStorage["config_file"], "r", encoding="utf8") as cf:
         config: dict[str, typing.Any] = json.load(cf)
 
-    util.VolatileStorage["modules_to_load"] = config["modules"]
-    util.VolatileStorage["discord_token"] = config["discord_token"]
+    VolatileStorage["modules_to_load"] = config["modules"]
+    VolatileStorage["discord_token"] = config["discord_token"]
 
     if "mal.malnotifier" in config["modules"]:
         if "malnotifier" not in config \
@@ -55,21 +58,22 @@ if __name__ == "__main__":
             raise ValueError("Missing client_id for use with the malnotifier module. " +
                              "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
 
-        util.VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
+        VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
 
     # setup storage
-    storage_dir = str(pathlib.Path(config["storage_dir"]).resolve())
+    storage_dir = fs.absolute(config["storage_dir"])
 
-    util.VolatileStorage["storage_file"] = os.path.join(storage_dir, "storage.json")
-    util.PersistentStorage._load_from_disk()
+    VolatileStorage["storage_file"] = os.path.join(storage_dir, "storage.json")
 
-    util.VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
-    os.makedirs(util.VolatileStorage["cache_dir"], exist_ok=True)
+    VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
+    os.makedirs(VolatileStorage["cache_dir"], exist_ok=True)
 
-    util.VolatileStorage["temp_dir"] = os.path.join(storage_dir, "temp")
-    shutil.rmtree(util.VolatileStorage["temp_dir"], ignore_errors=True)
-    os.makedirs(util.VolatileStorage["temp_dir"], exist_ok=True)
+    VolatileStorage["temp_dir"] = os.path.join(storage_dir, "temp")
+    shutil.rmtree(VolatileStorage["temp_dir"], ignore_errors=True)
+    os.makedirs(VolatileStorage["temp_dir"], exist_ok=True)
+
+    PersistentStorage.load_from_disk()
 
     bot = DiscordBot()
-    util.VolatileStorage["bot"] = bot
+    VolatileStorage["bot"] = bot
     bot.start_bot()

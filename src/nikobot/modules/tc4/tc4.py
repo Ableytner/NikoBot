@@ -1,12 +1,12 @@
 """contains the cog of the tc4 module"""
 
-import logging
 import os
 from threading import Thread
 
 from discord import app_commands
 from discord.ext import commands
 
+from abllib.log import get_logger
 from .aspect import Aspect
 from .aspect_parser import AspectParser
 from .shortest_path3 import Graph
@@ -14,7 +14,7 @@ from ... import util
 
 PATH = __file__.rsplit(os.sep, maxsplit=1)[0]
 
-logger = logging.getLogger("tc4")
+logger = get_logger("tc4")
 
 command_group = app_commands.Group(
     name="tc4",
