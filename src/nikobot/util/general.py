@@ -3,9 +3,8 @@
 import asyncio
 from typing import Any
 
+from abllib.storage import VolatileStorage
 import numpy
-
-from nikobot.util import storage
 
 def sync(coro, loop: asyncio.AbstractEventLoop = None) -> Any:
     """
@@ -14,7 +13,7 @@ def sync(coro, loop: asyncio.AbstractEventLoop = None) -> Any:
     """
 
     if loop is None:
-        bot = storage.VolatileStorage["bot"]
+        bot = VolatileStorage["bot"]
         loop = bot.loop
 
     fut = asyncio.run_coroutine_threadsafe(coro, loop)
