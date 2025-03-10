@@ -24,12 +24,17 @@ import typing
 from abllib import fs, log, storage
 from abllib.storage import PersistentStorage, VolatileStorage
 
+# setup testing dirs
+STORAGE_DIR = fs.absolute(os.path.dirname(__file__), "..", "..", "test_run")
+
+shutil.rmtree(STORAGE_DIR, ignore_errors=True)
+os.makedirs(STORAGE_DIR, exist_ok=True)
+
 # setup logs
 log.initialize(log.LogLevel.DEBUG)
-log.add_file_handler("test.log")
+log.add_file_handler(os.path.join(STORAGE_DIR, "test.log"))
 
 # setup storage
-STORAGE_DIR = fs.absolute(os.path.dirname(__file__), "..", "..", "test_run")
 storage.initialize(os.path.join(STORAGE_DIR, "storage.json"))
 
 VolatileStorage["config_file"] = fs.absolute("config.json")
@@ -43,9 +48,6 @@ if "test" not in config:
     raise ValueError(f"Missing test section in {VolatileStorage['config_file']}. " +
                      "You can find an example in config.template.json, located at the repository root.")
 
-# setup testing dirs
-shutil.rmtree(STORAGE_DIR, ignore_errors=True)
-os.makedirs(STORAGE_DIR, exist_ok=True)
 
 with open(VolatileStorage["storage_file"], "w", encoding="utf8") as f:
     f.write("{}")

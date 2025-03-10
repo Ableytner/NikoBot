@@ -18,11 +18,12 @@ from nikobot.discord_bot import DiscordBot
 # add README
 # create sing module with all music commands
 # create command to set manga provider url
-# fix manganato search for: oshi no ko, solo leveling
+# fix manganato search for: oshi no ko, solo leveling, propably a lot more after provider replacement
 # create command to list manga with reading status
-# add lock for threaded Storage access
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
 # move mal config loading to malnotifier module
+# pylint test fails if a file was deleted but not yet committed
+# implement abllib.error
 
 if __name__ == "__main__":
     # setup logging
