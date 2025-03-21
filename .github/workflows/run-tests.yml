@@ -1,29 +1,31 @@
 name: Run Tests
 
-on: 
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+on: [push]
 
 jobs:
   pylint:
     strategy:
       matrix:
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.13"]
     uses: ./.github/workflows/define-pylint.yml
     with:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
+
   pytest:
-    needs: [pylint]
+    needs: pylint
     strategy:
       matrix:
-        python-version: ["3.10", "3.12"]
+        python-version: ["3.10", "3.13"]
+    if: |
+      (github.event_name == 'push' && github.ref_name == 'main') ||
+      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
+      (github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/define-pytest.yml
     with:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
+
   build:
     needs: [pylint, pytest]
     uses: ./.github/workflows/define-build-image.yml
