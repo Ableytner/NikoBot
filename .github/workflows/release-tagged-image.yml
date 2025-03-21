@@ -42,10 +42,11 @@ jobs:
       with: 
         tag: ${{ env.CURRENT_VERSION }}
     - name: Fail if tag exists
-      if: steps.check-tag.outputs.exists == 'true' 
-      run: |
-        echo "Tag ${{ env.CURRENT_VERSION }} exists!"
-        exit 1
+      if: steps.check-tag.outputs.exists == 'true'
+      uses: actions/github-script@v3
+      with:
+        script: |
+            core.setFailed("Tag ${{ env.CURRENT_VERSION }} already exists!")
     - name: Print tag if it doesn't exist
       if: steps.check-tag.outputs.exists == 'false' 
       run: |
@@ -88,13 +89,16 @@ jobs:
     permissions:
       contents: write
     steps:
-    - name: Add body.md
+    - name: Create body.md
       run: |
         touch body.md
+        gh api --method POST -H "Accept: application/vnd.github+json" \
+          "/repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+          -f tag_name="${{ env.CURRENT_VERSION }}" \
+          --jq ".body" > "body.md"
     - name: Create new release
       uses: ncipollo/release-action@v1
       with:
         bodyFile: "body.md"
         tag: "${{ env.CURRENT_VERSION }}"
-        commit: "main"
         token: ${{ secrets.GITHUB_TOKEN }}
