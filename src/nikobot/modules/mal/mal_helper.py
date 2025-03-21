@@ -25,7 +25,7 @@ def get_manga_from_id(mal_id: int) -> dict[str, Any]:
         if r.json()["error"] == "not_found":
             raise error.MangaNotFound()
 
-        raise error.CustomException(r.json()["error"])
+        raise error.MALResponseError(r.json()["error"])
 
     if not _supported_media_type(r.json()["media_type"]):
         raise error.MediaTypeError("Currently only supports manga/manhwa and not light novel/novel")
@@ -66,7 +66,7 @@ def get_manga_list_from_username(mal_username: str) -> list[dict[str, str | int]
         if r.json()["error"] == "not_found":
             raise error.UserNotFound()
 
-        raise error.CustomException(r.json()["error"])
+        raise error.MALResponseError(r.json()["error"])
 
     return_data = []
     for manga_json in r.json()["data"]:
@@ -91,7 +91,7 @@ def search_for_manga(title: str) -> int | None:
                      timeout=30)
 
     if "error" in r.json():
-        raise error.CustomException(r.json()["error"])
+        raise error.MALResponseError(r.json()["error"])
 
     try:
         for manga in r.json()["data"]:

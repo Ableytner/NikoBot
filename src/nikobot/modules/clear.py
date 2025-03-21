@@ -1,5 +1,6 @@
 """A module containing the clear command"""
 
+from abllib.error import NoneTypeError
 from abllib.storage import PersistentStorage
 import discord as discordpy
 from discord.ext import commands
@@ -55,7 +56,7 @@ class Clear(commands.Cog):
 
         channel = util.discord.get_bot().get_channel(data["channel_id"])
         if channel is None:
-            raise util.error.NoneTypeException()
+            raise NoneTypeError()
 
         if reaction.emoji == self._yes_emoji:
             await channel.purge(limit=data["amount"])
