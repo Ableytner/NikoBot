@@ -2,8 +2,9 @@ name: Run Tests
 
 on:
   push:
+    branches: [main]
   pull_request:
-    types: [opened, reopened]
+  workflow_dispatch:
 
 jobs:
   pylint:
@@ -20,10 +21,6 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.10", "3.13"]
-    if: |
-      (github.event_name == 'push' && github.ref_name == 'main') ||
-      (github.event_name == 'pull_request' && github.base_ref == 'main') ||
-      (github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/define-pytest.yml
     with:
       python-version: ${{ matrix.python-version }}
