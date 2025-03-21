@@ -1,6 +1,6 @@
 """Custom esceptions for usage within the ``mal`` module"""
 
-from ...util.error import CustomException
+from abllib.error import CustomException
 
 class MangaFetchException(CustomException):
     """Exception raised when fetching the manga failed"""
@@ -16,6 +16,11 @@ class MediaTypeError(CustomException):
     """Exception raised when trying to process a light novel/novel"""
 
     default_message = "Currently only supports manga and not light novel/novel"
+
+class MALResponseError(CustomException):
+    """Exception raised when MyAnimeList returns an error as a response"""
+
+    default_message = "MyAnimeList responded with an internal error"
 
 class UnknownProvider(CustomException):
     """Exception raised when the manga provider is not (yet) supported"""

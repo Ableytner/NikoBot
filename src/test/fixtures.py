@@ -5,22 +5,23 @@
 # pylint: disable=protected-access, missing-class-docstring
 
 import json
-import logging
 import os
 import typing
 import _thread
 from threading import Thread
 from time import sleep
 
+from abllib.log import get_logger
+from abllib.storage import PersistentStorage, VolatileStorage
 import discord as discordpy
 import pytest
 from discord.ext import commands
 
 from nikobot.discord_bot import DiscordBot
-from nikobot.util import general, storage
+from nikobot.util import general
 from .helpers import CTXGrabber
 
-logger = logging.getLogger("test")
+logger = get_logger("test")
 
 @pytest.fixture(scope="function", autouse=True)
 def setup_storages():
@@ -40,7 +41,7 @@ def setup_storages():
         "test_channel_id"
     ]
     keys_to_remove = []
-    for store in [item._store for item in (storage.PersistentStorage, storage.VolatileStorage)]:
+    for store in [item._store for item in (PersistentStorage, VolatileStorage)]:
         for key in store.keys():
             remove = True
             for key_to_keep in keys_to_keep:
@@ -58,24 +59,24 @@ def bot():
     """Setup the DiscordBot for use with tests"""
 
     # load config
-    if not os.path.isfile(storage.VolatileStorage["config_file"]):
+    if not os.path.isfile(VolatileStorage["config_file"]):
         raise FileNotFoundError("Config file couldn't be found")
-    with open(storage.VolatileStorage["config_file"], "r", encoding="utf8") as cf:
+    with open(VolatileStorage["config_file"], "r", encoding="utf8") as cf:
         config: dict[str, typing.Any] = json.load(cf)
 
-    storage.VolatileStorage["modules_to_load"] = config["modules"]
+    VolatileStorage["modules_to_load"] = config["modules"]
 
     if "discord_token_testbot" not in config["test"] \
        or config["test"]["discord_token_testbot"] == "":
         raise ValueError("Missing discord_token_testbot for use with integration tests. " +
                          "Refer to the README for more information.")
-    storage.VolatileStorage["discord_token"] = config["test"]["discord_token_testbot"]
+    VolatileStorage["discord_token"] = config["test"]["discord_token_testbot"]
 
     if "test_channel_id" not in config["test"] \
        or config["test"]["test_channel_id"] == "":
         raise ValueError("Missing test_channel_id for use with integration tests. " +
                          "Refer to the README for more information.")
-    storage.VolatileStorage["test_channel_id"] = int(config["test"]["test_channel_id"])
+    VolatileStorage["test_channel_id"] = int(config["test"]["test_channel_id"])
 
     if "mal.malnotifier" in config["modules"]:
         if "malnotifier" not in config \
@@ -84,7 +85,7 @@ def bot():
             raise ValueError("Missing client_id for use with the malnotifier module. " +
                              "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
 
-        storage.VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
+        VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
 
     # don't ignore commands sent by other bots
     async def process_commands(self, message):
@@ -103,7 +104,7 @@ def bot():
     DiscordBot.on_ready = on_ready
 
     bot_obj = DiscordBot()
-    storage.VolatileStorage["bot"] = bot_obj
+    VolatileStorage["bot"] = bot_obj
 
     def thread_func():
         try:
@@ -139,16 +140,16 @@ def testing_bot():
     """Setup another DiscordBot to be used in tests"""
 
     # load config
-    if not os.path.isfile(storage.VolatileStorage["config_file"]):
+    if not os.path.isfile(VolatileStorage["config_file"]):
         raise FileNotFoundError("Config file couldn't be found")
-    with open(storage.VolatileStorage["config_file"], "r", encoding="utf8") as cf:
+    with open(VolatileStorage["config_file"], "r", encoding="utf8") as cf:
         config: dict[str, typing.Any] = json.load(cf)
 
     if "discord_token_helperbot" not in config["test"] \
        or config["test"]["discord_token_helperbot"] == "":
         raise ValueError("Missing discord_token_helperbot for use with integration tests. " +
                          "Refer to the README for more information.")
-    storage.VolatileStorage["discord_token_helperbot"] = config["test"]["discord_token_helperbot"]
+    VolatileStorage["discord_token_helperbot"] = config["test"]["discord_token_helperbot"]
 
     bot_ready = [False]
     class TestingDiscordBot(commands.Bot):
@@ -158,7 +159,7 @@ def testing_bot():
         def start_bot(self):
             """Override start_bot to set the proper token"""
 
-            self.run(storage.VolatileStorage["discord_token_helperbot"], log_handler=None)
+            self.run(VolatileStorage["discord_token_helperbot"], log_handler=None)
 
         async def on_ready(self: DiscordBot):
             """Override on_ready to wait for the bot to start"""
