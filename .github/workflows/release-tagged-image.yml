@@ -90,6 +90,8 @@ jobs:
       contents: write
     steps:
     - name: Create body.md
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         touch body.md
         gh api --method POST -H "Accept: application/vnd.github+json" \
