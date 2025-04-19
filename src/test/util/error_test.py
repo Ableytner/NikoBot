@@ -15,7 +15,9 @@ def test_customexception_custom_message():
     """Ensure that CustomException instantiation with a custom messaage keeps the message"""
 
     class TestException(error.CustomException):
-        default_message = "This exception is used in tests"
+        default_messages = {
+            0: "This exception is used in tests"
+        }
 
     try:
         raise TestException("This message should be retained")
@@ -28,7 +30,9 @@ def test_customexception_default_message():
     """Ensure that CustomException instantiation without a custom messaage uses the default message"""
 
     class TestException(error.CustomException):
-        default_message = "This exception is used in tests"
+        default_messages = {
+            0: "This exception is used in tests"
+        }
 
     try:
         raise TestException()

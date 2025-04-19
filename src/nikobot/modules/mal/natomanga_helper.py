@@ -6,7 +6,6 @@ import bs4 as bs
 import requests
 
 from .chapter import Chapter
-from ... import util
 
 logger = logging.getLogger("mal")
 
@@ -36,7 +35,7 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 
     if isinstance(titles, str):
         titles = [titles]
-    
+
     seen_titles = []
     i = 0
     while i < len(titles):
@@ -60,11 +59,11 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 
     if len(result_urls) == 0:
         return None
-    
+
     if len(result_urls) == 1:
         return result_urls[0]
 
-    logger.info(f"found multiple urls {result_urls} for manga {titles[0]}")
+    logger.debug(f"found multiple urls {result_urls} for manga {titles[0]}")
 
     max_chapters = -1
     i = 0
@@ -76,7 +75,7 @@ def get_manga_url(titles: str | list[str]) -> str | None:
         else:
             i += 1
 
-    logger.info(f"picked {result_urls[0]} with {max_chapters} chapters")
+    logger.debug(f"picked {result_urls[0]} with {max_chapters} chapters")
 
     return result_urls[0]
 
