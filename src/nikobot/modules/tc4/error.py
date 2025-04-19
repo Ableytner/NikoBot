@@ -5,7 +5,10 @@ from abllib.error import CustomException
 class AspectNotFound(CustomException):
     """Exception raised when the requested aspect wasn't found"""
 
-    default_message = "The requested aspect couldn't be found"
+    default_messages = {
+        0: "The requested aspect couldn't be found",
+        1: "The requested aspect {0} couldn't be found"
+    }
 
 class MissingRoute(CustomException):
     """
@@ -14,4 +17,6 @@ class MissingRoute(CustomException):
     This esception should never occur normally
     """
 
-    default_message = ""
+    default_messages = {
+        0: ""
+    }

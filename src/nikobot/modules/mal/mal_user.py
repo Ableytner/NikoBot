@@ -61,7 +61,6 @@ class MALUser():
                 manga.fetch_chapters()
             except Exception as e:
                 raise error.MangaFetchException(f"Error fetching manga {manga.mal_id}: {e.args[0]}")
-        self.save_to_storage()
 
     def fetch_manga_list(self) -> None:
         """Fetch the users manga list from MyAnimeList"""
@@ -84,8 +83,6 @@ class MALUser():
         for mal_id in list(self.manga.keys()):
             if mal_id not in correct_mal_ids:
                 self.manga.pop(mal_id)
-
-        self.save_to_storage()
 
     def save_to_storage(self) -> None:
         """Save the current object to the ``PersistentStorage``"""

@@ -53,9 +53,12 @@ class MALNotifier(commands.Cog):
         user_id = util.discord.get_user_id(ctx)
         if VolatileStorage.contains(f"mal.user.{user_id}"):
             maluser: MALUser = VolatileStorage[f"mal.user.{user_id}"]
+
             maluser.fetch_manga_list()
+
             if mal_id in maluser.manga:
                 manga = maluser.manga[mal_id]
+
                 manga.fetch_chapters()
 
         if manga is None:
@@ -87,15 +90,17 @@ class MALNotifier(commands.Cog):
                                                               color=discordpy.Color.orange()))
             return
 
-        message = await util.discord.reply(ctx, embed=discordpy.Embed(title="Fetching manga list from MyAnimeList",
+        message = await util.discord.reply(ctx, embed=discordpy.Embed(title="Fetching user from MyAnimeList",
                                                                     color=discordpy.Color.blue()))
 
         try:
             maluser = MALUser(username.lower(), user_id)
+
             await message.edit(embed=discordpy.Embed(title="Fetching manga list from MyAnimeList",
                                                    color=discordpy.Color.blue()))
             maluser.fetch_manga_list()
-            await message.edit(embed=discordpy.Embed(title="Fetching manga chapters from Manganato",
+
+            await message.edit(embed=discordpy.Embed(title="Fetching manga chapters from Nelomanga",
                                                    color=discordpy.Color.blue()))
             maluser.fetch_manga_chapters()
         except error.UserNotFound:
@@ -104,6 +109,10 @@ class MALNotifier(commands.Cog):
             return
 
         VolatileStorage[f"mal.user.{user_id}"] = maluser
+
+        # save new user, in case that notify_user crashes the bot
+        maluser.save_to_storage()
+
         await message.edit(embed=discordpy.Embed(title="Successfully registered for new release notifications",
                                                color=discordpy.Color.blue()))
 
@@ -118,10 +127,7 @@ class MALNotifier(commands.Cog):
     async def deregister(self, ctx: commands.context.Context | discordpy.interactions.Interaction):
         """The discord command 'niko.mal.dergister'"""
 
-        if util.discord.is_slash_command(ctx):
-            user_id = ctx.user.id
-        else:
-            user_id = ctx.author.id
+        user_id = util.discord.get_user_id(ctx)
 
         if not VolatileStorage.contains(f"mal.user.{user_id}"):
             await util.discord.reply(ctx,
@@ -130,6 +136,8 @@ class MALNotifier(commands.Cog):
             return
 
         del VolatileStorage[f"mal.user.{user_id}"]
+        del PersistentStorage[f"mal.user.{user_id}"]
+
         await util.discord.reply(ctx,
                                  embed=discordpy.Embed(title="Successfully deregistered from release notifications",
                                                      color=discordpy.Color.blue()))
@@ -191,7 +199,7 @@ class MALNotifier(commands.Cog):
             if not isinstance(manga, Manga): raise TypeError()
 
             if manga._time_next_notify < datetime.now():
-                await self.notify_manga(int(user_id), manga)
+                await self.notify_manga(user_id, manga)
 
         maluser.save_to_storage()
 
