@@ -12,7 +12,8 @@ from abllib.storage import PersistentStorage, VolatileStorage
 from nikobot.discord_bot import DiscordBot
 
 # TODO:
-# combine some parts of the mcserver-tools bot and roxy waifu bot
+# import some parts of the mcserver-tools bot
+# import some parts of the roxy waifu bot
 # fix /tc4 path
 # write response message if argument is missing (implement in command_failed)
 # add README
@@ -22,8 +23,8 @@ from nikobot.discord_bot import DiscordBot
 # create command to list manga with reading status
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
 # move mal config loading to malnotifier module
-# pylint test fails if a file was deleted but not yet committed
-# implement abllib.error
+# move all module-specific code to that module (e.g. help modulke in on_command_error)
+# add command to add all songs from all spotify playlists to one playlist, in order of first added
 
 if __name__ == "__main__":
     # setup logging
