@@ -87,7 +87,7 @@ class MALNotifier(commands.Cog):
                                                               color=discordpy.Color.orange()))
             return
 
-        message = await util.discord.reply(ctx, embed=discordpy.Embed(title="Fetching manga list from MyAnimeList",
+        message = await util.discord.reply(ctx, embed=discordpy.Embed(title="Fetching user from MyAnimeList",
                                                                     color=discordpy.Color.blue()))
 
         try:
@@ -95,7 +95,7 @@ class MALNotifier(commands.Cog):
             await message.edit(embed=discordpy.Embed(title="Fetching manga list from MyAnimeList",
                                                    color=discordpy.Color.blue()))
             maluser.fetch_manga_list()
-            await message.edit(embed=discordpy.Embed(title="Fetching manga chapters from Manganato",
+            await message.edit(embed=discordpy.Embed(title="Fetching manga chapters from Nelomanga",
                                                    color=discordpy.Color.blue()))
             maluser.fetch_manga_chapters()
         except error.UserNotFound:

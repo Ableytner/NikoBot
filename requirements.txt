@@ -1,4 +1,4 @@
-abllib @ git+https://github.com/Ableytner/abllib@1.1.0
+abllib @ git+https://github.com/Ableytner/abllib@1.3.0
 beautifulsoup4
 discord.py
 numpy

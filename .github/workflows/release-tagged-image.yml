@@ -45,6 +45,7 @@ jobs:
       if: steps.check-tag.outputs.exists == 'true'
       uses: actions/github-script@v3
       with:
+        # https://timheuer.com/blog/manually-force-a-failure-in-github-action-step/#evaluating-your-condition-and-failing-the-step-manually
         script: |
             core.setFailed("Tag ${{ env.CURRENT_VERSION }} already exists!")
     - name: Print tag if it doesn't exist
