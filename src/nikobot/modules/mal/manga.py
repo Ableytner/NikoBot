@@ -2,20 +2,20 @@
 
 from __future__ import annotations
 
-import logging
 import os
 from datetime import datetime
 from enum import Enum
 
+from abllib.log import get_logger
+from abllib.storage import VolatileStorage
 import requests
 from PIL import Image
 from discord import Embed, File
 
 from . import error, mal_helper, manganato_helper, natomanga_helper
 from .chapter import Chapter
-from ... import util
 
-logger = logging.getLogger("mal")
+logger = get_logger("mal")
 
 class MangaProvider(Enum):
     """
@@ -178,7 +178,7 @@ class Manga():
         Returns a cached picture if available
         """
 
-        path = os.path.join(util.VolatileStorage["cache_dir"], "mal")
+        path = os.path.join(VolatileStorage["cache_dir"], "mal")
         os.makedirs(path, exist_ok=True)
         path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
 

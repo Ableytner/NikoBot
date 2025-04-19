@@ -1,6 +1,6 @@
 """Custom esceptions for usage within the ``tc4`` module"""
 
-from ...util.error import CustomException
+from abllib.error import CustomException
 
 class AspectNotFound(CustomException):
     """Exception raised when the requested aspect wasn't found"""

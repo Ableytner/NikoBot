@@ -3,17 +3,18 @@
 # pylint: disable=protected-access, missing-class-docstring, pointless-statement, expression-not-assigned, unused-argument
 
 import inspect
-import logging
 
+from abllib.log import get_logger
+from abllib.storage import StorageView
 import pytest
 import discord as discordpy
 from discord.ext import commands
 
-from nikobot.util import discord, general, storage
+from nikobot.util import discord, general
 from nikobot.discord_bot import DiscordBot
 from ..helpers import CTXGrabber
 
-logger = logging.getLogger("test")
+logger = get_logger("test")
 
 def test_wrap_function_for_normal_command():
     """Test the internal _wrap_function_for_normal_command() function"""
@@ -74,7 +75,7 @@ def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabbe
     because private messages between discord bots aren't allowed
     """
 
-    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    testing_channel = testing_bot.get_channel(StorageView["test_channel_id"])
     assert testing_channel is not None
 
     ctx_grabber.wrap_command("ping")
@@ -93,7 +94,7 @@ def test_is_slash_command(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber:
     because discord bots can't initiate them
     """
 
-    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    testing_channel = testing_bot.get_channel(StorageView["test_channel_id"])
     assert testing_channel is not None
 
     ctx_grabber.wrap_command("ping")
@@ -112,7 +113,7 @@ def test_is_sent_by_owner(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber:
     because the discord bot doesn't own the other bot
     """
 
-    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    testing_channel = testing_bot.get_channel(StorageView["test_channel_id"])
     assert testing_channel is not None
 
     ctx_grabber.wrap_command("ping")
@@ -127,9 +128,9 @@ def test_is_sent_by_owner(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber:
 def test_channel_message(bot: DiscordBot, testing_bot: DiscordBot):
     """Test the discord.channel_message() method"""
 
-    general.sync(discord.channel_message(storage.StorageView["test_channel_id"], content="the message content"))
+    general.sync(discord.channel_message(StorageView["test_channel_id"], content="the message content"))
 
-    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    testing_channel = testing_bot.get_channel(StorageView["test_channel_id"])
     assert testing_channel is not None
 
     async def get_last_message():
@@ -145,7 +146,7 @@ def test_channel_message(bot: DiscordBot, testing_bot: DiscordBot):
 def test_parse_user(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
     """Test the discord.parse_user() method"""
 
-    testing_channel = testing_bot.get_channel(storage.StorageView["test_channel_id"])
+    testing_channel = testing_bot.get_channel(StorageView["test_channel_id"])
     assert testing_channel is not None
 
     ctx_grabber.wrap_command("ping")

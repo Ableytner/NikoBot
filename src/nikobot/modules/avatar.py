@@ -1,16 +1,17 @@
 """A module containing the avatar command"""
 
-import logging
 import os
 import pathlib
 
+from abllib.log import get_logger
+from abllib.storage import VolatileStorage
 import discord as discordpy
 import requests
 from discord.ext import commands
 
 from .. import util
 
-logger = logging.getLogger("avatar")
+logger = get_logger("avatar")
 
 class Avatar(commands.Cog):
     """A ``discord.commands.Cog`` containing the avatar command"""
@@ -35,7 +36,7 @@ class Avatar(commands.Cog):
             await util.discord.reply(ctx, "User has a default avatar, which can't be downloadad.")
             return
 
-        avatars_dir = str(pathlib.Path(util.VolatileStorage["cache_dir"], "avatars").resolve())
+        avatars_dir = str(pathlib.Path(VolatileStorage["cache_dir"], "avatars").resolve())
         os.makedirs(avatars_dir, exist_ok=True)
         avatar_dir = str(pathlib.Path(avatars_dir, f"{user_obj}.png").resolve())
 

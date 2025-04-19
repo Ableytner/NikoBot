@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+from abllib.storage import PersistentStorage
+
 from . import error, mal_helper
 from .manga import Manga
-from ... import util
 
 class MALUser():
     """
@@ -87,6 +88,6 @@ class MALUser():
         self.save_to_storage()
 
     def save_to_storage(self) -> None:
-        """Save the current object to the ``util.PersistentStorage``"""
+        """Save the current object to the ``PersistentStorage``"""
 
-        util.PersistentStorage[f"mal.user.{self.discord_id}"] = self.export()
+        PersistentStorage[f"mal.user.{self.discord_id}"] = self.export()

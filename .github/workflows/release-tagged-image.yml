@@ -3,7 +3,7 @@ name: Release tagged image
 on: [workflow_dispatch]
 
 env:
-  CURRENT_VERSION: 0.1.0
+  CURRENT_VERSION: 0.1.1
 
 defaults:
   run:
@@ -13,14 +13,22 @@ jobs:
   pylint:
     strategy:
       matrix:
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
     uses: ./.github/workflows/define-pylint.yml
     with:
       python-version: ${{ matrix.python-version }}
     secrets: inherit
 
+  pytest:
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    uses: ./.github/workflows/define-pytest.yml
+    with:
+      python-version: ${{ matrix.python-version }}
+    secrets: inherit
+
   build:
-    needs: [pylint]
     uses: ./.github/workflows/define-build-image.yml
     with:
       upload: true
@@ -34,17 +42,18 @@ jobs:
       with: 
         tag: ${{ env.CURRENT_VERSION }}
     - name: Fail if tag exists
-      if: steps.check-tag.outputs.exists == 'true' 
-      run: |
-        echo "Tag ${{ env.CURRENT_VERSION }} exists!"
-        exit 1
+      if: steps.check-tag.outputs.exists == 'true'
+      uses: actions/github-script@v3
+      with:
+        script: |
+            core.setFailed("Tag ${{ env.CURRENT_VERSION }} already exists!")
     - name: Print tag if it doesn't exist
       if: steps.check-tag.outputs.exists == 'false' 
       run: |
         echo "Tag ${{ env.CURRENT_VERSION }} doesn't yet exist and can be created"
 
   push:
-    needs: [tag, build]
+    needs: [pylint, pytest, build, tag]
     runs-on: [self-hosted, linux]
     permissions:
       contents: read
@@ -80,13 +89,18 @@ jobs:
     permissions:
       contents: write
     steps:
-    - name: Add body.md
+    - name: Create body.md
+      env:
+        GH_TOKEN: ${{ github.token }}
       run: |
         touch body.md
+        gh api --method POST -H "Accept: application/vnd.github+json" \
+          "/repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
+          -f tag_name="${{ env.CURRENT_VERSION }}" \
+          --jq ".body" > "body.md"
     - name: Create new release
       uses: ncipollo/release-action@v1
       with:
         bodyFile: "body.md"
         tag: "${{ env.CURRENT_VERSION }}"
-        commit: "main"
         token: ${{ secrets.GITHUB_TOKEN }}

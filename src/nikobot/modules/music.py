@@ -1,12 +1,11 @@
 # pylint: skip-file
 
-import logging
-
+from abllib.log import get_logger
 import discord as discordpy
 import youtube_dl
 from discord.ext import commands, tasks
 
-logger = logging.getLogger("music")
+logger = get_logger("music")
 
 class Music(commands.Cog):
     def __init__(self, bot: commands.Bot):

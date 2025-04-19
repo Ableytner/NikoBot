@@ -1,5 +1,7 @@
 """A module containing the clear command"""
 
+from abllib.error import NoneTypeError
+from abllib.storage import PersistentStorage
 import discord as discordpy
 from discord.ext import commands
 
@@ -32,7 +34,7 @@ class Clear(commands.Cog):
 
         amount += 1 if util.discord.is_slash_command(ctx) else 2
 
-        util.PersistentStorage[f"clear.{accept_decline.id}"] = {
+        PersistentStorage[f"clear.{accept_decline.id}"] = {
             "channel_id": ctx.channel.id,
             "message_id": accept_decline.id,
             "amount": amount,
@@ -45,16 +47,16 @@ class Clear(commands.Cog):
 
         if user.id == util.discord.get_bot().user.id:
             return
-        if str(reaction.message.id) not in util.PersistentStorage["clear"]:
+        if str(reaction.message.id) not in PersistentStorage["clear"]:
             return
         if reaction.emoji not in [self._yes_emoji, self._no_emoji]:
             return
 
-        data = util.PersistentStorage[f"clear.{reaction.message.id}"]
+        data = PersistentStorage[f"clear.{reaction.message.id}"]
 
         channel = util.discord.get_bot().get_channel(data["channel_id"])
         if channel is None:
-            raise util.error.NoneTypeException()
+            raise NoneTypeError()
 
         if reaction.emoji == self._yes_emoji:
             await channel.purge(limit=data["amount"])
@@ -64,7 +66,7 @@ class Clear(commands.Cog):
             else:
                 await channel.purge(limit=2)
 
-        del util.PersistentStorage[f"clear.{reaction.message.id}"]
+        del PersistentStorage[f"clear.{reaction.message.id}"]
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
