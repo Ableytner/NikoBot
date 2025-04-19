@@ -2,7 +2,7 @@
     Pytest configuration
 """
 
-# pylint: disable=unused-wildcard-import, wildcard-import, wrong-import-position, wrong-import-order, protected-access
+# pylint: disable=unused-wildcard-import, wildcard-import, wrong-import-position, wrong-import-order, protected-access, missing-function-docstring
 
 # set debug mode
 import os
@@ -23,6 +23,19 @@ import typing
 
 from abllib import fs, log, storage
 from abllib.storage import PersistentStorage, VolatileStorage
+import pytest
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--skip-linting", action="store_true", default=False, help="skip the pylint test"
+    )
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--skip-linting"):
+        skip_pylint = pytest.mark.skip(reason="skipping code linting due to --skip-linting arg")
+        for item in items:
+            if item.name == "test_pylint":
+                item.add_marker(skip_pylint)
 
 # setup testing dirs
 STORAGE_DIR = fs.absolute(os.path.dirname(__file__), "..", "..", "test_run")
@@ -43,8 +56,8 @@ VolatileStorage["config_file"] = fs.absolute("config.json")
 if not os.path.isfile(VolatileStorage["config_file"]):
     raise FileNotFoundError("Config file couldn't be found")
 with open(VolatileStorage["config_file"], "r", encoding="utf8") as cf:
-    config: dict[str, typing.Any] = json.load(cf)
-if "test" not in config:
+    config_dict: dict[str, typing.Any] = json.load(cf)
+if "test" not in config_dict:
     raise ValueError(f"Missing test section in {VolatileStorage['config_file']}. " +
                      "You can find an example in config.template.json, located at the repository root.")
 
@@ -62,4 +75,4 @@ os.makedirs(VolatileStorage["temp_dir"], exist_ok=True)
 atexit.unregister(PersistentStorage.save_to_disk)
 
 # pylint: disable-next=unused-import
-from .fixtures import setup_storages, bot, testing_bot, ctx_grabber
+from .fixtures import *

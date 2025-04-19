@@ -4,12 +4,13 @@ import traceback
 
 import os
 
+from abllib.alg import levenshtein_distance
 from abllib.log import get_logger
 from abllib.storage import VolatileStorage
 import discord as discordpy
 from discord.ext import commands
 
-from nikobot.util import discord, general
+from nikobot.util import discord
 
 logger = get_logger("core")
 
@@ -68,7 +69,7 @@ class DiscordBot(commands.Bot):
 
             cmds: list[tuple[commands.Command, int]] = []
             for cmd in self.commands:
-                dist = general.levenshtein_distance(cmd.name, user_command)
+                dist = levenshtein_distance(cmd.name, user_command)
                 if dist <= 2:
                     cmds.append((cmd, dist))
 

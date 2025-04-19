@@ -224,7 +224,7 @@ class Manga():
         image_path = self.picture_file()
 
         # TODO: fix!!!
-        # get the aspect color
+        # get the average color
         im = Image.open(image_path)
         pix = im.load()
         central_rgb = pix[int(im.size[0]/2), int(im.size[1]/2)][:-1:]

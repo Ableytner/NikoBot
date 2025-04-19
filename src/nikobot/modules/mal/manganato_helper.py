@@ -1,10 +1,10 @@
 """Module containing functions for webscraping manganato.com"""
 
+from abllib.alg import levenshtein_distance
 import bs4 as bs
 import requests
 
 from .chapter import Chapter
-from ... import util
 
 BASE_URL = "https://manganato.com"
 HEADERS = {
@@ -55,7 +55,7 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 
         found_titles = []
         for item in title_objects:
-            found_titles.append((util.general.levenshtein_distance(item.contents[0], title), item["href"]))
+            found_titles.append((levenshtein_distance(item.contents[0], title), item["href"]))
 
         found_titles.sort(key=lambda x: x[0])
         for c, item in enumerate(found_titles):

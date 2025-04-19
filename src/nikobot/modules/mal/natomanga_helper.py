@@ -1,13 +1,12 @@
 """Module containing functions for webscraping natomanga.com"""
 
-import logging
-
+from abllib.log import get_logger
 import bs4 as bs
 import requests
 
 from .chapter import Chapter
 
-logger = logging.getLogger("mal")
+logger = get_logger("mal")
 
 BASE_URL = "https://natomanga.com"
 HEADERS = {
