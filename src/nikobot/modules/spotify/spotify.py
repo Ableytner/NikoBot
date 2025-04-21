@@ -1,7 +1,7 @@
 """contains the cog of the spotify module"""
 
+from asyncio import sleep
 from threading import Thread
-from time import sleep
 
 from abllib import VolatileStorage, PersistentStorage
 from abllib.log import get_logger
@@ -44,27 +44,20 @@ class Spotify(commands.Cog):
 
         auth_url = auth_helper.auth(user_id)
 
-        reply_embed = Embed(title="Waiting for user to finish authenticating", color=Color.blue())
-        reply_embed.add_field(name="\u200b",
-                              value="Check your direct messages for further instructions.",
-                              inline=True)
+        reply_embed = Embed(title="Waiting for user to finish authenticating",
+                            description="Check your direct messages for further instructions.",
+                            color=Color.blue())
         await message.edit(embed=reply_embed)
         
-        auth_url_embed = Embed(title="Registering Spotify account for use with nikobot.spotify commands")
-        auth_url_embed.add_field(name="\u200b",
-                                 value="Click the following link to complete authentication:",
-                                 inline=True)
-        auth_url_embed.add_field(name="\u200b",
-                                 value=auth_url,
-                                 inline=True)
-        auth_url_embed.add_field(name="\u200b",
-                                 value="You have 5 minutes until registration times out.",
-                                 inline=True)
+        auth_url_embed = Embed(title="Registering Spotify account for use with nikobot.spotify commands",
+                               description="Click the following link to complete authentication:\n"
+                                           + f"{auth_url}\n"
+                                           + "You have 5 minutes until registration times out.")
         await private_message(user_id, embed=auth_url_embed)
 
         elapsed = 0
         while not auth_helper.is_authed(user_id) and elapsed < 60 * 5:
-            sleep(1)
+            await sleep(1)
             elapsed += 1
         
         if not auth_helper.is_authed(user_id) and elapsed >= 60 * 5:

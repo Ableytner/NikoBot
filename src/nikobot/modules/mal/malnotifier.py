@@ -162,10 +162,8 @@ class MALNotifier(commands.Cog):
             return
 
         embed = discordpy.Embed(title="Checking for new chapters...",
-                              color=discordpy.Color.blue())
-        embed.add_field(name="\u200b",
-                        value="Please wait a few minutes",
-                        inline=True)
+                                description="Please wait a few minutes",
+                                color=discordpy.Color.blue())
         message = await util.discord.reply(ctx, embed=embed)
 
         maluser = VolatileStorage[f"mal.user.{user_id}"]
