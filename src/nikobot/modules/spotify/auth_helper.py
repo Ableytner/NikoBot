@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 from abllib import VolatileStorage, PersistentStorage
 
-from error import UserNotRegisteredError
+from .error import UserNotRegisteredError
 
 REDIRECT_URL = "https://nikobot.ableytner.duckdns.org/spotify_auth"
 

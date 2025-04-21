@@ -5,8 +5,7 @@ import requests
 from abllib import log, VolatileStorage, PersistentStorage
 
 from . import auth_helper
-from error import ApiResponseError
-from track import SpotifyTrack
+from .error import ApiResponseError
 
 logger = log.get_logger("SpotifyApiHelper")
 
@@ -55,7 +54,7 @@ def get_playlist_ids(user_id: int) -> list[int]:
     return list(playlist_ids)
 
 # TODO: rework method
-def get_playlist(user_id: int, playlist_id: str) -> tuple[str, list[SpotifyTrack]]:
+def get_playlist(user_id: int, playlist_id: str) -> tuple[str, list]:
     """Return a certain playlist of a given user"""
 
     auth_helper.ensure_token(user_id)
@@ -88,7 +87,7 @@ def get_playlist(user_id: int, playlist_id: str) -> tuple[str, list[SpotifyTrack
 
     return (playlist_name, tracks)
 
-def _get_tracks_from_playlist(user_id: int, playlist_id: str, offset: int, limit: int) -> list[SpotifyTrack]:
+def _get_tracks_from_playlist(user_id: int, playlist_id: str, offset: int, limit: int) -> list:
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
     headers = {
         "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
@@ -107,7 +106,8 @@ def _get_tracks_from_playlist(user_id: int, playlist_id: str, offset: int, limit
     tracks = []
     for track in [item["track"] for item in res.json()["items"]]:
         try:
-            tracks.append(SpotifyTrack.from_response(track))
+            # tracks.append(SpotifyTrack.from_response(track))
+            pass
         except ValueError:
             pass
 
