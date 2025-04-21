@@ -1,13 +1,18 @@
+"""
+Module which contains helper functions for spotify OAuth
+
+See https://developer.spotify.com/documentation/web-api/tutorials/code-flow for more details
+"""
+
 import base64
 import hashlib
 import urllib.parse
-import requests
-import urllib
 from datetime import datetime, timedelta
 
+import requests
 from abllib import VolatileStorage, PersistentStorage
 
-from .error import UserNotRegisteredError
+from .error import ApiResponseError, UserNotRegisteredError
 
 REDIRECT_URL = "https://nikobot.ableytner.duckdns.org/spotify_auth"
 
@@ -31,7 +36,8 @@ def auth(user_id: int) -> str:
     params = {
         "response_type": "code",
         "client_id": VolatileStorage["spotify.client_id"],
-        "scope": "playlist-read-private playlist-read-collaborative user-library-read playlist-modify-public playlist-modify-private",
+        "scope": "playlist-read-private playlist-read-collaborative user-library-read" \
+                 + " playlist-modify-public playlist-modify-private",
         "state": state,
         "redirect_uri": REDIRECT_URL
     }
@@ -39,9 +45,9 @@ def auth(user_id: int) -> str:
 
     return url_with_params
 
-def complete_auth(user_id: int, auth_code: str, state: str):
+def complete_auth(user_id: int, auth_code: str):
     """Complete the user authorization"""
-    
+
     BASE_URL = "https://accounts.spotify.com/api/token"
 
     headers = {
@@ -54,11 +60,11 @@ def complete_auth(user_id: int, auth_code: str, state: str):
         "redirect_uri": REDIRECT_URL
     }
 
-    res = requests.post(BASE_URL, headers=headers, params=params)
+    res = requests.post(BASE_URL, headers=headers, params=params, timeout=10)
 
     if "error" in res.json():
-        raise Exception(f"received error: {res.json()}")
-    
+        raise ApiResponseError.with_values(res.json())
+
     PersistentStorage[f"spotify.{user_id}.access_token"] = res.json()["access_token"]
     PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
     expires_at = datetime.now() + timedelta(seconds=res.json()["expires_in"])
@@ -81,14 +87,14 @@ def ensure_token(user_id: int) -> None:
 
     if f"spotify.{user_id}" not in PersistentStorage:
         raise UserNotRegisteredError()
-    
+
     expiration_time = datetime.fromtimestamp(PersistentStorage[f"spotify.{user_id}.token_expiration_date"])
     expiration_time -= timedelta(minutes=5) # make the expiration date a bit sooner
 
     if expiration_time > datetime.now():
         # the token has not yet expired
         return
-    
+
     # the token has already expired
     refresh_token(user_id)
 
@@ -106,10 +112,10 @@ def refresh_token(user_id: int) -> None:
         "refresh_token": PersistentStorage[f"spotify.{user_id}.refresh_token"]
     }
 
-    res = requests.post(BASE_URL, headers=headers, params=params)
+    res = requests.post(BASE_URL, headers=headers, params=params, timeout=10)
 
     if "error" in res.json():
-        raise Exception(f"received error: {res.json()}")
+        raise ApiResponseError.with_values(res.json())
 
     PersistentStorage[f"spotify.{user_id}.access_token"] = res.json()["access_token"]
     PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]

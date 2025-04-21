@@ -48,7 +48,7 @@ class Spotify(commands.Cog):
                             description="Check your direct messages for further instructions.",
                             color=Color.blue())
         await message.edit(embed=reply_embed)
-        
+
         auth_url_embed = Embed(title="Registering Spotify account for use with nikobot.spotify commands",
                                description="Click the following link to complete authentication:\n"
                                            + f"{auth_url}\n"
@@ -59,7 +59,7 @@ class Spotify(commands.Cog):
         while not auth_helper.is_authed(user_id) and elapsed < 60 * 5:
             await sleep(1)
             elapsed += 1
-        
+
         if not auth_helper.is_authed(user_id) and elapsed >= 60 * 5:
             auth_helper.cancel_auth()
             await reply(ctx, embed=Embed(title="Registration timed out",

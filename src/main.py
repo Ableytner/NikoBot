@@ -67,12 +67,14 @@ if __name__ == "__main__":
            or "client_id" not in config["spotify"] \
            or config["spotify"]["client_id"] == "":
             raise ValueError("Missing client_id for use with the spotify module. " +
-                             "You can create one https://developer.spotify.com/dashboard and add it to your config.json.")
+                             "You can create one here https://developer.spotify.com/dashboard " +
+                             "and add it to your config.json.")
         if "spotify" not in config \
            or "client_secret" not in config["spotify"] \
            or config["spotify"]["client_secret"] == "":
             raise ValueError("Missing client_secret for use with the spotify module. " +
-                             "You can create one https://developer.spotify.com/dashboard and add it to your config.json.")
+                             "You can create one here https://developer.spotify.com/dashboard " +
+                             "and add it to your config.json.")
 
         VolatileStorage["spotify.client_id"] = config["spotify"]["client_id"]
         VolatileStorage["spotify.client_secret"] = config["spotify"]["client_secret"]

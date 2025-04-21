@@ -23,7 +23,7 @@ def get_playlist_ids(user_id: int) -> list[int]:
         "limit": 50
     }
 
-    res = requests.get(BASE_URL, headers=headers, params=params)
+    res = requests.get(BASE_URL, headers=headers, params=params, timeout=10)
 
     if "error" in res.json():
         raise ApiResponseError.with_values(res.json())
@@ -40,7 +40,7 @@ def get_playlist_ids(user_id: int) -> list[int]:
             "limit": 50
         }
 
-        res = requests.get(BASE_URL, headers=headers, params=params)
+        res = requests.get(BASE_URL, headers=headers, params=params, timeout=10)
 
         if "error" in res.json():
             raise ApiResponseError.with_values(res.json())
@@ -67,7 +67,7 @@ def get_playlist(user_id: int, playlist_id: str) -> tuple[str, list]:
         "fields": "name,tracks.total"
     }
 
-    res = requests.get(url, headers=headers, params=params)
+    res = requests.get(url, headers=headers, params=params, timeout=10)
 
     if "error" in res.json():
         raise ApiResponseError.with_values(res.json())
@@ -98,7 +98,7 @@ def _get_tracks_from_playlist(user_id: int, playlist_id: str, offset: int, limit
         "fields": "items(track(name,album,artists))"
     }
 
-    res = requests.get(url, headers=headers, params=params)
+    res = requests.get(url, headers=headers, params=params, timeout=10)
 
     if "error" in res.json():
         raise ApiResponseError.with_values(res.json())
