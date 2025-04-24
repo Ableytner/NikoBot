@@ -10,9 +10,11 @@ import urllib.parse
 from datetime import datetime, timedelta
 
 import requests
-from abllib import VolatileStorage, PersistentStorage
+from abllib import log, VolatileStorage, PersistentStorage
 
 from .error import ApiResponseError, UserNotRegisteredError
+
+logger = log.get_logger("SpotifyAuthHelper")
 
 REDIRECT_URL = "https://nikobot.ableytner.duckdns.org/spotify_auth"
 
@@ -69,8 +71,11 @@ def complete_auth(user_id: int, auth_code: str):
     PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
     expires_at = datetime.now() + timedelta(seconds=res.json()["expires_in"])
     PersistentStorage[f"spotify.{user_id}.token_expiration_date"] = expires_at.timestamp()
+    PersistentStorage.save_to_disk()
 
     del VolatileStorage[f"spotify.auth.{user_id}"]
+
+    logger.info(f"Successfully linked Spotify account of user {user_id}")
 
 def cancel_auth(user_id: int) -> None:
     """Cancel the given users' ongoing authentication"""

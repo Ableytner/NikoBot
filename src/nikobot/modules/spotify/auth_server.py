@@ -47,7 +47,7 @@ class _HTTPRequestHandler(BaseHTTPRequestHandler):
 
         if not self.path.startswith("/spotify_auth"):
             logger.warning(f"{self.client_address} sent unsupported request: {self.path}")
-            self.send_response(404) # not found
+            self.respond(404, "Address not found.") # not found
             return
 
         url_params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
@@ -56,9 +56,20 @@ class _HTTPRequestHandler(BaseHTTPRequestHandler):
 
         for user_id, state_candidate in VolatileStorage["spotify.auth"].items():
             if state_candidate == state:
-                self.send_response(200) # OK
+                self.respond(200, "Your Spotify account was successfully registered with the NikoBot discord bot.") # OK
 
                 self.server.completion_func(user_id, auth_code)
                 return
 
-        self.send_response(400) # invalid request
+        self.respond(400, "Invalid authentication state. Maybe you waited too long?") # invalid request
+
+    def respond(self, code: int, message: str) -> None:
+        self.send_response(code)
+        self.send_header("Content-type", "text/html")
+        self.end_headers()
+
+        html = f"<html><body><h1>{message}</h1></body></html>"
+        self.wfile.write(html.encode("utf8"))
+
+    def log_request(self, code = "-", size = "-"):
+        pass
