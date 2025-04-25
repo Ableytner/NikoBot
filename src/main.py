@@ -7,7 +7,7 @@ import shutil
 import typing
 
 from abllib import fs, log, storage
-from abllib.storage import PersistentStorage, VolatileStorage
+from abllib.storage import VolatileStorage
 
 from nikobot.discord_bot import DiscordBot
 
@@ -40,16 +40,17 @@ if __name__ == "__main__":
                         help="A config file in json format. A template is contained in the repository.")
     args = parser.parse_args()
 
-    #setup storage
-    storage.initialize()
-
-    VolatileStorage["config_file"] = args.config
-
-    if not os.path.isfile(VolatileStorage["config_file"]):
+    # load config file
+    if not os.path.isfile(args.config):
         raise FileNotFoundError("Config file couldn't be found")
-    with open(VolatileStorage["config_file"], "r", encoding="utf8") as cf:
+    with open(args.config, "r", encoding="utf8") as cf:
         config: dict[str, typing.Any] = json.load(cf)
 
+    # setup storage
+    storage_dir = fs.absolute(config["storage_dir"])
+    storage.initialize(os.path.join(storage_dir, "storage.json"), True)
+
+    VolatileStorage["config_file"] = args.config
     VolatileStorage["modules_to_load"] = config["modules"]
     VolatileStorage["discord_token"] = config["discord_token"]
 
@@ -79,19 +80,13 @@ if __name__ == "__main__":
         VolatileStorage["spotify.client_id"] = config["spotify"]["client_id"]
         VolatileStorage["spotify.client_secret"] = config["spotify"]["client_secret"]
 
-    # setup storage
-    storage_dir = fs.absolute(config["storage_dir"])
-
-    VolatileStorage["storage_file"] = os.path.join(storage_dir, "storage.json")
-
+    # setup storage directories
     VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
     os.makedirs(VolatileStorage["cache_dir"], exist_ok=True)
 
     VolatileStorage["temp_dir"] = os.path.join(storage_dir, "temp")
     shutil.rmtree(VolatileStorage["temp_dir"], ignore_errors=True)
     os.makedirs(VolatileStorage["temp_dir"], exist_ok=True)
-
-    PersistentStorage.load_from_disk()
 
     bot = DiscordBot()
     VolatileStorage["bot"] = bot

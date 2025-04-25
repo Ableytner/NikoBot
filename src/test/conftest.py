@@ -16,13 +16,12 @@ sys.path.append(f"{pathlib.Path(__file__).parent.parent}")
 sys.path.append(f"{pathlib.Path(__file__).parent}")
 # pylint: enable=wrong-import-position, wrong-import-order
 
-import atexit
 import json
 import shutil
 import typing
 
 from abllib import fs, log, storage
-from abllib.storage import PersistentStorage, VolatileStorage
+from abllib.storage import VolatileStorage
 import pytest
 
 def pytest_addoption(parser):
@@ -61,18 +60,13 @@ if "test" not in config_dict:
     raise ValueError(f"Missing test section in {VolatileStorage['config_file']}. " +
                      "You can find an example in config.template.json, located at the repository root.")
 
-
-with open(VolatileStorage["storage_file"], "w", encoding="utf8") as f:
-    f.write("{}")
-
+# setup storage folders
 VolatileStorage["cache_dir"] = os.path.join(STORAGE_DIR, "cache")
 os.makedirs(VolatileStorage["cache_dir"], exist_ok=True)
 
 VolatileStorage["temp_dir"] = os.path.join(STORAGE_DIR, "temp")
 shutil.rmtree(VolatileStorage["temp_dir"], ignore_errors=True)
 os.makedirs(VolatileStorage["temp_dir"], exist_ok=True)
-
-atexit.unregister(PersistentStorage.save_to_disk)
 
 # pylint: disable-next=unused-import
 from .fixtures import *
