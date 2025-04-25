@@ -7,7 +7,7 @@ import shutil
 import typing
 
 from abllib import fs, log, storage
-from abllib.storage import PersistentStorage, VolatileStorage
+from abllib.storage import VolatileStorage
 
 from nikobot.discord_bot import DiscordBot
 
