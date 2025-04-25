@@ -1,4 +1,4 @@
-abllib @ git+https://github.com/Ableytner/abllib@master
+abllib @ git+https://github.com/Ableytner/abllib@1.3.3
 beautifulsoup4
 discord.py
 pillow
