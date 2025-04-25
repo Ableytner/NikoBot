@@ -212,6 +212,9 @@ class MALNotifier(commands.Cog):
             if manga._time_next_notify < datetime.now():
                 await self.notify_manga(user_id, manga)
 
+                # avoid rate limits
+                await sleep(1)
+
         maluser.save_to_storage()
 
     async def notify_manga(self, user_id: int, manga: Manga) -> None:
