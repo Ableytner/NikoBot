@@ -9,6 +9,7 @@ from discord import app_commands, Color, Embed
 from discord.ext import commands
 
 from . import api_helper, auth_helper, auth_server
+from .dclasses import Playlist, TrackSet
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
 
 logger = get_logger("spotify")
@@ -73,7 +74,54 @@ class Spotify(commands.Cog):
 
     # TODO: deregister command + deregister spotify access?
 
-    # TODO: all_playlist command
+    @grouped_hybrid_command(
+        "all_playlist",
+        "Create a playlist with all your songs from every playlist you created",
+        command_group
+    )
+    async def all_playlist(self, ctx: commands.context.Context):
+        """The discord command 'niko.spotify.all_playlist'"""
+
+        user_id = get_user_id(ctx)
+
+        if not auth_helper.is_authed(user_id):
+            await reply(ctx, embed=Embed(title="You are not yet registered! Use the command 'niko.spotify.regsiter' first",
+                                         color=Color.orange()))
+            return
+        
+        if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
+            all_playlist = api_helper.get_playlist_meta(user_id, PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
+            message = await reply(ctx, embed=Embed(title=f"Updating existing playlist {all_playlist.name}",
+                                                   color=Color.blue()))
+        else:
+            all_playlist = api_helper.create_playlist(user_id, "🌎 everything")
+            PersistentStorage[f"spotify.{user_id}.all_playlist.id"] = all_playlist.id
+            message = await reply(ctx, embed=Embed(title=f"Creating new playlist {all_playlist.name}",
+                                                   color=Color.blue()))
+
+        playlist_ids = api_helper.get_playlist_ids(user_id)
+
+        # remove all_playlist
+        playlist_ids.remove(all_playlist.id)
+
+        track_set = TrackSet()
+
+        for p_id in playlist_ids:
+            p_meta = api_helper.get_playlist_meta(user_id, p_id)
+            await message.edit(embed=Embed(title="Loading tracks",
+                                           description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
+                                           color=Color.blue()))
+
+            for t_meta in api_helper.get_tracks(user_id, p_id):
+                track_set.add(*t_meta)
+
+        await message.edit(embed=Embed(title=f"Adding {len(track_set.ids())} tracks to final playlist",
+                                        color=Color.blue()))
+        api_helper.add_tracks(user_id, all_playlist.id, track_set.ids())
+
+        await message.edit(embed=Embed(title="Successfully updated your playlist",
+                                       description=f"Added {len(track_set.ids())} total tracks",
+                                       color=Color.green()))
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""

@@ -1,18 +1,53 @@
 """Contains helper functions for working with the Spotify Web API"""
 
-import requests
+from datetime import datetime
+from typing import Generator
 
 from abllib import log, VolatileStorage, PersistentStorage
 
-from . import auth_helper
+from . import auth_helper, req
+from .dclasses import Playlist
 from .error import ApiResponseError
 
-logger = log.get_logger("SpotifyApiHelper")
+logger = log.get_logger("Spotify.api_helper")
 
-def get_playlist_ids(user_id: int) -> list[int]:
-    """Return all playlist ids for the given user"""
+def get_user_spotify_id(user_id: int) -> str:
+    """Return the users' spotify id"""
 
     auth_helper.ensure_token(user_id)
+
+    url = f"https://api.spotify.com/v1/me"
+    headers = auth_helper.get_auth_headers(user_id)
+
+    res = req.get(url, headers=headers, timeout=10)
+
+    return res.json()["id"]
+
+def create_playlist(user_id: int, playlist_name: str) -> Playlist:
+    """Create a new playlist and return its sptify id"""
+
+    auth_helper.ensure_token(user_id)
+
+    user_spotify_id = get_user_spotify_id(user_id)
+
+    url = f"https://api.spotify.com/v1/users/{user_spotify_id}/playlists"
+    headers = auth_helper.get_auth_headers(user_id)
+    body = {
+        "name": playlist_name,
+        "description": "Playlist with all songs from all your playlists, created by github.com/Ableytner/NikoBot",
+        "public": False
+    }
+
+    res = req.post(url, headers=headers, json=body, timeout=10)
+
+    return Playlist(playlist_name, res.json()["id"], 0)
+
+def get_playlist_ids(user_id: int) -> list[str]:
+    """Return all playlist ids"""
+
+    auth_helper.ensure_token(user_id)
+
+    user_spotify_id = get_user_spotify_id(user_id)
 
     BASE_URL = "https://api.spotify.com/v1/me/playlists"
 
@@ -23,15 +58,10 @@ def get_playlist_ids(user_id: int) -> list[int]:
         "limit": 50
     }
 
-    res = requests.get(BASE_URL, headers=headers, params=params, timeout=10)
-
-    if "error" in res.json():
-        raise ApiResponseError.with_values(res.json())
+    res = req.get(BASE_URL, headers=headers, params=params, timeout=10)
 
     playlist_ids = set()
     total_playlists = res.json()["total"]
-
-    logger.info(f"Requesting {total_playlists} playlists in total")
 
     offset = 0
     while offset < total_playlists:
@@ -40,75 +70,92 @@ def get_playlist_ids(user_id: int) -> list[int]:
             "limit": 50
         }
 
-        res = requests.get(BASE_URL, headers=headers, params=params, timeout=10)
-
-        if "error" in res.json():
-            raise ApiResponseError.with_values(res.json())
+        res = req.get(BASE_URL, headers=headers, params=params, timeout=10)
 
         for playlist_json in res.json()["items"]:
-            playlist_ids.add(playlist_json["id"])
+            if playlist_json["owner"]["id"] == user_spotify_id:
+                playlist_ids.add(playlist_json["id"])
             offset += 1
 
-    logger.info(f"Retrieved {len(playlist_ids)} playlists")
+    logger.info(f"Retrieved {len(playlist_ids)} user-owned playlists")
 
     return list(playlist_ids)
 
-# TODO: rework method
-def get_playlist(user_id: int, playlist_id: str) -> tuple[str, list]:
-    """Return a certain playlist of a given user"""
+def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
+    """Return the metadata of a playlist"""
 
     auth_helper.ensure_token(user_id)
 
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
-    headers = {
-        "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
-    }
+    headers = auth_helper.get_auth_headers(user_id)
     params = {
         "fields": "name,tracks.total"
     }
 
-    res = requests.get(url, headers=headers, params=params, timeout=10)
+    res = req.get(url, headers=headers, params=params, timeout=10)
 
-    if "error" in res.json():
-        raise ApiResponseError.with_values(res.json())
+    return Playlist(res.json()["name"], playlist_id, res.json()["tracks"]["total"])
+
+def get_tracks(user_id: int, playlist_id: str) -> Generator[tuple[str, int], None, None]:
+    """Return a generator over all track ids and date_added of a playlist"""
+
+    auth_helper.ensure_token(user_id)
+
+    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}"
+    headers = auth_helper.get_auth_headers(user_id)
+    params = {
+        "fields": "name,tracks.total"
+    }
+
+    res = req.get(BASE_URL, headers=headers, params=params, timeout=10)
 
     playlist_name = res.json()["name"]
     total_tracks = res.json()["tracks"]["total"]
-    print(f"Requesting {total_tracks} tracks from playlist {playlist_name}")
+    logger.info(f"Requesting {total_tracks} tracks from playlist {playlist_name}")
 
-    tracks = []
     offset = 0
     while offset < total_tracks:
-        tracks += _get_tracks_from_playlist(playlist_id, offset, 100)
-        offset += 100
-        print(f"Retrieved {len(tracks)} tracks", end="\r")
+        params = {
+            "fields": "items(added_at,track.id)",
+            "offset": offset,
+            "limit": 50
+        }
 
-    print(f"Retrieved {len(tracks)} tracks")
+        res = req.get(BASE_URL + "/tracks", headers=headers, params=params, timeout=10)
 
-    return (playlist_name, tracks)
+        for track_json in res.json()["items"]:
+            if track_json["track"]["id"] is not None:
+                yield (
+                    track_json["track"]["id"],
+                    int(datetime.strptime(track_json["added_at"], r"%Y-%m-%dT%H:%M:%SZ").timestamp())
+                )
+            else:
+                # local files can't currently be added to playlists using the web api
+                # https://developer.spotify.com/documentation/web-api/concepts/playlists under #Limitations
+                pass
+            offset += 1
 
-def _get_tracks_from_playlist(user_id: int, playlist_id: str, offset: int, limit: int) -> list:
-    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
-    headers = {
-        "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
-    }
-    params = {
-        "offset": offset,
-        "limit": limit,
-        "fields": "items(track(name,album,artists))"
-    }
+def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> None:
+    """Add all given track ids to a playlist"""
 
-    res = requests.get(url, headers=headers, params=params, timeout=10)
+    auth_helper.ensure_token(user_id)
 
-    if "error" in res.json():
-        raise ApiResponseError.with_values(res.json())
+    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    headers = auth_helper.get_auth_headers(user_id)
 
-    tracks = []
-    for track in [item["track"] for item in res.json()["items"]]:
+    total_tracks = len(track_ids)
+    logger.info(f"Adding {len(track_ids)} tracks to playlist")
+
+    offset = 0
+    while offset < total_tracks:
+        body = {
+            "uris": [f"spotify:track:{item}" for item in track_ids[0:50:]]
+        }
+
         try:
-            # tracks.append(SpotifyTrack.from_response(track))
-            pass
-        except ValueError:
-            pass
+            res = req.post(BASE_URL, headers=headers, json=body, timeout=10)
+        except ApiResponseError:
+            logger.info(body)
 
-    return tracks
+        track_ids = track_ids[50:]
+        offset += len(body["uris"])

@@ -5,9 +5,11 @@ import json
 import os
 import shutil
 import typing
+from time import sleep
 
 from abllib import fs, log, storage
-from abllib.storage import VolatileStorage
+from abllib.pproc import WorkerThread
+from abllib.storage import VolatileStorage, PersistentStorage
 
 from nikobot.discord_bot import DiscordBot
 
@@ -22,9 +24,10 @@ from nikobot.discord_bot import DiscordBot
 # fix manganato search for: oshi no ko, solo leveling, propably a lot more after provider replacement
 # create command to list manga with reading status
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
-# move mal config loading to malnotifier module
-# move all module-specific code to that module (e.g. help modulke in on_command_error)
+# move mal config loading to centralized handler
+# move all module-specific code to that module (e.g. help module in on_command_error)
 # add command to add all songs from all spotify playlists to one playlist, in order of first added
+# update to python 3.13
 
 if __name__ == "__main__":
     # setup logging
@@ -49,6 +52,12 @@ if __name__ == "__main__":
     # setup storage
     storage_dir = fs.absolute(config["storage_dir"])
     storage.initialize(os.path.join(storage_dir, "storage.json"), True)
+
+    def save_func():
+        while True:
+            PersistentStorage.save_to_disk()
+            sleep(60)
+    WorkerThread(target=save_func, daemon=True).start()
 
     VolatileStorage["config_file"] = args.config
     VolatileStorage["modules_to_load"] = config["modules"]
@@ -90,4 +99,8 @@ if __name__ == "__main__":
 
     bot = DiscordBot()
     VolatileStorage["bot"] = bot
-    bot.start_bot()
+
+    try:
+        bot.start_bot()
+    except KeyboardInterrupt:
+        PersistentStorage.save_to_disk()

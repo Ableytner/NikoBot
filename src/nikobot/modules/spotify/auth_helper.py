@@ -9,12 +9,12 @@ import hashlib
 import urllib.parse
 from datetime import datetime, timedelta
 
-import requests
 from abllib import log, VolatileStorage, PersistentStorage
 
+from . import req
 from .error import ApiResponseError, UserNotRegisteredError
 
-logger = log.get_logger("SpotifyAuthHelper")
+logger = log.get_logger("Spotify.auth_helper")
 
 REDIRECT_URL = "https://nikobot.ableytner.duckdns.org/spotify_auth"
 
@@ -62,10 +62,7 @@ def complete_auth(user_id: int, auth_code: str):
         "redirect_uri": REDIRECT_URL
     }
 
-    res = requests.post(BASE_URL, headers=headers, params=params, timeout=10)
-
-    if "error" in res.json():
-        raise ApiResponseError.with_values(res.json())
+    res = req.post(BASE_URL, headers=headers, params=params, timeout=10)
 
     PersistentStorage[f"spotify.{user_id}.access_token"] = res.json()["access_token"]
     PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
@@ -117,13 +114,11 @@ def refresh_token(user_id: int) -> None:
         "refresh_token": PersistentStorage[f"spotify.{user_id}.refresh_token"]
     }
 
-    res = requests.post(BASE_URL, headers=headers, params=params, timeout=10)
-
-    if "error" in res.json():
-        raise ApiResponseError.with_values(res.json())
+    res = req.post(BASE_URL, headers=headers, params=params, timeout=10)
 
     PersistentStorage[f"spotify.{user_id}.access_token"] = res.json()["access_token"]
-    PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
+    if "refresh_token" in res.json():
+        PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
     expires_at = datetime.now() + timedelta(seconds=res.json()["expires_in"])
     PersistentStorage[f"spotify.{user_id}.token_expiration_date"] = expires_at.timestamp()
 
@@ -139,3 +134,8 @@ def get_auth_string() -> str:
     authorization = f"{VolatileStorage["spotify.client_id"]}:{VolatileStorage["spotify.client_secret"]}"
     authorization_encoded = base64.b64encode(authorization.encode("ascii")).decode("ascii")
     return authorization_encoded
+
+def get_auth_headers(user_id: int) -> str:
+    return {
+        "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
+    }
