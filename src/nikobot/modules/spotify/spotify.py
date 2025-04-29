@@ -1,5 +1,6 @@
 """contains the cog of the spotify module"""
 
+import asyncio
 from asyncio import sleep
 from threading import Thread
 
@@ -10,6 +11,7 @@ from discord.ext import commands
 
 from . import api_helper, auth_helper, auth_server
 from .dclasses import Playlist, TrackSet
+from .error import ApiResponseError
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
 
 logger = get_logger("spotify")
@@ -85,43 +87,80 @@ class Spotify(commands.Cog):
         user_id = get_user_id(ctx)
 
         if not auth_helper.is_authed(user_id):
-            await reply(ctx, embed=Embed(title="You are not yet registered! Use the command 'niko.spotify.regsiter' first",
+            await reply(ctx, embed=Embed(title="You are not yet registered! Use the command 'niko.spotify.register' first",
                                          color=Color.orange()))
             return
         
         if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
-            all_playlist = api_helper.get_playlist_meta(user_id, PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
-            message = await reply(ctx, embed=Embed(title=f"Updating existing playlist {all_playlist.name}",
-                                                   color=Color.blue()))
-        else:
-            all_playlist = api_helper.create_playlist(user_id, "🌎 everything")
+            try:
+                all_playlist = await api_helper.get_playlist_meta(user_id, PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
+                message = await reply(ctx, embed=Embed(title=f"Updating existing playlist {all_playlist.name}",
+                                                       color=Color.blue()))
+            except ApiResponseError as err:
+                if err.status_code == 404:
+                    del PersistentStorage[f"spotify.{user_id}.all_playlist.id"]
+                else:
+                    raise
+
+        if f"spotify.{user_id}.all_playlist.id" not in PersistentStorage:
+            all_playlist = await api_helper.create_playlist(user_id, "🌎 everything")
             PersistentStorage[f"spotify.{user_id}.all_playlist.id"] = all_playlist.id
             message = await reply(ctx, embed=Embed(title=f"Creating new playlist {all_playlist.name}",
                                                    color=Color.blue()))
 
-        playlist_ids = api_helper.get_playlist_ids(user_id)
+        playlist_ids = await api_helper.get_playlist_ids(user_id)
 
         # remove all_playlist
         playlist_ids.remove(all_playlist.id)
 
         track_set = TrackSet()
 
+        await message.edit(embed=Embed(title="Loading tracks",
+                                       description="Liked Songs",
+                                       color=Color.blue()))
+        async for t_meta in api_helper.get_saved_tracks(user_id):
+            track_set.add(*t_meta)
+
         for p_id in playlist_ids:
-            p_meta = api_helper.get_playlist_meta(user_id, p_id)
+            p_meta = await api_helper.get_playlist_meta(user_id, p_id)
             await message.edit(embed=Embed(title="Loading tracks",
                                            description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
                                            color=Color.blue()))
 
-            for t_meta in api_helper.get_tracks(user_id, p_id):
+            async for t_meta in api_helper.get_tracks(user_id, p_id):
                 track_set.add(*t_meta)
 
         await message.edit(embed=Embed(title=f"Adding {len(track_set.ids())} tracks to final playlist",
                                         color=Color.blue()))
-        api_helper.add_tracks(user_id, all_playlist.id, track_set.ids())
+        await api_helper.add_tracks(user_id, all_playlist.id, track_set.ids())
 
         await message.edit(embed=Embed(title="Successfully updated your playlist",
-                                       description=f"Added {len(track_set.ids())} total tracks",
+                                       description=f"Added {len(track_set.ids())} total tracks\n" \
+                                                  + "Note: Do not delete the playlist on your own, " \
+                                                  + "use niko.spotify.all_playlist_remove instead!",
                                        color=Color.green()))
+
+    @grouped_hybrid_command(
+        "all_playlist_remove",
+        "Remove the playlist created by niko.spotify.all_playlist",
+        command_group
+    )
+    async def all_playlist_remove(self, ctx: commands.context.Context):
+        """The discord command 'niko.spotify.all_playlist_remove'"""
+
+        user_id = get_user_id(ctx)
+
+        if not auth_helper.is_authed(user_id):
+            await reply(ctx, embed=Embed(title="You are not yet registered! Use the command 'niko.spotify.regsiter' first",
+                                         color=Color.orange()))
+            return
+        
+        if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
+            await api_helper.delete_playlist(user_id, PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
+            del PersistentStorage[f"spotify.{user_id}.all_playlist.id"]
+
+        await reply(ctx, embed=Embed(title="Successfully deleted the playlist",
+                                     color=Color.green()))
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
@@ -129,6 +168,12 @@ async def setup(bot: commands.Bot):
     cog = Spotify(bot)
 
     # start http server
-    Thread(target=lambda: auth_server.run_http_server(auth_helper.complete_auth), daemon=True).start()
+    def _start_http_server():
+        def _completion_func(*args):
+            fut = asyncio.ensure_future(auth_helper.complete_auth(*args), bot.loop)
+            return fut.result()
+
+        auth_server.run_http_server(_completion_func)
+    Thread(target=_start_http_server, daemon=True).start()
 
     await bot.add_cog(cog)

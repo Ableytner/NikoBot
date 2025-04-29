@@ -47,7 +47,7 @@ def auth(user_id: int) -> str:
 
     return url_with_params
 
-def complete_auth(user_id: int, auth_code: str):
+async def complete_auth(user_id: int, auth_code: str):
     """Complete the user authorization"""
 
     BASE_URL = "https://accounts.spotify.com/api/token"
@@ -62,11 +62,12 @@ def complete_auth(user_id: int, auth_code: str):
         "redirect_uri": REDIRECT_URL
     }
 
-    res = req.post(BASE_URL, headers=headers, params=params, timeout=10)
+    res = await req.post(BASE_URL, headers, params)
+    json_res = await res.json()
 
-    PersistentStorage[f"spotify.{user_id}.access_token"] = res.json()["access_token"]
-    PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
-    expires_at = datetime.now() + timedelta(seconds=res.json()["expires_in"])
+    PersistentStorage[f"spotify.{user_id}.access_token"] = json_res["access_token"]
+    PersistentStorage[f"spotify.{user_id}.refresh_token"] = json_res["refresh_token"]
+    expires_at = datetime.now() + timedelta(seconds=json_res["expires_in"])
     PersistentStorage[f"spotify.{user_id}.token_expiration_date"] = expires_at.timestamp()
     PersistentStorage.save_to_disk()
 
@@ -80,7 +81,7 @@ def cancel_auth(user_id: int) -> None:
     if f"spotify.auth.{user_id}" in VolatileStorage:
         del VolatileStorage[f"spotify.auth.{user_id}"]
 
-def ensure_token(user_id: int) -> None:
+async def ensure_token(user_id: int) -> None:
     """
     Ensure that the given user has a valid Spotify token
     
@@ -98,9 +99,9 @@ def ensure_token(user_id: int) -> None:
         return
 
     # the token has already expired
-    refresh_token(user_id)
+    await refresh_token(user_id)
 
-def refresh_token(user_id: int) -> None:
+async def refresh_token(user_id: int) -> None:
     """Refresh the given users Spotify token"""
 
     BASE_URL = "https://accounts.spotify.com/api/token"
@@ -114,12 +115,13 @@ def refresh_token(user_id: int) -> None:
         "refresh_token": PersistentStorage[f"spotify.{user_id}.refresh_token"]
     }
 
-    res = req.post(BASE_URL, headers=headers, params=params, timeout=10)
+    res = await req.post(BASE_URL, headers, params)
+    json_res = await res.json()
 
-    PersistentStorage[f"spotify.{user_id}.access_token"] = res.json()["access_token"]
-    if "refresh_token" in res.json():
-        PersistentStorage[f"spotify.{user_id}.refresh_token"] = res.json()["refresh_token"]
-    expires_at = datetime.now() + timedelta(seconds=res.json()["expires_in"])
+    PersistentStorage[f"spotify.{user_id}.access_token"] = json_res["access_token"]
+    if "refresh_token" in json_res:
+        PersistentStorage[f"spotify.{user_id}.refresh_token"] = json_res["refresh_token"]
+    expires_at = datetime.now() + timedelta(seconds=json_res["expires_in"])
     PersistentStorage[f"spotify.{user_id}.token_expiration_date"] = expires_at.timestamp()
 
 def _hash_user_id(user_id: int) -> str:

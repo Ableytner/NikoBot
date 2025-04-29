@@ -2,7 +2,10 @@
 
 from dataclasses import dataclass
 
+from abllib import log
 from abllib.error import WrongTypeError
+
+logger = log.get_logger("Spotify.dclasses")
 
 @dataclass
 class Playlist:
@@ -18,6 +21,10 @@ class TrackSet:
         if not isinstance(track_id, str): raise WrongTypeError.with_values(track_id, str)
         if not isinstance(timestamp, int): raise WrongTypeError.with_values(timestamp, int)
         
+        # TODO: remove
+        if track_id == "5fbSIKNisMBlP1tXxjziJb":
+            logger.info(timestamp)
+
         if track_id not in self._tracks:
             self._tracks[track_id] = timestamp
         elif timestamp < self._tracks[track_id]:

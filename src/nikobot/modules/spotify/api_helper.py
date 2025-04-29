@@ -1,7 +1,7 @@
 """Contains helper functions for working with the Spotify Web API"""
 
 from datetime import datetime
-from typing import Generator
+from typing import Generator, AsyncGenerator
 
 from abllib import log, VolatileStorage, PersistentStorage
 
@@ -11,24 +11,25 @@ from .error import ApiResponseError
 
 logger = log.get_logger("Spotify.api_helper")
 
-def get_user_spotify_id(user_id: int) -> str:
+async def get_user_spotify_id(user_id: int) -> str:
     """Return the users' spotify id"""
 
-    auth_helper.ensure_token(user_id)
+    await auth_helper.ensure_token(user_id)
 
     url = f"https://api.spotify.com/v1/me"
     headers = auth_helper.get_auth_headers(user_id)
 
-    res = req.get(url, headers=headers, timeout=10)
+    res = await req.get(url, headers)
+    json_res = await res.json()
 
-    return res.json()["id"]
+    return json_res["id"]
 
-def create_playlist(user_id: int, playlist_name: str) -> Playlist:
+async def create_playlist(user_id: int, playlist_name: str) -> Playlist:
     """Create a new playlist and return its sptify id"""
 
-    auth_helper.ensure_token(user_id)
+    await auth_helper.ensure_token(user_id)
 
-    user_spotify_id = get_user_spotify_id(user_id)
+    user_spotify_id = await get_user_spotify_id(user_id)
 
     url = f"https://api.spotify.com/v1/users/{user_spotify_id}/playlists"
     headers = auth_helper.get_auth_headers(user_id)
@@ -38,30 +39,30 @@ def create_playlist(user_id: int, playlist_name: str) -> Playlist:
         "public": False
     }
 
-    res = req.post(url, headers=headers, json=body, timeout=10)
+    res = await req.post(url, headers, json=body)
+    json_res = await res.json()
 
-    return Playlist(playlist_name, res.json()["id"], 0)
+    return Playlist(playlist_name, json_res["id"], 0)
 
-def get_playlist_ids(user_id: int) -> list[str]:
+async def get_playlist_ids(user_id: int) -> list[str]:
     """Return all playlist ids"""
 
-    auth_helper.ensure_token(user_id)
+    await auth_helper.ensure_token(user_id)
 
-    user_spotify_id = get_user_spotify_id(user_id)
+    user_spotify_id = await get_user_spotify_id(user_id)
 
     BASE_URL = "https://api.spotify.com/v1/me/playlists"
 
-    headers = {
-        "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
-    }
+    headers = auth_helper.get_auth_headers(user_id)
     params = {
         "limit": 50
     }
 
-    res = req.get(BASE_URL, headers=headers, params=params, timeout=10)
+    res = await req.get(BASE_URL, headers, params)
+    json_res = await res.json()
 
     playlist_ids = set()
-    total_playlists = res.json()["total"]
+    total_playlists = json_res["total"]
 
     offset = 0
     while offset < total_playlists:
@@ -70,9 +71,10 @@ def get_playlist_ids(user_id: int) -> list[str]:
             "limit": 50
         }
 
-        res = req.get(BASE_URL, headers=headers, params=params, timeout=10)
+        res = await req.get(BASE_URL, headers, params)
+        json_res = await res.json()
 
-        for playlist_json in res.json()["items"]:
+        for playlist_json in json_res["items"]:
             if playlist_json["owner"]["id"] == user_spotify_id:
                 playlist_ids.add(playlist_json["id"])
             offset += 1
@@ -81,10 +83,10 @@ def get_playlist_ids(user_id: int) -> list[str]:
 
     return list(playlist_ids)
 
-def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
+async def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
     """Return the metadata of a playlist"""
 
-    auth_helper.ensure_token(user_id)
+    await auth_helper.ensure_token(user_id)
 
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
     headers = auth_helper.get_auth_headers(user_id)
@@ -92,25 +94,37 @@ def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
         "fields": "name,tracks.total"
     }
 
-    res = req.get(url, headers=headers, params=params, timeout=10)
+    res = await req.get(url, headers, params)
+    json_res = await res.json()
 
-    return Playlist(res.json()["name"], playlist_id, res.json()["tracks"]["total"])
+    return Playlist(json_res["name"], playlist_id, json_res["tracks"]["total"])
 
-def get_tracks(user_id: int, playlist_id: str) -> Generator[tuple[str, int], None, None]:
+async def delete_playlist(user_id: int, playlist_id: str) -> Playlist:
+    """Delete a given playlist"""
+
+    await auth_helper.ensure_token(user_id)
+
+    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/followers"
+    headers = auth_helper.get_auth_headers(user_id)
+
+    await req.delete(url, headers)
+
+async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[tuple[str, int], None]:
     """Return a generator over all track ids and date_added of a playlist"""
 
-    auth_helper.ensure_token(user_id)
+    await auth_helper.ensure_token(user_id)
 
     BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}"
-    headers = auth_helper.get_auth_headers(user_id)
     params = {
         "fields": "name,tracks.total"
     }
+    headers = auth_helper.get_auth_headers(user_id)
 
-    res = req.get(BASE_URL, headers=headers, params=params, timeout=10)
+    res = await req.get(BASE_URL, headers, params)
+    json_res = await res.json()
 
-    playlist_name = res.json()["name"]
-    total_tracks = res.json()["tracks"]["total"]
+    playlist_name = json_res["name"]
+    total_tracks = json_res["tracks"]["total"]
     logger.info(f"Requesting {total_tracks} tracks from playlist {playlist_name}")
 
     offset = 0
@@ -121,9 +135,10 @@ def get_tracks(user_id: int, playlist_id: str) -> Generator[tuple[str, int], Non
             "limit": 50
         }
 
-        res = req.get(BASE_URL + "/tracks", headers=headers, params=params, timeout=10)
+        res = await req.get(BASE_URL + "/tracks", headers, params)
+        json_res = await res.json()
 
-        for track_json in res.json()["items"]:
+        for track_json in json_res["items"]:
             if track_json["track"]["id"] is not None:
                 yield (
                     track_json["track"]["id"],
@@ -135,27 +150,89 @@ def get_tracks(user_id: int, playlist_id: str) -> Generator[tuple[str, int], Non
                 pass
             offset += 1
 
-def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> None:
+async def get_saved_tracks(user_id: int) -> AsyncGenerator[tuple[str, int], None]:
+    """Return a generator over all saved track ids of the liked songs"""
+
+    await auth_helper.ensure_token(user_id)
+
+    BASE_URL = f"https://api.spotify.com/v1/me/tracks"
+
+    headers = auth_helper.get_auth_headers(user_id)
+
+    res = await req.get(BASE_URL, headers)
+    json_res = await res.json()
+
+    total_tracks = json_res["total"]
+    logger.info(f"Requesting {total_tracks} tracks from liked songs")
+
+    offset = 0
+    while offset < total_tracks:
+        params = {
+            "offset": offset,
+            "limit": 50
+        }
+
+        res = await req.get(BASE_URL, headers, params)
+        json_res = await res.json()
+
+        for track_json in json_res["items"]:
+            if track_json["track"]["id"] is not None:
+                yield (
+                    track_json["track"]["id"],
+                    int(datetime.strptime(track_json["added_at"], r"%Y-%m-%dT%H:%M:%SZ").timestamp())
+                )
+            else:
+                # local files can't currently be added to playlists using the web api
+                # https://developer.spotify.com/documentation/web-api/concepts/playlists under #Limitations
+                pass
+            offset += 1
+
+async def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> None:
     """Add all given track ids to a playlist"""
 
-    auth_helper.ensure_token(user_id)
+    await auth_helper.ensure_token(user_id)
 
     BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
     headers = auth_helper.get_auth_headers(user_id)
 
     total_tracks = len(track_ids)
-    logger.info(f"Adding {len(track_ids)} tracks to playlist")
+    logger.info(f"Adding {total_tracks} tracks to playlist")
 
     offset = 0
     while offset < total_tracks:
         body = {
-            "uris": [f"spotify:track:{item}" for item in track_ids[0:50:]]
+            "uris": [f"spotify:track:{item}" for item in track_ids[-50:]],
+            "position": 0
         }
 
         try:
-            res = req.post(BASE_URL, headers=headers, json=body, timeout=10)
+            await req.post(BASE_URL, headers, json=body)
         except ApiResponseError:
             logger.info(body)
 
-        track_ids = track_ids[50:]
+        track_ids = track_ids[:-50]
+        offset += len(body["uris"])
+
+async def remove_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> None:
+    """Remove all given track ids from a playlist"""
+
+    await auth_helper.ensure_token(user_id)
+
+    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    headers = auth_helper.get_auth_headers(user_id)
+
+    total_tracks = len(track_ids)
+
+    offset = 0
+    while offset < total_tracks:
+        body = {
+            "tracks": [{"uris": f"spotify:track:{item}"} for item in track_ids[0:100:]]
+        }
+
+        try:
+            await req.delete(BASE_URL, headers, json=body)
+        except ApiResponseError:
+            logger.info(body)
+
+        track_ids = track_ids[100:]
         offset += len(body["uris"])

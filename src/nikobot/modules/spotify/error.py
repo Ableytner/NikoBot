@@ -9,6 +9,8 @@ class ApiResponseError(CustomException):
         0: "The api returned an error",
         1: "The api returned an error: {0}"
     }
+    status_code: int | None
+    message: str | None
 
 class UserNotRegisteredError(CustomException):
     """Exception raised when the requested user is not yet registered"""
