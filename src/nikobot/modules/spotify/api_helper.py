@@ -104,6 +104,8 @@ async def delete_playlist(user_id: int, playlist_id: str) -> Playlist:
 
     await auth_helper.ensure_token(user_id)
 
+    # unfollowing a playlist deletes it
+    # https://stackoverflow.com/a/78710008/15436169
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}/followers"
     headers = auth_helper.get_auth_headers(user_id)
 
@@ -226,13 +228,15 @@ async def remove_tracks(user_id: int, playlist_id: str, track_ids: list[str]) ->
     offset = 0
     while offset < total_tracks:
         body = {
-            "tracks": [{"uris": f"spotify:track:{item}"} for item in track_ids[0:100:]]
+            "tracks": [{"uri": f"spotify:track:{item}"} for item in track_ids[0:100:]]
         }
 
         try:
             await req.delete(BASE_URL, headers, json=body)
-        except ApiResponseError:
+        except ApiResponseError as ex:
             logger.info(body)
+            logger.exception(ex)
+            return
 
         track_ids = track_ids[100:]
-        offset += len(body["uris"])
+        offset += len(body["tracks"])

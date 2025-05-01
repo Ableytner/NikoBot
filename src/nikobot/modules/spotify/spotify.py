@@ -78,7 +78,7 @@ class Spotify(commands.Cog):
 
     @grouped_hybrid_command(
         "all_playlist",
-        "Create a playlist with all your songs from every playlist you created",
+        "Create or update a playlist with all your songs from every playlist you created",
         command_group
     )
     async def all_playlist(self, ctx: commands.context.Context):
@@ -98,6 +98,7 @@ class Spotify(commands.Cog):
                                                        color=Color.blue()))
             except ApiResponseError as err:
                 if err.status_code == 404:
+                    # remove playlist if it wasn't found
                     del PersistentStorage[f"spotify.{user_id}.all_playlist.id"]
                 else:
                     raise
@@ -113,13 +114,12 @@ class Spotify(commands.Cog):
         # remove all_playlist
         playlist_ids.remove(all_playlist.id)
 
-        track_set = TrackSet()
-
+        updated_track_set = TrackSet()
         await message.edit(embed=Embed(title="Loading tracks",
                                        description="Liked Songs",
                                        color=Color.blue()))
         async for t_meta in api_helper.get_saved_tracks(user_id):
-            track_set.add(*t_meta)
+            updated_track_set.add(*t_meta)
 
         for p_id in playlist_ids:
             p_meta = await api_helper.get_playlist_meta(user_id, p_id)
@@ -128,17 +128,63 @@ class Spotify(commands.Cog):
                                            color=Color.blue()))
 
             async for t_meta in api_helper.get_tracks(user_id, p_id):
-                track_set.add(*t_meta)
+                updated_track_set.add(*t_meta)
+        updated_track_ids = updated_track_set.ids()
+        
+        current_track_ids = []
+        await message.edit(embed=Embed(title="Loading already present tracks",
+                                       description=all_playlist.name,
+                                       color=Color.blue()))
+        async for t_meta in api_helper.get_tracks(user_id, all_playlist.id):
+            current_track_ids.append(t_meta[0])
 
-        await message.edit(embed=Embed(title=f"Adding {len(track_set.ids())} tracks to final playlist",
+        await message.edit(embed=Embed(title="Calculating",
+                                       description="Checking which songs to add",
+                                       color=Color.blue()))
+        # the oldest track needs to be first
+        updated_track_ids.reverse()
+        current_track_ids.reverse()
+        to_remove = []
+        offset = 0
+        last_c = 0
+        for c in range(len(current_track_ids)):
+            last_c = c
+            if c + offset > len(updated_track_ids) - 1:
+                # we have exhausted all updated tracks
+                to_remove += current_track_ids[c:]
+                break
+            if current_track_ids[c] != updated_track_ids[c + offset]:
+                # remove the mismatching track
+                to_remove.append(current_track_ids[c])
+                offset -= 1
+        else:
+            # if the loop completed without break
+            last_c += 1
+        # add remaining new tracks
+        to_add = updated_track_ids[last_c + offset:]
+
+        await message.edit(embed=Embed(title=f"Including {len(updated_track_ids)} tracks in final playlist",
                                         color=Color.blue()))
-        await api_helper.add_tracks(user_id, all_playlist.id, track_set.ids())
+        # the newest track needs to be first
+        to_remove.reverse()
+        to_add.reverse()
+        if len(to_remove) > 0:
+            await api_helper.remove_tracks(user_id, all_playlist.id, to_remove)
+        if len(to_add) > 0:
+            await api_helper.add_tracks(user_id, all_playlist.id, to_add)
 
-        await message.edit(embed=Embed(title="Successfully updated your playlist",
-                                       description=f"Added {len(track_set.ids())} total tracks\n" \
-                                                  + "Note: Do not delete the playlist on your own, " \
-                                                  + "use niko.spotify.all_playlist_remove instead!",
-                                       color=Color.green()))
+        embed = Embed(title="Successfully updated your playlist",
+                      description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name}",
+                      color=Color.green())
+        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(name="Note",
+                        value="Local tracks are not supported by the Spotify Web API, so they were ignored.",
+                        inline=False)
+        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(name="Note",
+                        value="Do not delete the playlist on your own, use niko.spotify.all_playlist_remove instead!",
+                        inline=False)
+        await message.edit(embed=embed)
 
     @grouped_hybrid_command(
         "all_playlist_remove",
