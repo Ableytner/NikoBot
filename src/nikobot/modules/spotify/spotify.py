@@ -114,21 +114,11 @@ class Spotify(commands.Cog):
         playlist_ids.remove(all_playlist.id)
         updated_track_ids = await update_helper.get_all_track_ids(user_id, playlist_ids, message)
 
-        current_track_ids = []
-        current_track_set = TrackSet()
-        await message.edit(embed=Embed(title="Loading already present tracks",
-                                       description=all_playlist.name,
-                                       color=Color.blue()))
-        async for t_meta in api_helper.get_tracks(user_id, all_playlist.id):
-            current_track_ids.append(t_meta[0])
-            current_track_set.add(*t_meta)
+        current_track_ids = await update_helper.get_current_track_ids(user_id, all_playlist, message)
 
         await message.edit(embed=Embed(title="Calculating",
                                        description="Checking which songs to add",
                                        color=Color.blue()))
-        # the oldest track needs to be first
-        current_track_ids.reverse()
-        assert current_track_ids == current_track_set.ids()
         to_remove, to_add = update_helper.calculate_diff(current_track_ids, updated_track_ids)
         # the newest track needs to be first
         to_add.reverse()

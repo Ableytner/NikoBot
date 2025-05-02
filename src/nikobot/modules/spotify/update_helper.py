@@ -5,21 +5,52 @@ from discord import Color, Embed, Message
 from discord.interactions import InteractionMessage
 
 from . import api_helper
-from .dclasses import TrackSet
+from .dclasses import TrackSet, Playlist
 
 logger = log.get_logger("spotify.update_helper")
+
+async def get_current_track_ids(user_id: str, p_meta: Playlist, message: Message | InteractionMessage | None) -> list[str]:
+    """return all track_ids in the all_playlist, sorted from oldest to newest"""
+
+    track_ids = []
+
+    if message is not None:
+        await message.edit(embed=Embed(title="Loading already present tracks",
+                                       description=p_meta.name,
+                                       color=Color.blue()))
+
+    cache_used = False
+    if f"spotify.{user_id}.cache.all_playlist" in PersistentStorage:
+        if PersistentStorage[f"spotify.{user_id}.cache.all_playlist.snapshot_id"] == p_meta.snapshot_id:
+            # the playlist hasn't changed since
+            logger.info(f"using cached tracks for all_playlist")
+            cache_used = True
+            track_ids = PersistentStorage[f"spotify.{user_id}.cache.all_playlist.tracks"].copy()
+        else:
+            # invalidate cache
+            logger.info(f"invalidating cache for all_playlist")
+            del PersistentStorage[f"spotify.{user_id}.cache.all_playlist"]
+
+    if not cache_used:
+        track_ids = [t_meta[0] async for t_meta in api_helper.get_tracks(user_id, p_meta.id)]
+        # sort from old to new
+        track_ids.reverse()
+        PersistentStorage[f"spotify.{user_id}.cache.all_playlist.snapshot_id"] = p_meta.snapshot_id
+        PersistentStorage[f"spotify.{user_id}.cache.all_playlist.tracks"] = track_ids.copy()
+
+    return track_ids
 
 async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Message | InteractionMessage | None) -> list[str]:
     """return all track_ids in the given playlists, sorted from oldest ot newest"""
 
-    updated_track_set = TrackSet()
+    track_set = TrackSet()
 
     if message is not None:
         await message.edit(embed=Embed(title="Loading tracks",
                                        description="Liked Songs",
                                        color=Color.blue()))
     async for t_meta in api_helper.get_saved_tracks(user_id):
-        updated_track_set.add(*t_meta)
+        track_set.add(*t_meta)
 
     for p_id in playlist_ids:
         p_meta = await api_helper.get_playlist_meta(user_id, p_id)
@@ -29,13 +60,13 @@ async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Mess
                                            color=Color.blue()))
 
         cache_used = False
-        if f"spotify.{user_id}.{p_meta.id}" in PersistentStorage:
+        if f"spotify.{user_id}.cache.{p_meta.id}" in PersistentStorage:
             if PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.snapshot_id"] == p_meta.snapshot_id:
                 # the playlist hasn't changed since
                 logger.info(f"using cached tracks for {p_meta.name}")
                 cache_used = True
                 for t_meta in PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"]:
-                    updated_track_set.add(*t_meta)
+                    track_set.add(*t_meta)
             else:
                 # invalidate cache
                 logger.info(f"invalidating cache for {p_meta.name}")
@@ -45,10 +76,10 @@ async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Mess
             PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.snapshot_id"] = p_meta.snapshot_id
             PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"] = []
             async for t_meta in api_helper.get_tracks(user_id, p_id):
-                updated_track_set.add(*t_meta)
+                track_set.add(*t_meta)
                 PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"].append(t_meta)
 
-    return updated_track_set.ids()
+    return track_set.ids()
 
 def calculate_diff(saved_track_ids: list[str], updated_track_ids: list[str]) -> tuple[list[str], list[str]]:
     """
