@@ -133,7 +133,7 @@ def _hash_user_id(user_id: int) -> str:
 def get_auth_string() -> str:
     """Get the base64-encoded client_id/client_secret"""
 
-    authorization = f"{VolatileStorage["spotify.client_id"]}:{VolatileStorage["spotify.client_secret"]}"
+    authorization = f"{VolatileStorage['spotify.client_id']}:{VolatileStorage['spotify.client_secret']}"
     authorization_encoded = base64.b64encode(authorization.encode("ascii")).decode("ascii")
     return authorization_encoded
 
@@ -141,5 +141,5 @@ def get_auth_headers(user_id: int) -> str:
     """Get the Oauth header containing the access token"""
 
     return {
-        "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
+        "Authorization": f"Bearer {PersistentStorage[f'spotify.{user_id}.access_token']}"
     }
