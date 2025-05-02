@@ -9,7 +9,7 @@ from abllib.log import get_logger
 from discord import app_commands, Color, Embed
 from discord.ext import commands
 
-from . import api_helper, auth_helper, auth_server
+from . import api_helper, auth_helper, auth_server, update_helper
 from .dclasses import Playlist, TrackSet
 from .error import ApiResponseError
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
@@ -110,71 +110,38 @@ class Spotify(commands.Cog):
                                                    color=Color.blue()))
 
         playlist_ids = await api_helper.get_playlist_ids(user_id)
-
         # remove all_playlist
         playlist_ids.remove(all_playlist.id)
+        updated_track_ids = await update_helper.get_all_track_ids(user_id, playlist_ids, message)
 
-        updated_track_set = TrackSet()
-        await message.edit(embed=Embed(title="Loading tracks",
-                                       description="Liked Songs",
-                                       color=Color.blue()))
-        async for t_meta in api_helper.get_saved_tracks(user_id):
-            updated_track_set.add(*t_meta)
-
-        for p_id in playlist_ids:
-            p_meta = await api_helper.get_playlist_meta(user_id, p_id)
-            await message.edit(embed=Embed(title="Loading tracks",
-                                           description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
-                                           color=Color.blue()))
-
-            async for t_meta in api_helper.get_tracks(user_id, p_id):
-                updated_track_set.add(*t_meta)
-        updated_track_ids = updated_track_set.ids()
-        
         current_track_ids = []
+        current_track_set = TrackSet()
         await message.edit(embed=Embed(title="Loading already present tracks",
                                        description=all_playlist.name,
                                        color=Color.blue()))
         async for t_meta in api_helper.get_tracks(user_id, all_playlist.id):
             current_track_ids.append(t_meta[0])
+            current_track_set.add(*t_meta)
 
         await message.edit(embed=Embed(title="Calculating",
                                        description="Checking which songs to add",
                                        color=Color.blue()))
         # the oldest track needs to be first
-        updated_track_ids.reverse()
         current_track_ids.reverse()
-        to_remove = []
-        offset = 0
-        last_c = 0
-        for c in range(len(current_track_ids)):
-            last_c = c
-            if c + offset > len(updated_track_ids) - 1:
-                # we have exhausted all updated tracks
-                to_remove += current_track_ids[c:]
-                break
-            if current_track_ids[c] != updated_track_ids[c + offset]:
-                # remove the mismatching track
-                to_remove.append(current_track_ids[c])
-                offset -= 1
-        else:
-            # if the loop completed without break
-            last_c += 1
-        # add remaining new tracks
-        to_add = updated_track_ids[last_c + offset:]
-
-        await message.edit(embed=Embed(title=f"Including {len(updated_track_ids)} tracks in final playlist",
-                                        color=Color.blue()))
+        assert current_track_ids == current_track_set.ids()
+        to_remove, to_add = update_helper.calculate_diff(current_track_ids, updated_track_ids)
         # the newest track needs to be first
-        to_remove.reverse()
         to_add.reverse()
+
+        await message.edit(embed=Embed(title=f"Removing {len(to_remove)} and adding {len(to_add)} tracks",
+                                        color=Color.blue()))
         if len(to_remove) > 0:
             await api_helper.remove_tracks(user_id, all_playlist.id, to_remove)
         if len(to_add) > 0:
             await api_helper.add_tracks(user_id, all_playlist.id, to_add)
 
         embed = Embed(title="Successfully updated your playlist",
-                      description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name}",
+                      description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name} for a total of {len(updated_track_ids)} tracks",
                       color=Color.green())
         embed.add_field(name=" ", value=" ", inline=False)
         embed.add_field(name="Note",
