@@ -10,11 +10,13 @@ from .error import ApiResponseError
 
 logger = log.get_logger("Spotify.req")
 
-_session = aiohttp.ClientSession()
+_session = None
 
 async def get(url: str, headers: dict, params: dict | None = None, json: dict | None = None, **kwargs) \
              -> aiohttp.ClientResponse:
     """Send a get request asynchronously"""
+
+    await _ensure_session()
 
     code = 429
     while code == 429:
@@ -33,6 +35,8 @@ async def post(url: str, headers: dict, params: dict | None = None, json: dict |
               -> aiohttp.ClientResponse:
     """Send a post request asynchronously"""
 
+    await _ensure_session()
+
     code = 429
     while code == 429:
         res = await _session.post(url, headers=headers, params=params, json=json, **kwargs)
@@ -50,6 +54,8 @@ async def delete(url: str, headers: dict, params: dict | None = None, json: dict
                 -> aiohttp.ClientResponse:
     """Send a delete request asynchronously"""
 
+    await _ensure_session()
+
     code = 429
     while code == 429:
         res = await _session.delete(url, headers=headers, params=params, json=json, **kwargs)
@@ -62,6 +68,11 @@ async def delete(url: str, headers: dict, params: dict | None = None, json: dict
     await _check_res(res)
 
     return res
+
+async def _ensure_session() -> None:
+    global _session
+    if _session is None:
+        _session = aiohttp.ClientSession()
 
 async def _check_res(res: aiohttp.ClientResponse) -> None:
     if await _has_json(res) and "error" in await res.json():
