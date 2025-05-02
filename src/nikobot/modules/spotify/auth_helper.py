@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from abllib import log, VolatileStorage, PersistentStorage
 
 from . import req
-from .error import ApiResponseError, UserNotRegisteredError
+from .error import UserNotRegisteredError
 
 logger = log.get_logger("Spotify.auth_helper")
 
@@ -138,6 +138,8 @@ def get_auth_string() -> str:
     return authorization_encoded
 
 def get_auth_headers(user_id: int) -> str:
+    """Get the Oauth header containing the access token"""
+
     return {
         "Authorization": f"Bearer {PersistentStorage[f"spotify.{user_id}.access_token"]}"
     }

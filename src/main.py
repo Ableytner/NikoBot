@@ -54,6 +54,7 @@ if __name__ == "__main__":
     storage.initialize(os.path.join(storage_dir, "storage.json"), True)
 
     def save_func():
+        """Save PersistentStorage every minute"""
         while True:
             PersistentStorage.save_to_disk()
             sleep(60)

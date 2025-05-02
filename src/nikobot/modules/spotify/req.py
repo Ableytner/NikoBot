@@ -1,8 +1,7 @@
 """A module containing wrapping functions around requests which retires on rate-limit exceedings"""
 
 import asyncio
-import json
-from typing import Any, NoReturn
+from json import JSONDecodeError
 
 import aiohttp
 from abllib import log
@@ -13,7 +12,10 @@ logger = log.get_logger("Spotify.req")
 
 _session = aiohttp.ClientSession()
 
-async def get(url: str, headers: dict | None = None, params: dict | None = None, json: dict | None = None, **kwargs) -> aiohttp.ClientResponse:
+async def get(url: str, headers: dict, params: dict | None = None, json: dict | None = None, **kwargs) \
+             -> aiohttp.ClientResponse:
+    """Send a get request asynchronously"""
+
     code = 429
     while code == 429:
         res = await _session.get(url, headers=headers, params=params, json=json, **kwargs)
@@ -24,10 +26,13 @@ async def get(url: str, headers: dict | None = None, params: dict | None = None,
             await asyncio.sleep(timeout)
 
     await _check_res(res)
-    
+
     return res
 
-async def post(url: str, headers: dict | None = None, params: dict | None = None, json: dict | None = None, **kwargs) -> aiohttp.ClientResponse:
+async def post(url: str, headers: dict, params: dict | None = None, json: dict | None = None, **kwargs) \
+              -> aiohttp.ClientResponse:
+    """Send a post request asynchronously"""
+
     code = 429
     while code == 429:
         res = await _session.post(url, headers=headers, params=params, json=json, **kwargs)
@@ -38,10 +43,13 @@ async def post(url: str, headers: dict | None = None, params: dict | None = None
             await asyncio.sleep(timeout)
 
     await _check_res(res)
-    
+
     return res
 
-async def delete(url: str, headers: dict | None = None, params: dict | None = None, json: dict | None = None, **kwargs) -> aiohttp.ClientResponse:
+async def delete(url: str, headers: dict, params: dict | None = None, json: dict | None = None, **kwargs) \
+                -> aiohttp.ClientResponse:
+    """Send a delete request asynchronously"""
+
     code = 429
     while code == 429:
         res = await _session.delete(url, headers=headers, params=params, json=json, **kwargs)
@@ -52,7 +60,7 @@ async def delete(url: str, headers: dict | None = None, params: dict | None = No
             await asyncio.sleep(timeout)
 
     await _check_res(res)
-    
+
     return res
 
 async def _check_res(res: aiohttp.ClientResponse) -> None:
@@ -64,7 +72,8 @@ async def _check_res(res: aiohttp.ClientResponse) -> None:
         err.status_code = error_json["error"]["status"]
 
         raise err
-    elif res.status != 200:
+
+    if res.status != 200:
         err = ApiResponseError(f"Unexpected status code {res.status}")
         err.message = await res.text()
         err.status_code = res.status
@@ -79,5 +88,5 @@ async def _has_json(res: aiohttp.ClientResponse) -> bool:
         try:
             await res.json(content_type=None)
             return True
-        except json.JSONDecodeError:
+        except JSONDecodeError:
             return False

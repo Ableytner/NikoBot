@@ -9,7 +9,8 @@ from .dclasses import TrackSet, Playlist
 
 logger = log.get_logger("spotify.update_helper")
 
-async def get_current_track_ids(user_id: str, p_meta: Playlist, message: Message | InteractionMessage | None) -> list[str]:
+async def get_current_track_ids(user_id: str, p_meta: Playlist, message: Message | InteractionMessage | None) \
+                               -> list[str]:
     """return all track_ids in the all_playlist, sorted from oldest to newest"""
 
     track_ids = []
@@ -23,12 +24,12 @@ async def get_current_track_ids(user_id: str, p_meta: Playlist, message: Message
     if f"spotify.{user_id}.cache.all_playlist" in PersistentStorage:
         if PersistentStorage[f"spotify.{user_id}.cache.all_playlist.snapshot_id"] == p_meta.snapshot_id:
             # the playlist hasn't changed since
-            logger.info(f"using cached tracks for all_playlist")
+            logger.info("using cached tracks for all_playlist")
             cache_used = True
             track_ids = PersistentStorage[f"spotify.{user_id}.cache.all_playlist.tracks"].copy()
         else:
             # invalidate cache
-            logger.info(f"invalidating cache for all_playlist")
+            logger.info("invalidating cache for all_playlist")
             del PersistentStorage[f"spotify.{user_id}.cache.all_playlist"]
 
     if not cache_used:
@@ -40,7 +41,8 @@ async def get_current_track_ids(user_id: str, p_meta: Playlist, message: Message
 
     return track_ids
 
-async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Message | InteractionMessage | None) -> list[str]:
+async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Message | InteractionMessage | None) \
+                           -> list[str]:
     """return all track_ids in the given playlists, sorted from oldest ot newest"""
 
     track_set = TrackSet()
@@ -97,6 +99,7 @@ def calculate_diff(saved_track_ids: list[str], updated_track_ids: list[str]) -> 
 
     offset = 0
     last_c = 0
+    # pylint: disable-next=consider-using-enumerate
     for c in range(len(saved_track_ids)):
         last_c = c
 

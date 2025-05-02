@@ -64,6 +64,8 @@ class _HTTPRequestHandler(BaseHTTPRequestHandler):
         self.respond(400, "Invalid authentication state. Maybe you waited too long?") # invalid request
 
     def respond(self, code: int, message: str) -> None:
+        """Send a response to the client"""
+
         self.send_response(code)
         self.send_header("Content-type", "text/html")
         self.end_headers()

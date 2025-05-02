@@ -1,9 +1,9 @@
 """Contains helper functions for working with the Spotify Web API"""
 
 from datetime import datetime
-from typing import Generator, AsyncGenerator
+from typing import AsyncGenerator
 
-from abllib import log, VolatileStorage, PersistentStorage
+from abllib import log
 
 from . import auth_helper, req
 from .dclasses import Playlist
@@ -16,7 +16,7 @@ async def get_user_spotify_id(user_id: int) -> str:
 
     await auth_helper.ensure_token(user_id)
 
-    url = f"https://api.spotify.com/v1/me"
+    url = "https://api.spotify.com/v1/me"
     headers = auth_helper.get_auth_headers(user_id)
 
     res = await req.get(url, headers)
@@ -157,7 +157,7 @@ async def get_saved_tracks(user_id: int) -> AsyncGenerator[tuple[str, int], None
 
     await auth_helper.ensure_token(user_id)
 
-    BASE_URL = f"https://api.spotify.com/v1/me/tracks"
+    BASE_URL = "https://api.spotify.com/v1/me/tracks"
 
     headers = auth_helper.get_auth_headers(user_id)
 

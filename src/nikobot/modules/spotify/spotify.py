@@ -4,17 +4,18 @@ import asyncio
 from asyncio import sleep
 from threading import Thread
 
-from abllib import VolatileStorage, PersistentStorage
+from abllib import PersistentStorage
 from abllib.log import get_logger
 from discord import app_commands, Color, Embed
 from discord.ext import commands
 
 from . import api_helper, auth_helper, auth_server, update_helper
-from .dclasses import Playlist, TrackSet
 from .error import ApiResponseError
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
 
 logger = get_logger("spotify")
+
+REGISTER_MSG = "You are not yet registered! Use the command 'niko.spotify.register' first"
 
 command_group = app_commands.Group(
     name="spotify",
@@ -87,13 +88,17 @@ class Spotify(commands.Cog):
         user_id = get_user_id(ctx)
 
         if not auth_helper.is_authed(user_id):
-            await reply(ctx, embed=Embed(title="You are not yet registered! Use the command 'niko.spotify.register' first",
-                                         color=Color.orange()))
+            await reply(ctx, embed=Embed(title=REGISTER_MSG, color=Color.orange()))
             return
-        
+
+        # to make pylint happy
+        message = None
+
         if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
             try:
-                all_playlist = await api_helper.get_playlist_meta(user_id, PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
+                all_playlist = await api_helper.get_playlist_meta(
+                    user_id,
+                    PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
                 message = await reply(ctx, embed=Embed(title=f"Updating existing playlist {all_playlist.name}",
                                                        color=Color.blue()))
             except ApiResponseError as err:
@@ -131,7 +136,8 @@ class Spotify(commands.Cog):
             await api_helper.add_tracks(user_id, all_playlist.id, to_add)
 
         embed = Embed(title="Successfully updated your playlist",
-                      description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name} for a total of {len(updated_track_ids)} tracks",
+                      description=f"Removed {len(to_remove)} and added {len(to_add)} tracks "
+                                  f"to {all_playlist.name} for a total of {len(updated_track_ids)} tracks",
                       color=Color.green())
         embed.add_field(name=" ", value=" ", inline=False)
         embed.add_field(name="Note",
@@ -154,10 +160,9 @@ class Spotify(commands.Cog):
         user_id = get_user_id(ctx)
 
         if not auth_helper.is_authed(user_id):
-            await reply(ctx, embed=Embed(title="You are not yet registered! Use the command 'niko.spotify.regsiter' first",
-                                         color=Color.orange()))
+            await reply(ctx, embed=Embed(title=REGISTER_MSG, color=Color.orange()))
             return
-        
+
         if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
             await api_helper.delete_playlist(user_id, PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
             del PersistentStorage[f"spotify.{user_id}.all_playlist.id"]
@@ -173,7 +178,7 @@ async def setup(bot: commands.Bot):
     # start http server
     def _start_http_server():
         def _completion_func(*args):
-            fut = asyncio.ensure_future(auth_helper.complete_auth(*args), bot.loop)
+            fut = asyncio.ensure_future(auth_helper.complete_auth(*args), loop=bot.loop)
             return fut.result()
 
         auth_server.run_http_server(_completion_func)
