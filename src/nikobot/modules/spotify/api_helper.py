@@ -91,13 +91,13 @@ async def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
     url = f"https://api.spotify.com/v1/playlists/{playlist_id}"
     headers = auth_helper.get_auth_headers(user_id)
     params = {
-        "fields": "name,tracks.total"
+        "fields": "name,tracks.total,snapshot_id"
     }
 
     res = await req.get(url, headers, params)
     json_res = await res.json()
 
-    return Playlist(json_res["name"], playlist_id, json_res["tracks"]["total"])
+    return Playlist(json_res["name"], playlist_id, json_res["tracks"]["total"], json_res["snapshot_id"])
 
 async def delete_playlist(user_id: int, playlist_id: str) -> Playlist:
     """Delete a given playlist"""

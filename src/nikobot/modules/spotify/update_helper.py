@@ -1,10 +1,13 @@
 """Module which contains helper functions for spotify track difference calculation"""
 
+from abllib import log, PersistentStorage
 from discord import Color, Embed, Message
 from discord.interactions import InteractionMessage
 
 from . import api_helper
 from .dclasses import TrackSet
+
+logger = log.get_logger("spotify.update_helper")
 
 async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Message | InteractionMessage | None) -> list[str]:
     """return all track_ids in the given playlists, sorted from oldest ot newest"""
@@ -25,8 +28,25 @@ async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Mess
                                            description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
                                            color=Color.blue()))
 
-        async for t_meta in api_helper.get_tracks(user_id, p_id):
-            updated_track_set.add(*t_meta)
+        cache_used = False
+        if f"spotify.{user_id}.{p_meta.id}" in PersistentStorage:
+            if PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.snapshot_id"] == p_meta.snapshot_id:
+                # the playlist hasn't changed since
+                logger.info(f"using cached tracks for {p_meta.name}")
+                cache_used = True
+                for t_meta in PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"]:
+                    updated_track_set.add(*t_meta)
+            else:
+                # invalidate cache
+                logger.info(f"invalidating cache for {p_meta.name}")
+                del PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}"]
+
+        if not cache_used:
+            PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.snapshot_id"] = p_meta.snapshot_id
+            PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"] = []
+            async for t_meta in api_helper.get_tracks(user_id, p_id):
+                updated_track_set.add(*t_meta)
+                PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"].append(t_meta)
 
     return updated_track_set.ids()
 

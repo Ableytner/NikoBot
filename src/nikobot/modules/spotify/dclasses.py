@@ -12,6 +12,7 @@ class Playlist:
     name: str
     id: str
     total_tracks: int
+    snapshot_id: str | None = None
 
 class TrackSet:
     """
