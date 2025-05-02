@@ -70,6 +70,7 @@ async def delete(url: str, headers: dict, params: dict | None = None, json: dict
     return res
 
 async def _ensure_session() -> None:
+    # pylint: disable-next=global-statement
     global _session
     if _session is None:
         _session = aiohttp.ClientSession()

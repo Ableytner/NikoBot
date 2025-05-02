@@ -17,13 +17,11 @@ SERVER_ADDRESS = ("", 80)
 def run_http_server(completion_func):
     """Runs the http server in an infinite loop"""
 
-    VolatileStorage["spotify.auth"] = {}
-
     with _HTTPServer(completion_func) as httpd:
         httpd.timeout = 30
 
         while True:
-            if len(VolatileStorage["spotify.auth"]) > 0:
+            if "spotify.auth" in VolatileStorage and len(VolatileStorage["spotify.auth"]) > 0:
                 httpd.handle_request()
 
             sleep(1)
