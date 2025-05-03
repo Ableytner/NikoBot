@@ -7,7 +7,6 @@ from abllib import log
 
 from . import auth_helper, req
 from .dclasses import Playlist
-from .error import ApiResponseError
 
 logger = log.get_logger("spotify.api_helper")
 

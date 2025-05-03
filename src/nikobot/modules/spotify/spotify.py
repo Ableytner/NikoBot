@@ -49,16 +49,19 @@ class Spotify(commands.Cog):
 
         auth_url = auth_helper.auth(user_id)
 
-        reply_embed = Embed(title="Waiting for user to finish authenticating",
-                            description="Check your direct messages for further instructions.",
-                            color=Color.blue())
-        await message.edit(embed=reply_embed)
+        embed = Embed(title="Waiting for user to finish authenticating",
+                      description="Check your direct messages for further instructions.",
+                      color=Color.blue())
+        await message.edit(embed=embed)
 
-        auth_url_embed = Embed(title="Registering Spotify account for use with nikobot.spotify commands",
-                               description="Click the following link to complete authentication:\n"
-                                           + f"{auth_url}\n"
-                                           + "You have 5 minutes until registration times out.")
-        await private_message(user_id, embed=auth_url_embed)
+        embed = Embed(title="Registering Spotify account for use with nikobot.spotify commands",
+                      description=f"Click the following link to complete authentication:\n{auth_url}",
+                      color=Color.blue())
+        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(name="Note",
+                        value="You have 5 minutes until registration times out.",
+                        inline=False)
+        await private_message(user_id, embed=embed)
 
         elapsed = 0
         while not auth_helper.is_authed(user_id) and elapsed < 60 * 5:
@@ -66,17 +69,46 @@ class Spotify(commands.Cog):
             elapsed += 1
 
         if not auth_helper.is_authed(user_id) and elapsed >= 60 * 5:
-            auth_helper.cancel_auth()
+            auth_helper.cancel_auth(user_id)
             await reply(ctx, embed=Embed(title="Registration timed out",
                                          color=Color.orange()))
             return
 
         # TODO: check if user cancelled authentication
 
-        await message.edit(embed=Embed(title="Successfully registered with your spotify account!",
+        await message.edit(embed=Embed(title="Successfully registered with your Spotify account!",
                                        color=Color.green()))
 
-    # TODO: deregister command + deregister spotify access?
+    @grouped_hybrid_command(
+        "deregister",
+        "Deregister an users' Spotify account from the discord bot",
+        command_group
+    )
+    async def deregister(self, ctx: commands.context.Context):
+        """The discord command 'niko.spotify.deregister'"""
+
+        user_id = get_user_id(ctx)
+
+        if not auth_helper.is_authed(user_id):
+            await reply(ctx, embed=Embed(title=REGISTER_MSG, color=Color.orange()))
+            return
+
+        del PersistentStorage[f"spotify.{user_id}"]
+        PersistentStorage.save_to_disk()
+
+        # the Spotify App can't be removed via the API
+        # https://github.com/spotify/web-api/issues/600
+
+        embed = Embed(title="Successfully deregistered your Spotify account from this disord bot",
+                            description="If you change your mind, "
+                                        "you can always re-register using the command 'niko.spotify.register'.",
+                            color=Color.blue())
+        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(name="Note",
+                        value="Click the following link to remove NikoBot from your Spotify Apps:\n"
+                              "https://www.spotify.com/account/apps/",
+                        inline=False)
+        await reply(ctx, embed=embed)
 
     @grouped_hybrid_command(
         "all_playlist",
@@ -94,6 +126,7 @@ class Spotify(commands.Cog):
 
         # to make pylint happy
         message = None
+        is_new_playlist = None
 
         if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
             try:
@@ -102,6 +135,7 @@ class Spotify(commands.Cog):
                     PersistentStorage[f"spotify.{user_id}.all_playlist.id"])
                 message = await reply(ctx, embed=Embed(title=f"Updating existing playlist {all_playlist.name}",
                                                        color=Color.blue()))
+                is_new_playlist = False
             except ApiResponseError as err:
                 if err.status_code == 404:
                     # remove playlist if it wasn't found
@@ -114,6 +148,7 @@ class Spotify(commands.Cog):
             PersistentStorage[f"spotify.{user_id}.all_playlist.id"] = all_playlist.id
             message = await reply(ctx, embed=Embed(title=f"Creating new playlist {all_playlist.name}",
                                                    color=Color.blue()))
+            is_new_playlist = True
 
         playlist_metas = await api_helper.get_playlists(user_id)
         # exclude all_playlist
@@ -142,14 +177,19 @@ class Spotify(commands.Cog):
         await sleep(5)
 
         # request new snapshot_id
-        p_meta = await api_helper.get_playlist_meta(user_id, all_playlist.id)
+        all_playlist = await api_helper.get_playlist_meta(user_id, all_playlist.id)
         cache = PlaylistCache(user_id)
-        cache.set(p_meta, current_track_ids)
+        cache.set(all_playlist, current_track_ids)
 
-        embed = Embed(title="Successfully updated your playlist",
+        title = "Successfully created new playlist" if is_new_playlist else "Successfully updated your playlist"
+        embed = Embed(title=title,
                       description=f"Removed {len(to_remove)} and added {len(to_add)} tracks "
                                   f"to {all_playlist.name} for a total of {len(updated_track_ids)} tracks.",
                       color=Color.green())
+        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(name="Url",
+                        value=f"https://open.spotify.com/playlist/{all_playlist.id}",
+                        inline=False)
         embed.add_field(name=" ", value=" ", inline=False)
         embed.add_field(name="Note",
                         value="Local tracks are not supported by the Spotify Web API, so they were ignored.",
