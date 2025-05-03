@@ -4,7 +4,6 @@ Module which contains an http server for spotify OAuth
 See https://developer.spotify.com/documentation/web-api/tutorials/code-flow for more details
 """
 
-import asyncio
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from time import sleep

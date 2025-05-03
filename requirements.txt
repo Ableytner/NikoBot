@@ -1,4 +1,4 @@
-abllib @ git+https://github.com/Ableytner/abllib@1.3.3
+abllib @ git+https://github.com/Ableytner/abllib@master
 beautifulsoup4
 discord.py
 pillow
@@ -6,3 +6,4 @@ pylint
 pytest
 requests
 youtube_dl
+audioop-lts~=0.2.1; python_version>='3.13'
