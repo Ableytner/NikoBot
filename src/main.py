@@ -26,7 +26,8 @@ from nikobot.discord_bot import DiscordBot
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
 # move mal config loading to centralized handler
 # move all module-specific code to that module (e.g. help module in on_command_error)
-# add command to add all songs from all spotify playlists to one playlist, in order of first added
+# print number of spotify requests if all_playlist command completes
+# run all_playlist command once per day
 # update to python 3.13
 
 if __name__ == "__main__":

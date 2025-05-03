@@ -1,10 +1,9 @@
 """contains the cog of the spotify module"""
 
-import asyncio
 from asyncio import sleep
 from threading import Thread
 
-from abllib import PersistentStorage
+from abllib import PersistentStorage, VolatileStorage
 from abllib.log import get_logger
 from discord import app_commands, Color, Embed
 from discord.ext import commands
@@ -64,20 +63,22 @@ class Spotify(commands.Cog):
         await private_message(user_id, embed=embed)
 
         elapsed = 0
-        while not auth_helper.is_authed(user_id) and elapsed < 60 * 5:
+        while not auth_helper.is_authed(user_id) and f"spotify.auth.{user_id}" in VolatileStorage and elapsed < 60 * 5:
             await sleep(1)
             elapsed += 1
 
-        if not auth_helper.is_authed(user_id) and elapsed >= 60 * 5:
+        if auth_helper.is_authed(user_id):
+            # auth was successful
+            await message.edit(embed=Embed(title="Successfully registered with your Spotify account!",
+                                           color=Color.green()))
+        elif f"spotify.auth.{user_id}" not in VolatileStorage:
+            # user cancelled auth
+            await message.edit(embed=Embed(title="Registration was cancelled",
+                                           color=Color.orange()))
+        elif elapsed >= 60 * 5:
             auth_helper.cancel_auth(user_id)
-            await reply(ctx, embed=Embed(title="Registration timed out",
-                                         color=Color.orange()))
-            return
-
-        # TODO: check if user cancelled authentication
-
-        await message.edit(embed=Embed(title="Successfully registered with your Spotify account!",
-                                       color=Color.green()))
+            await message.edit(embed=Embed(title="Registration timed out",
+                                           color=Color.orange()))
 
     @grouped_hybrid_command(
         "deregister",
@@ -226,13 +227,6 @@ async def setup(bot: commands.Bot):
 
     cog = Spotify(bot)
 
-    # start http server
-    def _start_http_server():
-        def _completion_func(*args):
-            fut = asyncio.ensure_future(auth_helper.complete_auth(*args), loop=bot.loop)
-            return fut.result()
-
-        auth_server.run_http_server(_completion_func)
-    Thread(target=_start_http_server, daemon=True).start()
+    Thread(target=auth_server.run_http_server, daemon=True).start()
 
     await bot.add_cog(cog)

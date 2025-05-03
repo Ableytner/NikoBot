@@ -4,20 +4,24 @@ Module which contains an http server for spotify OAuth
 See https://developer.spotify.com/documentation/web-api/tutorials/code-flow for more details
 """
 
+import asyncio
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from time import sleep
 
 from abllib import log, VolatileStorage
 
+from . import auth_helper
+from ...util import general
+
 logger = log.get_logger("spotify.auth_server")
 
 SERVER_ADDRESS = ("", 80)
 
-def run_http_server(completion_func):
+def run_http_server():
     """Runs the http server in an infinite loop"""
 
-    with _HTTPServer(completion_func) as httpd:
+    with _HTTPServer() as httpd:
         httpd.timeout = 30
 
         while True:
@@ -29,9 +33,8 @@ def run_http_server(completion_func):
 class _HTTPServer(HTTPServer):
     """Modified version of http.server.HTTPServer"""
 
-    def __init__(self, completion_func) -> None:
+    def __init__(self) -> None:
         super().__init__(SERVER_ADDRESS, _HTTPRequestHandler)
-        self.completion_func = completion_func
 
 class _HTTPRequestHandler(BaseHTTPRequestHandler):
     """Modified version of http.server.BaseHTTPRequestHandler"""
@@ -49,17 +52,26 @@ class _HTTPRequestHandler(BaseHTTPRequestHandler):
             return
 
         url_params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
-        auth_code = url_params["code"][0]
         state = url_params["state"][0]
 
-        for user_id, state_candidate in VolatileStorage["spotify.auth"].items():
+        user_id = None
+        for u_id, state_candidate in VolatileStorage["spotify.auth"].items():
             if state_candidate == state:
-                self.respond(200, "Your Spotify account was successfully registered with the NikoBot discord bot.") # OK
+                user_id = u_id
 
-                self.server.completion_func(user_id, auth_code)
-                return
+        if user_id is None:
+            self.respond(400, "Invalid authentication state. Maybe you waited too long?") # invalid request
+            return
 
-        self.respond(400, "Invalid authentication state. Maybe you waited too long?") # invalid request
+        if "error" in url_params and url_params["error"][0] == "access_denied":
+            # user cancelled auth
+            auth_helper.cancel_auth(user_id)
+            self.respond(400, "Registration was cancelled by user.") # access was denied
+            return
+
+        auth_code = url_params["code"][0]
+        general.sync(auth_helper.complete_auth(user_id, auth_code))
+        self.respond(200, "Your Spotify account was successfully registered with the NikoBot discord bot.") # OK
 
     def respond(self, code: int, message: str) -> None:
         """Send a response to the client"""
