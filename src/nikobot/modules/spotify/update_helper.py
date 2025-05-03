@@ -26,7 +26,7 @@ async def get_current_track_ids(user_id: int, p_meta: Playlist, message: Message
             await message.edit(embed=Embed(title="Loading already present tracks from cache",
                                            description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
                                            color=Color.blue()))
-        logger.info("using cached tracks for all_playlist")
+        logger.debug("using cached tracks for all_playlist")
 
         for t_id in cached_tracks:
             track_ids.append(t_id)
@@ -58,7 +58,7 @@ async def get_all_track_ids(user_id: int, playlist_metas: list[Playlist], messag
             await message.edit(embed=Embed(title="Loading already present tracks from cache",
                                            description=f"Liked songs: {p_meta.total_tracks} tracks",
                                            color=Color.blue()))
-        logger.info("using cached tracks for saved tracks")
+        logger.debug("using cached tracks for saved tracks")
 
         for t_meta in cached_tracks:
             track_set.add(*t_meta)
@@ -83,7 +83,7 @@ async def get_all_track_ids(user_id: int, playlist_metas: list[Playlist], messag
                 await message.edit(embed=Embed(title="Loading tracks from cache",
                                                description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
                                                color=Color.blue()))
-            logger.info(f"using cached tracks for {p_meta.name}")
+            logger.debug(f"using cached tracks for {p_meta.name}")
 
             for t_meta in cached_tracks:
                 track_set.add(*t_meta)

@@ -10,7 +10,7 @@ from time import sleep
 
 from abllib import log, VolatileStorage
 
-logger = log.get_logger("SpotifyAuthServer")
+logger = log.get_logger("spotify.auth_server")
 
 SERVER_ADDRESS = ("", 80)
 

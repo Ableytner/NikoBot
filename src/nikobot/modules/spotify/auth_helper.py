@@ -14,7 +14,7 @@ from abllib import log, VolatileStorage, PersistentStorage
 from . import req
 from .error import UserNotRegisteredError
 
-logger = log.get_logger("Spotify.auth_helper")
+logger = log.get_logger("spotify.auth_helper")
 
 REDIRECT_URL = "https://nikobot.ableytner.duckdns.org/spotify_auth"
 

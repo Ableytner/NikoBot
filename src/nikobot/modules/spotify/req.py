@@ -8,7 +8,7 @@ from abllib import log
 
 from .error import ApiResponseError
 
-logger = log.get_logger("Spotify.req")
+logger = log.get_logger("spotify.req")
 
 _session = None
 

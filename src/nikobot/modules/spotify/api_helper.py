@@ -9,7 +9,7 @@ from . import auth_helper, req
 from .dclasses import Playlist
 from .error import ApiResponseError
 
-logger = log.get_logger("Spotify.api_helper")
+logger = log.get_logger("spotify.api_helper")
 
 async def get_user_spotify_id(user_id: int) -> str:
     """Return the users' spotify id"""
@@ -215,7 +215,7 @@ async def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> No
     headers = auth_helper.get_auth_headers(user_id)
 
     total_tracks = len(track_ids)
-    logger.info(f"Adding {total_tracks} tracks to playlist")
+    logger.debug(f"Adding {total_tracks} tracks to playlist")
 
     offset = 0
     while offset < total_tracks:
@@ -224,12 +224,7 @@ async def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> No
             "position": 0
         }
 
-        try:
-            await req.post(BASE_URL, headers, json=body)
-        except ApiResponseError as ex:
-            logger.info(body)
-            logger.exception(ex)
-            return
+        await req.post(BASE_URL, headers, json=body)
 
         track_ids = track_ids[:-50]
         offset += len(body["uris"])
@@ -250,12 +245,7 @@ async def remove_tracks(user_id: int, playlist_id: str, track_ids: list[str]) ->
             "tracks": [{"uri": f"spotify:track:{item}"} for item in track_ids[0:100:]]
         }
 
-        try:
-            await req.delete(BASE_URL, headers, json=body)
-        except ApiResponseError as ex:
-            logger.info(body)
-            logger.exception(ex)
-            return
+        await req.delete(BASE_URL, headers, json=body)
 
         track_ids = track_ids[100:]
         offset += len(body["tracks"])
