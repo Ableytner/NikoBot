@@ -44,7 +44,7 @@ class TrackSet:
     def get(self) -> list[tuple[str, int]]:
         """Return all track ids and timestamps without order"""
 
-        return [(key, value) for key, value in self._tracks.items()]
+        return list(self._tracks.items())
 
     def ids(self) -> list[str]:
         """Return all track ids, sorted from oldest to newest"""

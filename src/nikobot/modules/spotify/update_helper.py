@@ -1,5 +1,7 @@
 """Module which contains helper functions for spotify track difference calculation"""
 
+from typing import TypeAlias
+
 from abllib import log
 from discord import Color, Embed, Message
 from discord.interactions import InteractionMessage
@@ -10,8 +12,9 @@ from .dclasses import TrackSet, Playlist
 
 logger = log.get_logger("spotify.update_helper")
 
-async def get_current_track_ids(user_id: int, p_meta: Playlist, message: Message | InteractionMessage | None) \
-                               -> list[str]:
+MessageType: TypeAlias = Message | InteractionMessage | None
+
+async def get_current_track_ids(user_id: int, p_meta: Playlist, message: MessageType) -> list[str]:
     """return all track_ids in the all_playlist, sorted from oldest to newest"""
 
     track_ids = []
@@ -41,8 +44,7 @@ async def get_current_track_ids(user_id: int, p_meta: Playlist, message: Message
 
     return track_ids
 
-async def get_all_track_ids(user_id: int, playlist_metas: list[Playlist], message: Message | InteractionMessage | None) \
-                           -> list[str]:
+async def get_all_track_ids(user_id: int, playlist_metas: list[Playlist], message: MessageType) -> list[str]:
     """return all track_ids in the given playlists, sorted from oldest ot newest"""
 
     track_set = TrackSet()
@@ -95,7 +97,7 @@ async def get_all_track_ids(user_id: int, playlist_metas: list[Playlist], messag
             async for t_meta in api_helper.get_tracks(user_id, p_meta.id):
                 tracks_meta.append(t_meta)
                 track_set.add(*t_meta)
-            
+
             cache.set(p_meta, tracks_meta)
 
     return track_set.ids()

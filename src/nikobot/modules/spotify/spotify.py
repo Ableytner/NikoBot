@@ -137,7 +137,7 @@ class Spotify(commands.Cog):
             await api_helper.remove_tracks(user_id, all_playlist.id, to_remove)
         if len(to_add) > 0:
             await api_helper.add_tracks(user_id, all_playlist.id, to_add)
-        
+
         # wait for spotify to finish processing
         await sleep(5)
 
