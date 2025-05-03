@@ -14,7 +14,7 @@ class Playlist:
     name: str
     id: str
     total_tracks: int
-    snapshot_id: str | None = None
+    snapshot_id: str | None
 
 class TrackSet:
     """
@@ -24,7 +24,7 @@ class TrackSet:
     """
 
     def __init__(self):
-        self._tracks = {}
+        self._tracks: dict[str, int] = {}
 
     def add(self, track_id: str, timestamp: int) -> None:
         """Add a new track id and timestamp to the set"""
@@ -40,6 +40,11 @@ class TrackSet:
             self._tracks[track_id] = timestamp
         elif timestamp < self._tracks[track_id]:
             self._tracks[track_id] = timestamp
+
+    def get(self) -> list[tuple[str, int]]:
+        """Return all track ids and timestamps without order"""
+
+        return [(key, value) for key, value in self._tracks.items()]
 
     def ids(self) -> list[str]:
         """Return all track ids, sorted from oldest to newest"""

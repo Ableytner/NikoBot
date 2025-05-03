@@ -10,6 +10,7 @@ from discord import app_commands, Color, Embed
 from discord.ext import commands
 
 from . import api_helper, auth_helper, auth_server, update_helper
+from .cache import PlaylistCache
 from .error import ApiResponseError
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
 
@@ -114,10 +115,10 @@ class Spotify(commands.Cog):
             message = await reply(ctx, embed=Embed(title=f"Creating new playlist {all_playlist.name}",
                                                    color=Color.blue()))
 
-        playlist_ids = await api_helper.get_playlist_ids(user_id)
-        # remove all_playlist
-        playlist_ids.remove(all_playlist.id)
-        updated_track_ids = await update_helper.get_all_track_ids(user_id, playlist_ids, message)
+        playlist_metas = await api_helper.get_playlists(user_id)
+        # exclude all_playlist
+        playlist_metas = [item for item in playlist_metas if item.id != all_playlist.id]
+        updated_track_ids = await update_helper.get_all_track_ids(user_id, playlist_metas, message)
 
         current_track_ids = await update_helper.get_current_track_ids(user_id, all_playlist, message)
 
@@ -128,16 +129,26 @@ class Spotify(commands.Cog):
         # the newest track needs to be first
         to_add.reverse()
 
-        await message.edit(embed=Embed(title=f"Removing {len(to_remove)} and adding {len(to_add)} tracks",
-                                        color=Color.blue()))
+        await message.edit(embed=Embed(title="Updating your playlist",
+                                       description=f"Removing {len(to_remove)} and adding {len(to_add)} tracks",
+                                       color=Color.blue()))
+        logger.info(f"Removing {len(to_remove)} and adding {len(to_add)} tracks")
         if len(to_remove) > 0:
             await api_helper.remove_tracks(user_id, all_playlist.id, to_remove)
         if len(to_add) > 0:
             await api_helper.add_tracks(user_id, all_playlist.id, to_add)
+        
+        # wait for spotify to finish processing
+        await sleep(5)
+
+        # request new snapshot_id
+        p_meta = await api_helper.get_playlist_meta(user_id, all_playlist.id)
+        cache = PlaylistCache(user_id)
+        cache.set(p_meta, current_track_ids)
 
         embed = Embed(title="Successfully updated your playlist",
                       description=f"Removed {len(to_remove)} and added {len(to_add)} tracks "
-                                  f"to {all_playlist.name} for a total of {len(updated_track_ids)} tracks",
+                                  f"to {all_playlist.name} for a total of {len(updated_track_ids)} tracks.",
                       color=Color.green())
         embed.add_field(name=" ", value=" ", inline=False)
         embed.add_field(name="Note",

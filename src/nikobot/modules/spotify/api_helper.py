@@ -42,10 +42,10 @@ async def create_playlist(user_id: int, playlist_name: str) -> Playlist:
     res = await req.post(url, headers, json=body)
     json_res = await res.json()
 
-    return Playlist(playlist_name, json_res["id"], 0)
+    return Playlist(playlist_name, json_res["id"], 0, None)
 
-async def get_playlist_ids(user_id: int) -> list[str]:
-    """Return all playlist ids"""
+async def get_playlists(user_id: int) -> list[Playlist]:
+    """Return all playlist metadatas"""
 
     await auth_helper.ensure_token(user_id)
 
@@ -61,7 +61,7 @@ async def get_playlist_ids(user_id: int) -> list[str]:
     res = await req.get(BASE_URL, headers, params)
     json_res = await res.json()
 
-    playlist_ids = set()
+    playlists = []
     total_playlists = json_res["total"]
 
     offset = 0
@@ -76,12 +76,15 @@ async def get_playlist_ids(user_id: int) -> list[str]:
 
         for playlist_json in json_res["items"]:
             if playlist_json["owner"]["id"] == user_spotify_id:
-                playlist_ids.add(playlist_json["id"])
+                playlists.append(Playlist(playlist_json["name"],
+                                          playlist_json["id"],
+                                          playlist_json["tracks"]["total"],
+                                          playlist_json["snapshot_id"]))
             offset += 1
 
-    logger.info(f"Retrieved {len(playlist_ids)} user-owned playlists")
+    logger.info(f"Retrieved {len(playlists)} user-owned playlists")
 
-    return list(playlist_ids)
+    return playlists
 
 async def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
     """Return the metadata of a playlist"""
@@ -98,6 +101,20 @@ async def get_playlist_meta(user_id: int, playlist_id: str) -> Playlist:
     json_res = await res.json()
 
     return Playlist(json_res["name"], playlist_id, json_res["tracks"]["total"], json_res["snapshot_id"])
+
+async def get_saved_tracks_meta(user_id: int) -> Playlist:
+    """Return the metadata of the users' saved tracks"""
+
+    await auth_helper.ensure_token(user_id)
+
+    BASE_URL = "https://api.spotify.com/v1/me/tracks"
+
+    headers = auth_helper.get_auth_headers(user_id)
+
+    res = await req.get(BASE_URL, headers)
+    json_res = await res.json()
+
+    return Playlist("Liked Songs", f"saved_tracks:{user_id}", json_res["total"], None)
 
 async def delete_playlist(user_id: int, playlist_id: str) -> Playlist:
     """Delete a given playlist"""
@@ -209,8 +226,10 @@ async def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> No
 
         try:
             await req.post(BASE_URL, headers, json=body)
-        except ApiResponseError:
+        except ApiResponseError as ex:
             logger.info(body)
+            logger.exception(ex)
+            return
 
         track_ids = track_ids[:-50]
         offset += len(body["uris"])

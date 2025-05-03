@@ -85,7 +85,7 @@ async def _check_res(res: aiohttp.ClientResponse) -> None:
 
         raise err
 
-    if res.status != 200:
+    if res.status not in [200, 201]:
         err = ApiResponseError(f"Unexpected status code {res.status}")
         err.message = await res.text()
         err.status_code = res.status

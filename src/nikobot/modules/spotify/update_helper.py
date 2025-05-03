@@ -1,85 +1,102 @@
 """Module which contains helper functions for spotify track difference calculation"""
 
-from abllib import log, PersistentStorage
+from abllib import log
 from discord import Color, Embed, Message
 from discord.interactions import InteractionMessage
 
 from . import api_helper
+from .cache import PlaylistCache
 from .dclasses import TrackSet, Playlist
 
 logger = log.get_logger("spotify.update_helper")
 
-async def get_current_track_ids(user_id: str, p_meta: Playlist, message: Message | InteractionMessage | None) \
+async def get_current_track_ids(user_id: int, p_meta: Playlist, message: Message | InteractionMessage | None) \
                                -> list[str]:
     """return all track_ids in the all_playlist, sorted from oldest to newest"""
 
     track_ids = []
+    cache = PlaylistCache(user_id)
 
-    if message is not None:
-        await message.edit(embed=Embed(title="Loading already present tracks",
-                                       description=p_meta.name,
-                                       color=Color.blue()))
+    cached_tracks = cache.get(p_meta)
+    if cached_tracks is not None:
+        if message is not None:
+            await message.edit(embed=Embed(title="Loading already present tracks from cache",
+                                           description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
+                                           color=Color.blue()))
+        logger.info("using cached tracks for all_playlist")
 
-    cache_used = False
-    if f"spotify.{user_id}.cache.all_playlist" in PersistentStorage:
-        if PersistentStorage[f"spotify.{user_id}.cache.all_playlist.snapshot_id"] == p_meta.snapshot_id:
-            # the playlist hasn't changed since
-            logger.info("using cached tracks for all_playlist")
-            cache_used = True
-            track_ids = PersistentStorage[f"spotify.{user_id}.cache.all_playlist.tracks"].copy()
-        else:
-            # invalidate cache
-            logger.info("invalidating cache for all_playlist")
-            del PersistentStorage[f"spotify.{user_id}.cache.all_playlist"]
+        for t_id in cached_tracks:
+            track_ids.append(t_id)
+    else:
+        if message is not None:
+            await message.edit(embed=Embed(title="Loading tracks",
+                                            description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
+                                            color=Color.blue()))
 
-    if not cache_used:
-        track_ids = [t_meta[0] async for t_meta in api_helper.get_tracks(user_id, p_meta.id)]
+        async for t_meta in api_helper.get_tracks(user_id, p_meta.id):
+            track_ids.append(t_meta[0])
+
         # sort from old to new
         track_ids.reverse()
-        PersistentStorage[f"spotify.{user_id}.cache.all_playlist.snapshot_id"] = p_meta.snapshot_id
-        PersistentStorage[f"spotify.{user_id}.cache.all_playlist.tracks"] = track_ids.copy()
 
     return track_ids
 
-async def get_all_track_ids(user_id: str, playlist_ids: list[str], message: Message | InteractionMessage | None) \
+async def get_all_track_ids(user_id: int, playlist_metas: list[Playlist], message: Message | InteractionMessage | None) \
                            -> list[str]:
     """return all track_ids in the given playlists, sorted from oldest ot newest"""
 
     track_set = TrackSet()
+    cache = PlaylistCache(user_id)
 
-    if message is not None:
-        await message.edit(embed=Embed(title="Loading tracks",
-                                       description="Liked Songs",
-                                       color=Color.blue()))
-    async for t_meta in api_helper.get_saved_tracks(user_id):
-        track_set.add(*t_meta)
+    # load saved tracks
+    p_meta = await api_helper.get_saved_tracks_meta(user_id)
+    cached_tracks = cache.get(p_meta)
+    if cached_tracks is not None:
+        if message is not None:
+            await message.edit(embed=Embed(title="Loading already present tracks from cache",
+                                           description=f"Liked songs: {p_meta.total_tracks} tracks",
+                                           color=Color.blue()))
+        logger.info("using cached tracks for saved tracks")
 
-    for p_id in playlist_ids:
-        p_meta = await api_helper.get_playlist_meta(user_id, p_id)
+        for t_meta in cached_tracks:
+            track_set.add(*t_meta)
+    else:
         if message is not None:
             await message.edit(embed=Embed(title="Loading tracks",
-                                           description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
-                                           color=Color.blue()))
+                                            description=f"Liked songs: {p_meta.total_tracks} tracks",
+                                            color=Color.blue()))
 
-        cache_used = False
-        if f"spotify.{user_id}.cache.{p_meta.id}" in PersistentStorage:
-            if PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.snapshot_id"] == p_meta.snapshot_id:
-                # the playlist hasn't changed since
-                logger.info(f"using cached tracks for {p_meta.name}")
-                cache_used = True
-                for t_meta in PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"]:
-                    track_set.add(*t_meta)
-            else:
-                # invalidate cache
-                logger.info(f"invalidating cache for {p_meta.name}")
-                del PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}"]
+        tracks_meta = []
+        async for t_meta in api_helper.get_saved_tracks(user_id):
+            tracks_meta.append(t_meta)
+            track_set.add(*t_meta)
 
-        if not cache_used:
-            PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.snapshot_id"] = p_meta.snapshot_id
-            PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"] = []
-            async for t_meta in api_helper.get_tracks(user_id, p_id):
+        cache.set(p_meta, tracks_meta)
+
+    # load all other playlists
+    for p_meta in playlist_metas:
+        cached_tracks = cache.get(p_meta)
+        if cached_tracks is not None:
+            if message is not None:
+                await message.edit(embed=Embed(title="Loading tracks from cache",
+                                               description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
+                                               color=Color.blue()))
+            logger.info(f"using cached tracks for {p_meta.name}")
+
+            for t_meta in cached_tracks:
                 track_set.add(*t_meta)
-                PersistentStorage[f"spotify.{user_id}.cache.{p_meta.id}.tracks"].append(t_meta)
+        else:
+            if message is not None:
+                await message.edit(embed=Embed(title="Loading tracks",
+                                               description=f"{p_meta.name}: {p_meta.total_tracks} tracks",
+                                               color=Color.blue()))
+
+            tracks_meta = []
+            async for t_meta in api_helper.get_tracks(user_id, p_meta.id):
+                tracks_meta.append(t_meta)
+                track_set.add(*t_meta)
+            
+            cache.set(p_meta, tracks_meta)
 
     return track_set.ids()
 
