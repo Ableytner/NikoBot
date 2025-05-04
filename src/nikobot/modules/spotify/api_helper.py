@@ -115,7 +115,7 @@ async def get_saved_tracks_meta(user_id: int) -> Playlist:
 
     return Playlist("Liked Songs", f"saved_tracks:{user_id}", json_res["total"], None)
 
-async def delete_playlist(user_id: int, playlist_id: str) -> Playlist:
+async def delete_playlist(user_id: int, playlist_id: str) -> None:
     """Delete a given playlist"""
 
     await auth_helper.ensure_token(user_id)

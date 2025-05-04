@@ -1,7 +1,6 @@
 """A module containing wrapping functions around requests which retires on rate-limit exceedings"""
 
 import asyncio
-from json import JSONDecodeError
 
 import aiohttp
 from abllib import log
@@ -97,8 +96,4 @@ async def _has_json(res: aiohttp.ClientResponse) -> bool:
         await res.json()
         return True
     except aiohttp.ContentTypeError:
-        try:
-            await res.json(content_type=None)
-            return True
-        except JSONDecodeError:
-            return False
+        return False
