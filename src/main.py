@@ -22,6 +22,7 @@ from nikobot.discord_bot import DiscordBot
 # create sing module with all music commands
 # create command to set manga provider url
 # fix manganato search for: oshi no ko, solo leveling, propably a lot more after provider replacement
+# handle rate limits from natomanga
 # create command to list manga with reading status
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
 # move mal config loading to centralized handler
