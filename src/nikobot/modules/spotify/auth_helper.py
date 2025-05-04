@@ -39,7 +39,7 @@ def auth(user_id: int) -> str:
         "response_type": "code",
         "client_id": VolatileStorage["spotify.client_id"],
         "scope": "playlist-read-private playlist-read-collaborative user-library-read" \
-                 + " playlist-modify-public playlist-modify-private",
+                 " playlist-modify-public playlist-modify-private",
         "state": state,
         "redirect_uri": REDIRECT_URL
     }
