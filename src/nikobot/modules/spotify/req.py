@@ -97,8 +97,4 @@ async def _has_json(res: aiohttp.ClientResponse) -> bool:
         await res.json()
         return True
     except aiohttp.ContentTypeError:
-        try:
-            await res.json(content_type=None)
-            return True
-        except JSONDecodeError:
-            return False
+        return False
