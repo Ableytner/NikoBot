@@ -18,5 +18,9 @@
     },
     "malnotifier": {
         "client_id": ""
+    },
+    "spotify": {
+        "client_id": "",
+        "client_secret": ""
     }
 }

@@ -5,9 +5,11 @@ import json
 import os
 import shutil
 import typing
+from time import sleep
 
 from abllib import fs, log, storage
-from abllib.storage import VolatileStorage
+from abllib.pproc import WorkerThread
+from abllib.storage import VolatileStorage, PersistentStorage
 
 from nikobot.discord_bot import DiscordBot
 
@@ -22,9 +24,11 @@ from nikobot.discord_bot import DiscordBot
 # fix manganato search for: oshi no ko, solo leveling, propably a lot more after provider replacement
 # create command to list manga with reading status
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
-# move mal config loading to malnotifier module
-# move all module-specific code to that module (e.g. help modulke in on_command_error)
-# add command to add all songs from all spotify playlists to one playlist, in order of first added
+# move mal config loading to centralized handler
+# move all module-specific code to that module (e.g. help module in on_command_error)
+# print number of spotify requests if all_playlist command completes
+# run all_playlist command once per day
+# update to python 3.13
 
 if __name__ == "__main__":
     # setup logging
@@ -50,6 +54,13 @@ if __name__ == "__main__":
     storage_dir = fs.absolute(config["storage_dir"])
     storage.initialize(os.path.join(storage_dir, "storage.json"), True)
 
+    def save_func():
+        """Save PersistentStorage every minute"""
+        while True:
+            PersistentStorage.save_to_disk()
+            sleep(60)
+    WorkerThread(target=save_func, daemon=True).start()
+
     VolatileStorage["config_file"] = args.config
     VolatileStorage["modules_to_load"] = config["modules"]
     VolatileStorage["discord_token"] = config["discord_token"]
@@ -63,7 +74,24 @@ if __name__ == "__main__":
 
         VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
 
-    # setup storage folders
+    if "spotify.spotify" in config["modules"]:
+        if "spotify" not in config \
+           or "client_id" not in config["spotify"] \
+           or config["spotify"]["client_id"] == "":
+            raise ValueError("Missing client_id for use with the spotify module. " +
+                             "You can create one here https://developer.spotify.com/dashboard " +
+                             "and add it to your config.json.")
+        if "spotify" not in config \
+           or "client_secret" not in config["spotify"] \
+           or config["spotify"]["client_secret"] == "":
+            raise ValueError("Missing client_secret for use with the spotify module. " +
+                             "You can create one here https://developer.spotify.com/dashboard " +
+                             "and add it to your config.json.")
+
+        VolatileStorage["spotify.client_id"] = config["spotify"]["client_id"]
+        VolatileStorage["spotify.client_secret"] = config["spotify"]["client_secret"]
+
+    # setup storage directories
     VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
     os.makedirs(VolatileStorage["cache_dir"], exist_ok=True)
 
@@ -73,4 +101,8 @@ if __name__ == "__main__":
 
     bot = DiscordBot()
     VolatileStorage["bot"] = bot
-    bot.start_bot()
+
+    try:
+        bot.start_bot()
+    except KeyboardInterrupt:
+        PersistentStorage.save_to_disk()
