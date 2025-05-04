@@ -89,8 +89,8 @@ class Spotify(commands.Cog):
                                     inline=False)
                     await message.edit(embed=embed)
                     return
-                else:
-                    raise
+
+                raise
 
             await message.edit(embed=Embed(title="Successfully registered with your Spotify account!",
                                            color=Color.green()))
