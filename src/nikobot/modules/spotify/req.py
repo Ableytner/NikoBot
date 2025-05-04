@@ -1,7 +1,6 @@
 """A module containing wrapping functions around requests which retires on rate-limit exceedings"""
 
 import asyncio
-from json import JSONDecodeError
 
 import aiohttp
 from abllib import log
