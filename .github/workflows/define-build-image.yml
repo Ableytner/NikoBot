@@ -30,9 +30,7 @@ jobs:
     - name: Cache docker image
       if: ${{ inputs.upload == true }}
       run: |
-        sshpass -p ${{ secrets.FTP_PASSWORD }} sftp -oPort=2022 ghauser@localhost <<EOF
-        put /tmp/image.tar ./image.tar
-        EOF
+        curl -X POST -F "file=@/tmp/image.tar" -F "project_id=${{ env.IMAGE_NAME }}" -F "issue_id=1" http://127.0.0.1:25000/dump
     - name: Remove local image
       run: |
         docker image rm ${{ env.IMAGE_NAME }}
