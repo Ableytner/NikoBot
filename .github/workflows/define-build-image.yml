@@ -27,12 +27,12 @@ jobs:
       if: ${{ inputs.upload == true }}
       run: |
         docker save -o /tmp/image.tar ${{ env.IMAGE_NAME }}:latest
-    - name: Upload image artifact
+    - name: Cache docker image
       if: ${{ inputs.upload == true }}
-      uses: actions/upload-artifact@v4
-      with:
-        name: image
-        path: /tmp/image.tar
+      run: |
+        sshpass -p ${{ secrets.FTP_PASSWORD }} sftp -oPort=2022 ghauser@localhost <<EOF
+        put /tmp/image.tar ./image.tar
+        EOF
     - name: Remove local image
       run: |
         docker image rm ${{ env.IMAGE_NAME }}
