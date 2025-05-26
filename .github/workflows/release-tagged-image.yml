@@ -71,7 +71,7 @@ jobs:
         echo "IMAGE_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
     - name: Download cached docker image
       run: |
-        curl -X GET http://192.168.0.145:25000/attachments/${{ env.IMAGE_NAME }}/1/image.tar -o /tmp/image.tar
+        curl -X GET http://192.168.0.145:25000/attachments/nikobot/1/image.tar -o /tmp/image.tar
     - name: Load image
       run: |
         docker load --input /tmp/image.tar
