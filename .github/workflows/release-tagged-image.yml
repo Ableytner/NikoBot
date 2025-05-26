@@ -30,8 +30,6 @@ jobs:
 
   build:
     uses: ./.github/workflows/define-build-image.yml
-    with:
-      upload: true
     secrets: inherit
 
   tag:
@@ -82,9 +80,14 @@ jobs:
         docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }} ghcr.io/${{ env.IMAGE_NAME }}:latest
         docker push ghcr.io/${{ env.IMAGE_NAME }}:latest
     - name: Remove local image
+      if: always()
       run: |
         docker image rm ${{ env.IMAGE_NAME }}
-  
+    - name: Remove cached docker image
+      if: always()
+      run: |
+        curl -X DELETE http://192.168.0.145:25000/attachments/nikobot/1/image.tar
+
   release:
     needs: [push]
     runs-on: [self-hosted, linux]
