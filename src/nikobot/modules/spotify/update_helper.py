@@ -139,7 +139,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
                     color=Color.blue()
                 )
             )
-        async for track in api_helper.get_tracks(user_id, playlist.id):
+        async for track in api_helper.get_tracks(user_id, all_playlist.id):
             current_tracks.append(track)
         # sort from old to new
         current_tracks.reverse()
