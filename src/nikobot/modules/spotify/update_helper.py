@@ -155,10 +155,12 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         )
     new_tracks = new_tracks_set.ids()
     logger.info(f"calculating diff between {len(current_tracks)} current and {len(new_tracks)} updated tracks")
-    logger.info(f"current: [{current_tracks[0]}, {current_tracks[1]}, {current_tracks[2]}, "
-                f"..., {current_tracks[-3]}, {current_tracks[-2]}, {current_tracks[-1]}")
-    logger.info(f"updated: [{new_tracks[0]}, {new_tracks[1]}, {new_tracks[2]}, "
-                f"..., {new_tracks[-3]}, {new_tracks[-2]}, {new_tracks[-1]}")
+    if len(current_tracks) > 0:
+        logger.info(f"current: [{current_tracks[0]}, {current_tracks[1]}, {current_tracks[2]}, "
+                    f"..., {current_tracks[-3]}, {current_tracks[-2]}, {current_tracks[-1]}")
+    if len(new_tracks) > 0:
+        logger.info(f"updated: [{new_tracks[0]}, {new_tracks[1]}, {new_tracks[2]}, "
+                    f"..., {new_tracks[-3]}, {new_tracks[-2]}, {new_tracks[-1]}")
     to_remove, to_add = calculate_diff([item.id for item in current_tracks], new_tracks)
     logger.info(f"to_add: {to_add[:20]}")
     logger.info(f"to_remove: {to_remove[-20:-1]}")
