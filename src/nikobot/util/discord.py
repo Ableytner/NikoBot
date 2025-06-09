@@ -513,7 +513,7 @@ async def private_message(user_id: int, *args, **kwargs) \
     if user is None:
         raise error.UserNotFound()
 
-    await user.send(*args, **kwargs)
+    return await user.send(*args, **kwargs)
 
 async def parse_user(ctx: commands.context.Context | discordpy.interactions.Interaction, user: str) \
           -> discordpy.member.Member | None:
