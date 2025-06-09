@@ -42,16 +42,14 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     for playlist in playlists:
         # ignore all_playlist
         if playlist.id != all_playlist.id:
-            cached = cache.get(playlist)
-            if cached is not None:
+            if cache.get(playlist) is not None:
                 # cache hit
                 cached_playlists.append(playlist)
             else:
                 # cache miss or is not up-to-date
                 changed_playlists.append(playlist)
 
-    # TODO: check Liked Songs
-    if len(changed_playlists) == 0:
+    if len(changed_playlists) == 0 and cache.get(liked_songs_playlist) is not None:
         # yay, nothing changed and we can exit early
         return
 
@@ -175,18 +173,30 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         await api_helper.add_tracks(user_id, all_playlist.id, to_add)
 
     # wait for spotify to finish processing
-    await sleep(5)
+    if notify_user:
+        await message.edit(
+            embed=Embed(
+                title="Waiting for Spotify",
+                description=f"Waiting for Spotify to process changes",
+                color=Color.blue()
+            )
+        )
+    remote_track_count = 0
+    while remote_track_count != len(new_tracks_set.tracks()):
+        logger.info(f"track count mismatch: expected {len(new_tracks_set.tracks())}, got {remote_track_count}")
+        await sleep(5)
 
-    # request new snapshot_id for all_playlist
-    all_playlist = await api_helper.get_playlist_meta(user_id, all_playlist.id)
-    cache = PlaylistCache.get_instance(user_id)
+        # request new snapshot_id for all_playlist
+        all_playlist = await api_helper.get_playlist_meta(user_id, all_playlist.id)
+        remote_track_count = all_playlist.total_tracks
+
     cache.set(all_playlist, new_tracks_set.tracks())
 
     if notify_user:
         embed = Embed(
             title="Successfully updated your playlist",
             description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name}"
-                        f" for a total of {len(new_tracks_set.ids())} tracks.",
+                        f" for a total of {all_playlist.total_tracks} tracks.",
             color=Color.green()
         )
         embed.add_field(name=" ", value=" ", inline=False)

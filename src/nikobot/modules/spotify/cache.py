@@ -29,6 +29,9 @@ class PlaylistCache(Cache):
     def get(self, p_meta: Playlist) -> list[Track] | None:
         """Return the cached playlist, or None on missed or out-of-date cache"""
 
+        if p_meta.id is None or p_meta.id == "":
+            raise RuntimeError()
+
         key = f"{self.key}.{p_meta.id}"
 
         # cache miss
