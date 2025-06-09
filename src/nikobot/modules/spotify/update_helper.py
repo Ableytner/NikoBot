@@ -17,6 +17,8 @@ logger = log.get_logger("spotify.update_helper")
 
 MessageType: TypeAlias = Message | InteractionMessage | None
 
+# pylint: disable=broad-exception-raised, too-many-statements
+
 async def run(user_id: int, notify_user: bool = True) -> None:
     """Check if any playlist cnahged, and update all_playlist accordingly"""
 
@@ -35,7 +37,8 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     cache = PlaylistCache.get_instance(user_id)
 
     if cache.get(all_playlist) is None:
-        raise Exception("all_playlist changed since last cache update, which means the user added/deleted a song manually")
+        raise Exception("all_playlist changed since last cache update,"
+                        " which means the user added/deleted a song manually")
 
     cached_playlists = []
     changed_playlists = []
@@ -71,7 +74,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     for playlist in cached_playlists:
         for track in cache.get(playlist):
             new_tracks_set.add(track)
-    
+
     # fetch tracks from changed playlists
     for playlist in changed_playlists:
         if notify_user:

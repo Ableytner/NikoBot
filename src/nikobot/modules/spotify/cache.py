@@ -9,8 +9,13 @@ from .dclasses import Track, Playlist
 class Cache():
     """Base class for all spotify caches"""
 
+    user_id: int
+    key: str
+
     @classmethod
     def get_instance(cls, user_id: int):
+        """Return the Cache instance of the given user"""
+
         inst = cls()
 
         inst.user_id = user_id

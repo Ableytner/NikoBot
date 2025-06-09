@@ -177,7 +177,7 @@ class Spotify(commands.Cog):
 
         embed = Embed(
             title="Successfully created your new playlist" if is_new_playlist else "Successfully updated your playlist",
-            description=f"The playlist is automatically updated every 15 minutes.",
+            description="The playlist is automatically updated every 15 minutes.",
             color=Color.green()
         )
         embed.add_field(name=" ", value=" ", inline=False)
@@ -217,6 +217,8 @@ class Spotify(commands.Cog):
 
     @tasks.loop(minutes=15, reconnect=True, name="update-all-playlists-task")
     async def update_all_playlists(self):
+        """Update all all_playlists every 15 minutes"""
+
         for user_id in PersistentStorage["spotify"].keys():
             # ignore all entries that aren't user ids
             if user_id.isdigit():
