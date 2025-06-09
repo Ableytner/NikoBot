@@ -155,15 +155,11 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         )
     new_tracks = new_tracks_set.ids()
     logger.info(f"calculating diff between {len(current_tracks)} current and {len(new_tracks)} updated tracks")
-    if len(current_tracks) > 0:
-        logger.info(f"current: [{current_tracks[0]}, {current_tracks[1]}, {current_tracks[2]}, "
-                    f"..., {current_tracks[-3]}, {current_tracks[-2]}, {current_tracks[-1]}")
-    if len(new_tracks) > 0:
-        logger.info(f"updated: [{new_tracks[0]}, {new_tracks[1]}, {new_tracks[2]}, "
-                    f"..., {new_tracks[-3]}, {new_tracks[-2]}, {new_tracks[-1]}")
+    logger.info(f"current: {_format_list(current_tracks)}")
+    logger.info(f"updated: {_format_list(new_tracks)}")
     to_remove, to_add = calculate_diff([item.id for item in current_tracks], new_tracks)
-    logger.info(f"to_add: {to_add[:20]}")
-    logger.info(f"to_remove: {to_remove[-20:-1]}")
+    logger.info(f"to_add: {_format_list(to_add)}")
+    logger.info(f"to_remove: {_format_list(to_remove)}")
 
     if notify_user:
         await message.edit(
@@ -262,3 +258,9 @@ def calculate_diff(saved_track_ids: list[str], updated_track_ids: list[str]) -> 
     to_add = updated_track_ids[last_c + offset:]
 
     return (to_remove, to_add)
+
+def _format_list(l: list):
+    if len(l) < 6:
+        return str(l)
+    
+    return f"[{l[0]}, {l[1]}, {l[2]}, ..., {l[-3]}, {l[-2]}, {l[-1]}]"
