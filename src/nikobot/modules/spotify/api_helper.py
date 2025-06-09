@@ -6,7 +6,7 @@ from typing import AsyncGenerator
 from abllib import log
 
 from . import auth_helper, req
-from .dclasses import Playlist
+from .dclasses import Track, Playlist
 
 logger = log.get_logger("spotify.api_helper")
 
@@ -127,7 +127,7 @@ async def delete_playlist(user_id: int, playlist_id: str) -> None:
 
     await req.delete(url, headers)
 
-async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[tuple[str, int], None]:
+async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[Track, None]:
     """Return a generator over all track ids and date_added of a playlist"""
 
     await auth_helper.ensure_token(user_id)
@@ -158,7 +158,7 @@ async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[tuple[str
 
         for track_json in json_res["items"]:
             if track_json["track"]["id"] is not None:
-                yield (
+                yield Track(
                     track_json["track"]["id"],
                     int(datetime.strptime(track_json["added_at"], r"%Y-%m-%dT%H:%M:%SZ").timestamp())
                 )
@@ -168,7 +168,7 @@ async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[tuple[str
                 pass
             offset += 1
 
-async def get_saved_tracks(user_id: int) -> AsyncGenerator[tuple[str, int], None]:
+async def get_saved_tracks(user_id: int) -> AsyncGenerator[Track, None]:
     """Return a generator over all saved track ids of the liked songs"""
 
     await auth_helper.ensure_token(user_id)
@@ -195,7 +195,7 @@ async def get_saved_tracks(user_id: int) -> AsyncGenerator[tuple[str, int], None
 
         for track_json in json_res["items"]:
             if track_json["track"]["id"] is not None:
-                yield (
+                yield Track(
                     track_json["track"]["id"],
                     int(datetime.strptime(track_json["added_at"], r"%Y-%m-%dT%H:%M:%SZ").timestamp())
                 )
