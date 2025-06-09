@@ -153,13 +153,14 @@ async def run(user_id: int, notify_user: bool = True) -> None:
                 color=Color.blue()
             )
         )
-    new_tracks = new_tracks_set.ids()
-    logger.info(f"calculating diff between {len(current_tracks)} current and {len(new_tracks)} updated tracks")
-    logger.info(f"current: {_format_list(current_tracks)}")
-    logger.info(f"updated: {_format_list(new_tracks)}")
-    to_remove, to_add = calculate_diff([item.id for item in current_tracks], new_tracks)
-    logger.info(f"to_add: {_format_list(to_add)}")
-    logger.info(f"to_remove: {_format_list(to_remove)}")
+    current_track_ids = [item.id for item in current_tracks]
+    new_track_ids = new_tracks_set.ids()
+    logger.debug(f"calculating diff between {len(current_tracks)} current and {len(new_track_ids)} updated tracks")
+    logger.debug(f"current: {_format_list(current_tracks)}")
+    logger.debug(f"updated: {_format_list(new_track_ids)}")
+    to_remove, to_add = calculate_diff(current_track_ids, new_track_ids)
+    logger.debug(f"to_add: {_format_list(to_add)}")
+    logger.debug(f"to_remove: {_format_list(to_remove)}")
 
     if notify_user:
         await message.edit(
@@ -169,7 +170,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
                 color=Color.blue()
             )
         )
-    logger.info(f"Removing {len(to_remove)} and adding {len(to_add)} tracks")
+    logger.debug(f"Removing {len(to_remove)} and adding {len(to_add)} tracks")
     if len(to_remove) > 0:
         # track order doesn't matter when removing
         await api_helper.remove_tracks(user_id, all_playlist.id, to_remove)
@@ -189,7 +190,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         )
     remote_track_count = 0
     while remote_track_count != len(new_tracks_set.tracks()):
-        logger.info(f"track count mismatch: expected {len(new_tracks_set.tracks())}, got {remote_track_count}")
+        logger.debug(f"track count mismatch: expected {len(new_tracks_set.tracks())}, got {remote_track_count}")
         await sleep(5)
 
         # request new snapshot_id for all_playlist
