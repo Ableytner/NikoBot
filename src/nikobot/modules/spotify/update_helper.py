@@ -36,10 +36,6 @@ async def run(user_id: int, notify_user: bool = True) -> None:
 
     cache = PlaylistCache.get_instance(user_id)
 
-    if cache.get(all_playlist) is None:
-        raise Exception("all_playlist changed since last cache update,"
-                        " which means the user added/deleted a song manually")
-
     cached_playlists = []
     changed_playlists = []
 
