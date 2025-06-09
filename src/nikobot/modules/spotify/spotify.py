@@ -173,7 +173,7 @@ class Spotify(commands.Cog):
             message = await reply(ctx, embed=Embed(title=f"Creating new playlist {all_playlist.name}",
                                                    color=Color.blue()))
 
-        update_helper.run(user_id, True)
+        await update_helper.run(user_id, True)
 
         embed = Embed(
             title="Successfully created your new playlist" if is_new_playlist else "Successfully updated your playlist",

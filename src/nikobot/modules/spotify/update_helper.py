@@ -114,7 +114,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         async for track in api_helper.get_saved_tracks(user_id):
             new_tracks_set.add(track)
             tracks.append(track)
-        # update cache
+        # order doesn't matter because its sorted by timestamp after
         cache.set(liked_songs_playlist, tracks)
 
     # load / fetch track_ids in all_playlist
