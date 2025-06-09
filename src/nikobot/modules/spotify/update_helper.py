@@ -177,7 +177,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         await message.edit(
             embed=Embed(
                 title="Waiting for Spotify",
-                description=f"Waiting for Spotify to process changes",
+                description="Waiting for Spotify to process changes",
                 color=Color.blue()
             )
         )
