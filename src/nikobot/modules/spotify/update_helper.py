@@ -262,5 +262,5 @@ def calculate_diff(saved_track_ids: list[str], updated_track_ids: list[str]) -> 
 def _format_list(l: list):
     if len(l) < 6:
         return str(l)
-    
+
     return f"[{l[0]}, {l[1]}, {l[2]}, ..., {l[-3]}, {l[-2]}, {l[-1]}]"
