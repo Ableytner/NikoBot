@@ -155,7 +155,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
                 color=Color.blue()
             )
         )
-    to_remove, to_add = calculate_diff(new_tracks_set.ids(), [item.id for item in current_tracks])
+    to_remove, to_add = calculate_diff([item.id for item in current_tracks], new_tracks_set.ids())
 
     if notify_user:
         await message.edit(
@@ -186,7 +186,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         embed = Embed(
             title="Successfully updated your playlist",
             description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name}"
-                        f" for a total of {len(new_tracks_set.tracks())} tracks.",
+                        f" for a total of {len(new_tracks_set.ids())} tracks.",
             color=Color.green()
         )
         embed.add_field(name=" ", value=" ", inline=False)
