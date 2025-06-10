@@ -1,15 +1,14 @@
 """contains the cog of the dev module"""
 
-from asyncio import sleep
-from threading import Thread
-
 from abllib import PersistentStorage, VolatileStorage, CacheStorage
 from abllib.storage import _PersistentStorage, _VolatileStorage, _CacheStorage
 from abllib.log import get_logger
-from discord import app_commands, Color, Embed
+from discord import app_commands
 from discord.ext import commands
 
-from ..util.discord import grouped_normal_command, reply, get_user_id, private_message
+from ..util.discord import grouped_normal_command, reply
+
+# pylint: disable=broad-exception-caught
 
 logger = get_logger("dev")
 
@@ -82,7 +81,7 @@ class Dev(commands.Cog):
             return VolatileStorage
         if storage_name in "cachestorage":
             return CacheStorage
-        
+
         raise ValueError(f"Expected valid storage name, not '{storage_name}'")
 
 async def setup(bot: commands.Bot):
