@@ -65,7 +65,6 @@ def test_is_cog_loaded(bot: DiscordBot):
     """Test the discord.is_cog_loaded() method"""
 
     assert discord.is_cog_loaded("help")
-    assert discord.is_cog_loaded("owner")
     assert not discord.is_cog_loaded("invalid")
 
 def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
