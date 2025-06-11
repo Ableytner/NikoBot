@@ -72,6 +72,27 @@ class Dev(commands.Cog):
         except Exception as e:
             await reply(ctx, f"Error occured:\n{str(e)}")
 
+    @grouped_normal_command(
+        "keys",
+        "return all keys from the given storage object",
+        command_group,
+        hidden=True
+    )
+    @commands.is_owner()
+    async def keys(self, ctx: commands.context.Context, storage_name: str, key: str):
+        """return all keys from the given storage object"""
+
+        storage = self._parse_storage(storage_name)
+
+        try:
+            if not isinstance(storage[key], dict):
+                await reply(ctx, f"Requested object is not of type {dict}, but {type(storage[key])}")
+                return
+
+            await reply(ctx, str(storage[key].keys()))
+        except Exception as e:
+            await reply(ctx, f"Error occured:\n{str(e)}")
+
     def _parse_storage(self, storage_name: str) -> _PersistentStorage | _VolatileStorage | _CacheStorage:
         storage_name = storage_name.lower().strip()
 
