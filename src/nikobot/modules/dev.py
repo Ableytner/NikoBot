@@ -89,7 +89,9 @@ class Dev(commands.Cog):
                 await reply(ctx, f"Requested object is not of type {dict}, but {type(storage[key])}")
                 return
 
-            await reply(ctx, str(storage[key].keys()))
+            # cast to list for more beautiful print
+            keys = list(storage[key].keys())
+            await reply(ctx, str(keys))
         except Exception as e:
             await reply(ctx, f"Error occured:\n{str(e)}")
 
