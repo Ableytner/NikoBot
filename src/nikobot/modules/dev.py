@@ -1,7 +1,7 @@
 """contains the cog of the dev module"""
 
-from abllib import PersistentStorage, VolatileStorage, CacheStorage
-from abllib.storage import _PersistentStorage, _VolatileStorage, _CacheStorage
+from abllib import PersistentStorage, VolatileStorage, CacheStorage, StorageView
+from abllib.storage import _PersistentStorage, _VolatileStorage, _CacheStorage, _StorageView
 from abllib.log import get_logger
 from discord import app_commands
 from discord.ext import commands
@@ -48,11 +48,15 @@ class Dev(commands.Cog):
         """return a value from the given storage"""
 
         storage = self._parse_storage(storage_name)
+        if storage is None:
+            await reply(ctx, f"unknown storage type {storage_name}")
+            return
 
-        try:
-            await reply(ctx, str(storage[key]))
-        except Exception as e:
-            await reply(ctx, f"Error occured:\n{str(e)}")
+        if key not in storage:
+            await reply(ctx, f"key {key} is not in {storage_name}")
+            return
+
+        await reply(ctx, str(storage[key]))
 
     @grouped_normal_command(
         "set",
@@ -65,39 +69,55 @@ class Dev(commands.Cog):
         """set a key from the given storage to a given value"""
 
         storage = self._parse_storage(storage_name)
+        if storage is None:
+            await reply(ctx, f"unknown storage type {storage_name}")
+            return
 
-        try:
-            storage[key] = value
-            await reply(ctx, "success")
-        except Exception as e:
-            await reply(ctx, f"Error occured:\n{str(e)}")
+        if key not in storage:
+            await reply(ctx, f"key {key} is not in {storage_name}")
+            return
+
+        storage[key] = value
+        await reply(ctx, "success")
 
     @grouped_normal_command(
         "keys",
-        "return all keys from the given storage object",
+        "return all keys from the requested storage object, or all keys if the given key is omitted",
         command_group,
         hidden=True
     )
     @commands.is_owner()
-    async def keys(self, ctx: commands.context.Context, storage_name: str, key: str):
-        """return all keys from the given storage object"""
+    async def keys(self, ctx: commands.context.Context, storage_name: str, key: str | None):
+        """return all keys from the requested storage object, or all keys if the given key is omitted"""
 
         storage = self._parse_storage(storage_name)
+        if storage is None:
+            await reply(ctx, f"unknown storage type {storage_name}")
+            return
 
-        try:
-            if not isinstance(storage[key], dict):
-                await reply(ctx, f"Requested object is not of type {dict}, but {type(storage[key])}")
+        if key is None:
+            storage_obj = storage
+        else:
+            if key not in storage:
+                await reply(ctx, f"key {key} is not in {storage_name}")
                 return
 
-            # cast to list for more beautiful print
-            keys = list(storage[key].keys())
-            await reply(ctx, str(keys))
-        except Exception as e:
-            await reply(ctx, f"Error occured:\n{str(e)}")
+            storage_obj = storage[key]
 
-    def _parse_storage(self, storage_name: str) -> _PersistentStorage | _VolatileStorage | _CacheStorage:
+        if not isinstance(storage_obj, dict):
+            await reply(ctx, f"Requested object is not of type {dict}, but {type(storage_obj)}")
+            return
+
+        # cast to list for more beautiful print
+        keys = list(storage_obj.keys())
+        await reply(ctx, str(keys))
+
+    def _parse_storage(self, storage_name: str) \
+       -> _StorageView | _PersistentStorage | _VolatileStorage | _CacheStorage | None:
         storage_name = storage_name.lower().strip()
 
+        if storage_name in "storageview":
+            return StorageView
         if storage_name in "persistentstorage":
             return PersistentStorage
         if storage_name in "volatilestorage":
@@ -105,7 +125,7 @@ class Dev(commands.Cog):
         if storage_name in "cachestorage":
             return CacheStorage
 
-        raise ValueError(f"Expected valid storage name, not '{storage_name}'")
+        return None
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
