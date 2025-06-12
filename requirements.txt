@@ -1,4 +1,4 @@
-abllib @ git+https://github.com/Ableytner/abllib@master
+abllib @ git+https://github.com/Ableytner/abllib@support-more-dict-functions-in-storages
 beautifulsoup4
 discord.py
 pillow

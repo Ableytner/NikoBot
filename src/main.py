@@ -29,6 +29,7 @@ from nikobot.discord_bot import DiscordBot
 # move all module-specific code to that module (e.g. help module in on_command_error)
 # update to python 3.13
 # add some sort of statistics system (similar in usage to help module)
+# type-checking for util.discord functions
 
 if __name__ == "__main__":
     # setup logging
