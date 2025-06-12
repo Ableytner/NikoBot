@@ -2,6 +2,7 @@
 
 from abllib import PersistentStorage, VolatileStorage, CacheStorage, StorageView
 from abllib.storage import _PersistentStorage, _VolatileStorage, _CacheStorage, _StorageView
+from abllib._storage import _BaseStorage
 from abllib.log import get_logger
 from discord import app_commands
 from discord.ext import commands
@@ -49,11 +50,11 @@ class Dev(commands.Cog):
 
         storage = self._parse_storage(storage_name)
         if storage is None:
-            await reply(ctx, f"unknown storage type {storage_name}")
+            await reply(ctx, f"unknown storage type '{storage_name}'")
             return
 
         if key not in storage:
-            await reply(ctx, f"key {key} is not in {storage_name}")
+            await reply(ctx, f"key '{key}' is not in {storage_name}")
             return
 
         await reply(ctx, str(storage[key]))
@@ -70,11 +71,11 @@ class Dev(commands.Cog):
 
         storage = self._parse_storage(storage_name)
         if storage is None:
-            await reply(ctx, f"unknown storage type {storage_name}")
+            await reply(ctx, f"unknown storage type '{storage_name}'")
             return
 
         if key not in storage:
-            await reply(ctx, f"key {key} is not in {storage_name}")
+            await reply(ctx, f"key '{key}' is not in {storage_name}")
             return
 
         storage[key] = value
@@ -92,20 +93,20 @@ class Dev(commands.Cog):
 
         storage = self._parse_storage(storage_name)
         if storage is None:
-            await reply(ctx, f"unknown storage type {storage_name}")
+            await reply(ctx, f"unknown storage type '{storage_name}'")
             return
 
         if key is None:
             storage_obj = storage
         else:
             if key not in storage:
-                await reply(ctx, f"key {key} is not in {storage_name}")
+                await reply(ctx, f"key '{key}' is not in {storage_name}")
                 return
 
             storage_obj = storage[key]
 
-        if not isinstance(storage_obj, dict):
-            await reply(ctx, f"Requested object is not of type {dict}, but {type(storage_obj)}")
+        if not isinstance(storage_obj, (dict, _BaseStorage, _StorageView)):
+            await reply(ctx, f"Requested object is not of type '{dict}', but '{type(storage_obj)}'")
             return
 
         # cast to list for more beautiful print
