@@ -25,6 +25,18 @@ class Dev(commands.Cog):
         self.bot = bot
 
     @grouped_normal_command(
+        "testfunc",
+        "run the test function for debugging purposes, does nothing in production environment",
+        command_group,
+        hidden=True
+    )
+    @commands.is_owner()
+    async def testfunc(self, _: commands.context.Context):
+        """run the test function for debugging purposes, does nothing in production environment"""
+
+        return
+
+    @grouped_normal_command(
         "sync_tree",
         "sync the bots tree to load new slash commands",
         command_group,
