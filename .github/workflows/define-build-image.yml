@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: [self-hosted, linux]
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: lowercase github.repository
       run: |
         echo "IMAGE_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
