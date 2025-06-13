@@ -49,7 +49,7 @@ class DiscordBot(commands.Bot):
                                exception: commands.errors.CommandError, /) -> None:
         # owner-only commands
         if isinstance(exception, commands.errors.NotOwner):
-            embed = discordpy.Embed(title="Not allowed to use this command", color=discordpy.Color.red())
+            embed = discordpy.Embed(title="You are not allowed to use this command", color=discordpy.Color.red())
             await discord.reply(context, embed=embed)
             return
 

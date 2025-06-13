@@ -2,10 +2,10 @@
     "modules": [
         "general",
         "help",
+        "dev",
         "clear",
         "music",
         "avatar",
-        "owner",
         "tc4.tc4",
         "mal.malnotifier"
     ],

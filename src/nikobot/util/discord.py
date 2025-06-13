@@ -65,7 +65,7 @@ def get_user_id(ctx: commands.context.Context | discordpy.interactions.Interacti
 
     return ctx.user.id
 
-def normal_command(name: str, description: str, hidden: str = False):
+def normal_command(name: str, description: str, hidden: bool = False):
     """Register the provided method as a normal command"""
 
     def decorator(func):
@@ -98,6 +98,45 @@ def normal_command(name: str, description: str, hidden: str = False):
             brief=desc,
             description=desc
         )(_wrap_function_for_normal_command(name, wrapper))
+
+        logger.debug(f"Registered command {name}")
+
+        return wrapper
+    return decorator
+
+def grouped_normal_command(name: str, description: str, command_group: app_commands.Group, hidden: bool = False):
+    """Register the provided method as a normal command of a given command group"""
+
+    def decorator(func):
+        """The decorator, which is called at program start"""
+
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            """The wrapped function that is called on command execution"""
+
+            # __qualname__ looks like this: <classname>.<methodname>
+            cls_name = func.__qualname__.split(".", maxsplit=1)[0]
+            cog = get_bot().cogs[cls_name]
+            return await func(cog, *args, **kwargs)
+
+        # for some reason the decorator gets called twice for every command
+        # so we skip registrating an already existing command
+        if name in [item.name for item in list(get_bot().commands)]:
+#           logger.warning(f"Command {name} is already registered, skipping...")
+            return wrapper
+
+        # add hidden attribute to hide command from help
+        if hidden:
+            desc = "__hidden__" + description
+        else:
+            desc = description
+
+        # register normal command
+        get_bot().command(
+            name=f"{command_group.name}.{name}",
+            brief=desc,
+            description=desc
+        )(_wrap_function_for_normal_command(f"{command_group.name}.{name}", wrapper))
 
         logger.debug(f"Registered command {name}")
 
@@ -158,7 +197,7 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
             return await func(cog, *args, **kwargs)
 
         # for some reason the decorator gets called twice for every command
-        # so we skip registratin an already existing command
+        # so we skip registrating an already existing command
         if f"{command_group.name}.{name}" in [item.name for item in list(get_bot().commands)]:
 #           logger.warning(f"Command {command_group.name}.{name} is already registered, skipping...")
             return wrapper
