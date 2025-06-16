@@ -104,24 +104,15 @@ class Dev(commands.Cog):
             await reply(ctx, f"unknown storage type '{storage_name}'")
             return
 
-        if key is None:
-            storage_obj = storage
-        else:
-            if key not in storage:
-                await reply(ctx, f"key '{key}' is not in {storage_name}")
-                return
-
-            storage_obj = storage[key]
-
-        if not isinstance(storage_obj, (dict, _BaseStorage, _StorageView)):
-            await reply(ctx, f"Requested object is not of type '{dict}', but '{type(storage_obj)}'")
-            return
-
-        if isinstance(storage_obj, _StorageView):
+        if isinstance(storage, _StorageView):
             await reply(ctx, "StorageView is read-only'")
             return
 
-        await reply(ctx, str(storage_obj.pop(key)))
+        if key not in storage:
+            await reply(ctx, f"key '{key}' is not in {storage_name}")
+            return
+
+        await reply(ctx, str(storage.pop(key)))
 
     @grouped_normal_command(
         "keys",
