@@ -86,10 +86,6 @@ class Dev(commands.Cog):
             await reply(ctx, f"unknown storage type '{storage_name}'")
             return
 
-        if key not in storage:
-            await reply(ctx, f"key '{key}' is not in {storage_name}")
-            return
-
         storage[key] = value
         await reply(ctx, "success")
 
