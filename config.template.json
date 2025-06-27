@@ -2,7 +2,6 @@
     "modules": [
         "general",
         "help",
-        "dev",
         "clear",
         "music",
         "avatar",
