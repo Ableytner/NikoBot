@@ -120,3 +120,28 @@ class DiscordBot(commands.Bot):
             await discord.reply(context, embed=embed)
 
         return await super().on_command_error(context, exception)
+
+    async def is_owner(self, user: int | discordpy.User, /) -> bool:
+        if isinstance(user, int):
+            # user is actually user_id
+
+            if self.owner_id:
+                return user == self.owner_id
+
+            if self.owner_ids:
+                return user in self.owner_ids
+
+            app: discordpy.AppInfo = await self.application_info()  # type: ignore
+            if app.team:
+                self.owner_ids = ids = {
+                    m.id
+                    for m in app.team.members
+                    if m.role in (discordpy.TeamMemberRole.admin, discordpy.TeamMemberRole.developer)
+                }
+                return user in ids
+
+            self.owner_id = owner_id = app.owner.id
+            return user == owner_id
+
+        # fall back to default
+        return await super().is_owner(user)

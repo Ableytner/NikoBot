@@ -68,6 +68,13 @@ def test_is_cog_loaded(bot: DiscordBot):
     assert not discord.is_cog_loaded("invalid")
     assert not discord.is_cog_loaded("")
 
+def test_is_owner(bot: DiscordBot):
+    """Test the discord.is_owner() method"""
+
+    assert general.sync(discord.is_owner(650587171375284226), bot.loop)
+    assert not general.sync(discord.is_owner(650587199375284226), bot.loop)
+    assert not general.sync(discord.is_owner(468720945692147712), bot.loop)
+
 def test_is_private_channel(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
     """
     Test the discord.is_private_channel() method
@@ -170,3 +177,19 @@ def test_parse_user(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGr
 
     user: discordpy.Member = general.sync(discord.parse_user(ctx, None))
     assert user is None
+
+def test_username(bot: DiscordBot, testing_bot: DiscordBot, ctx_grabber: CTXGrabber):
+    """Test the discord.username() method"""
+
+    testing_channel = testing_bot.get_channel(StorageView["test_channel_id"])
+    assert testing_channel is not None
+
+    ctx_grabber.wrap_command("ping")
+
+    general.sync(testing_channel.send("niko.ping"), testing_bot.loop)
+
+    ctx: commands.context.Context = ctx_grabber.get_context(30)
+    assert ctx is not None
+
+    assert isinstance(discord.username(ctx), str)
+    assert discord.username(ctx) == "AbleytnersTestBot"
