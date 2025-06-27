@@ -1,9 +1,10 @@
 name: Release tagged image
 
-on: [workflow_dispatch]
-
-env:
-  CURRENT_VERSION: 0.2.2
+on:
+  workflow_dispatch:
+    inputs:
+      version_number:
+        required: true
 
 defaults:
   run:
@@ -38,18 +39,18 @@ jobs:
     - uses: mukunku/tag-exists-action@v1.6.0
       id: check-tag
       with: 
-        tag: ${{ env.CURRENT_VERSION }}
+        tag: ${{ github.event.inputs.version_number }}
     - name: Fail if tag exists
       if: steps.check-tag.outputs.exists == 'true'
       uses: actions/github-script@v3
       with:
         # https://timheuer.com/blog/manually-force-a-failure-in-github-action-step/#evaluating-your-condition-and-failing-the-step-manually
         script: |
-            core.setFailed("Tag ${{ env.CURRENT_VERSION }} already exists!")
+            core.setFailed("Tag ${{ github.event.inputs.version_number }} already exists!")
     - name: Print tag if it doesn't exist
       if: steps.check-tag.outputs.exists == 'false' 
       run: |
-        echo "Tag ${{ env.CURRENT_VERSION }} doesn't yet exist and can be created"
+        echo "Tag ${{ github.event.inputs.version_number }} doesn't yet exist and can be created"
 
   push:
     needs: [pylint, pytest, build, tag]
@@ -69,15 +70,15 @@ jobs:
         echo "IMAGE_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
     - name: Download cached docker image
       run: |
-        curl -X GET http://192.168.0.145:25000/attachments/nikobot/1/image.tar -o /tmp/image.tar
+        curl --fail-with-body -X GET http://192.168.0.145:25000/attachments/nikobot/1/image.tar -o /tmp/image.tar
     - name: Load image
       run: |
         docker load --input /tmp/image.tar
     - name: Push
       run: |
-        docker tag ${{ env.IMAGE_NAME }}:latest ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }}
-        docker push ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }}
-        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ env.CURRENT_VERSION }} ghcr.io/${{ env.IMAGE_NAME }}:latest
+        docker tag ${{ env.IMAGE_NAME }}:latest ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.version_number }}
+        docker push ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.version_number }}
+        docker tag ghcr.io/${{ env.IMAGE_NAME }}:${{ github.event.inputs.version_number }} ghcr.io/${{ env.IMAGE_NAME }}:latest
         docker push ghcr.io/${{ env.IMAGE_NAME }}:latest
     - name: Remove local image
       if: always()
@@ -86,7 +87,7 @@ jobs:
     - name: Remove cached docker image
       if: always()
       run: |
-        curl -X DELETE http://192.168.0.145:25000/attachments/nikobot/1/image.tar
+        curl --fail-with-body -X DELETE http://192.168.0.145:25000/attachments/nikobot/1/image.tar
 
   release:
     needs: [push]
@@ -101,11 +102,11 @@ jobs:
         touch body.md
         gh api --method POST -H "Accept: application/vnd.github+json" \
           "/repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
-          -f tag_name="${{ env.CURRENT_VERSION }}" \
+          -f tag_name="${{ github.event.inputs.version_number }}" \
           --jq ".body" > "body.md"
     - name: Create new release
       uses: ncipollo/release-action@v1
       with:
         bodyFile: "body.md"
-        tag: "${{ env.CURRENT_VERSION }}"
+        tag: "${{ github.event.inputs.version_number }}"
         token: ${{ secrets.GITHUB_TOKEN }}
