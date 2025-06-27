@@ -30,7 +30,6 @@ from nikobot.discord_bot import DiscordBot
 # update to python 3.13
 # add some sort of statistics system (similar in usage to help module)
 # type-checking for util.discord functions
-# dev use future storage.name attribute for error messages
 # dev ensure is_owner is working
 
 if __name__ == "__main__":

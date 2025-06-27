@@ -66,7 +66,7 @@ class Dev(commands.Cog):
             return
 
         if key not in storage:
-            await reply(ctx, f"key '{key}' is not in {storage_name}")
+            await reply(ctx, f"key '{key}' is not in {storage.name}")
             return
 
         await reply(ctx, str(storage[key]))
@@ -109,7 +109,7 @@ class Dev(commands.Cog):
             return
 
         if key not in storage:
-            await reply(ctx, f"key '{key}' is not in {storage_name}")
+            await reply(ctx, f"key '{key}' is not in {storage.name}")
             return
 
         await reply(ctx, str(storage.pop(key)))
@@ -133,7 +133,7 @@ class Dev(commands.Cog):
             storage_obj = storage
         else:
             if key not in storage:
-                await reply(ctx, f"key '{key}' is not in {storage_name}")
+                await reply(ctx, f"key '{key}' is not in {storage.name}")
                 return
 
             storage_obj = storage[key]
