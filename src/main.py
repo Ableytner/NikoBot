@@ -31,6 +31,7 @@ from nikobot.discord_bot import DiscordBot
 # add some sort of statistics system (similar in usage to help module)
 # type-checking for util.discord functions
 # dev ensure is_owner is working
+# delete dev.py on release build
 
 if __name__ == "__main__":
     # setup logging
