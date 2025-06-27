@@ -15,7 +15,7 @@ from . import error
 
 logger = get_logger("core")
 
-type CONTEXT = commands.context.Context | discordpy.interactions.Interaction
+CONTEXT = commands.context.Context | discordpy.interactions.Interaction
 
 def get_command_name(ctx: commands.context.Context | discordpy.interactions.Interaction) -> str:
     """Return the full name of the contexts' command"""
