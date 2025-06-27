@@ -30,7 +30,6 @@ class Dev(commands.Cog):
         command_group,
         hidden=True
     )
-    @commands.is_owner()
     async def testfunc(self, _: commands.context.Context):
         """run the test function for debugging purposes, does nothing in production environment"""
 
@@ -42,7 +41,6 @@ class Dev(commands.Cog):
         command_group,
         hidden=True
     )
-    @commands.is_owner()
     async def sync_tree(self, ctx: commands.context.Context):
         """sync the bots tree to load new slash command"""
 
@@ -56,7 +54,6 @@ class Dev(commands.Cog):
         command_group,
         hidden=True
     )
-    @commands.is_owner()
     async def get(self, ctx: commands.context.Context, storage_name: str, key: str):
         """return a value from the given storage"""
 
@@ -77,7 +74,6 @@ class Dev(commands.Cog):
         command_group,
         hidden=True
     )
-    @commands.is_owner()
     async def set(self, ctx: commands.context.Context, storage_name: str, key: str, value: str):
         """set a key from the given storage to a given value"""
 
@@ -95,7 +91,6 @@ class Dev(commands.Cog):
         command_group,
         hidden=True
     )
-    @commands.is_owner()
     async def pop(self, ctx: commands.context.Context, storage_name: str, key: str | None):
         """remove and return a key from the requested storage object"""
 
@@ -120,7 +115,6 @@ class Dev(commands.Cog):
         command_group,
         hidden=True
     )
-    @commands.is_owner()
     async def keys(self, ctx: commands.context.Context, storage_name: str, key: str | None):
         """return all keys from the requested storage object, or all keys if the given key is omitted"""
 
