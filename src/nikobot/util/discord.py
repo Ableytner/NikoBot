@@ -15,6 +15,8 @@ from . import error
 
 logger = get_logger("core")
 
+CONTEXT = commands.context.Context | discordpy.interactions.Interaction
+
 def get_command_name(ctx: commands.context.Context | discordpy.interactions.Interaction) -> str:
     """Return the full name of the contexts' command"""
 
@@ -65,18 +67,23 @@ def get_user_id(ctx: commands.context.Context | discordpy.interactions.Interacti
 
     return ctx.user.id
 
-def normal_command(name: str, description: str, hidden: str = False):
+def normal_command(name: str, description: str, hidden: bool = False):
     """Register the provided method as a normal command"""
 
     def decorator(func):
         """The decorator, which is called at program start"""
 
+        # __qualname__ looks like this: <classname>.<methodname>
+        cls_name, func_name = func.__qualname__.split(".", maxsplit=1)
+
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             """The wrapped function that is called on command execution"""
 
-            # __qualname__ looks like this: <classname>.<methodname>
-            cls_name = func.__qualname__.split(".", maxsplit=1)[0]
+            if hidden and not await is_sent_by_owner(args[0]):
+                logger.warning(f"user {username(args[0])} tried to use owner-only command {func_name}")
+                return None
+
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
@@ -104,18 +111,63 @@ def normal_command(name: str, description: str, hidden: str = False):
         return wrapper
     return decorator
 
+def grouped_normal_command(name: str, description: str, command_group: app_commands.Group, hidden: bool = False):
+    """Register the provided method as a normal command of a given command group"""
+
+    def decorator(func):
+        """The decorator, which is called at program start"""
+
+        # __qualname__ looks like this: <classname>.<methodname>
+        cls_name, func_name = func.__qualname__.split(".", maxsplit=1)
+
+        @functools.wraps(func)
+        async def wrapper(*args, **kwargs):
+            """The wrapped function that is called on command execution"""
+
+            if hidden and not await is_sent_by_owner(args[0]):
+                logger.warning(f"user {username(args[0])} tried to use owner-only command {func_name}")
+                return None
+
+            cog = get_bot().cogs[cls_name]
+            return await func(cog, *args, **kwargs)
+
+        # for some reason the decorator gets called twice for every command
+        # so we skip registrating an already existing command
+        if name in [item.name for item in list(get_bot().commands)]:
+#           logger.warning(f"Command {name} is already registered, skipping...")
+            return wrapper
+
+        # add hidden attribute to hide command from help
+        if hidden:
+            desc = "__hidden__" + description
+        else:
+            desc = description
+
+        # register normal command
+        get_bot().command(
+            name=f"{command_group.name}.{name}",
+            brief=desc,
+            description=desc
+        )(_wrap_function_for_normal_command(f"{command_group.name}.{name}", wrapper))
+
+        logger.debug(f"Registered command {name}")
+
+        return wrapper
+    return decorator
+
 def hybrid_command(name: str, description: str):
     """Register the provided method as both a normal and a slash command"""
 
     def decorator(func):
         """The decorator, which is called at program start"""
 
+        # __qualname__ looks like this: <classname>.<methodname>
+        cls_name = func.__qualname__.split(".", maxsplit=1)[0]
+
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             """The wrapped function that is called on command execution"""
 
-            # __qualname__ looks like this: <classname>.<methodname>
-            cls_name = func.__qualname__.split(".", maxsplit=1)[0]
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
@@ -148,17 +200,18 @@ def grouped_hybrid_command(name: str, description: str, command_group: app_comma
     def decorator(func):
         """The decorator, which is called at program start"""
 
+        # __qualname__ looks like this: <classname>.<methodname>
+        cls_name = func.__qualname__.split(".", maxsplit=1)[0]
+
         @functools.wraps(func)
         async def wrapper(*args, **kwargs):
             """The wrapped function that is called on command execution"""
 
-            # __qualname__ looks like this: <classname>.<methodname>
-            cls_name = func.__qualname__.split(".", maxsplit=1)[0]
             cog = get_bot().cogs[cls_name]
             return await func(cog, *args, **kwargs)
 
         # for some reason the decorator gets called twice for every command
-        # so we skip registratin an already existing command
+        # so we skip registrating an already existing command
         if f"{command_group.name}.{name}" in [item.name for item in list(get_bot().commands)]:
 #           logger.warning(f"Command {command_group.name}.{name} is already registered, skipping...")
             return wrapper
@@ -441,6 +494,13 @@ def is_cog_loaded(name: str) -> bool:
 
     return name.lower() in (cog.lower() for cog in get_bot().cogs)
 
+async def is_owner(user_id: int) -> bool:
+    """
+    Checks whether the given id is the bots' owner
+    """
+
+    return await get_bot().is_owner(user_id)
+
 def is_private_channel(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
     """Checks whether the message related to ``ctx`` was received as a private / direct message"""
 
@@ -449,7 +509,7 @@ def is_private_channel(ctx: commands.context.Context | discordpy.interactions.In
 
     return isinstance(ctx.channel, discordpy.channel.DMChannel)
 
-def is_slash_command(ctx: commands.context.Context | discordpy.interactions.Interaction) -> bool:
+def is_slash_command(ctx: CONTEXT) -> bool:
     """Checks whether the ``ctx`` was received from a 'normal' text command or a slash command"""
 
     # for slash commands
@@ -555,3 +615,13 @@ async def parse_user(ctx: commands.context.Context | discordpy.interactions.Inte
         pass
 
     return None
+
+def username(ctx: CONTEXT) -> str:
+    """
+    Return the username of the message sender
+    """
+
+    if not is_slash_command(ctx):
+        return ctx.author.name
+
+    return ctx.user.name
