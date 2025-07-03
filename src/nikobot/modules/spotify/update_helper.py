@@ -10,7 +10,7 @@ from discord.interactions import InteractionMessage
 
 from . import api_helper
 from .cache import PlaylistCache
-from .dclasses import Track, TrackSet
+from .dclasses import Track, TrackSet, Playlist
 from ...util import discord
 
 logger = log.get_logger("spotify.update_helper")
@@ -20,7 +20,7 @@ MessageType: TypeAlias = Message | InteractionMessage | None
 # pylint: disable=broad-exception-raised, too-many-statements
 
 async def run(user_id: int, notify_user: bool = True) -> None:
-    """Check if any playlist cnahged, and update all_playlist accordingly"""
+    """Check if any playlist changed, and update all_playlist accordingly"""
 
     if not isinstance(user_id, int): raise WrongTypeError.with_values(user_id, int)
 
@@ -36,8 +36,8 @@ async def run(user_id: int, notify_user: bool = True) -> None:
 
     cache = PlaylistCache.get_instance(user_id)
 
-    cached_playlists = []
-    changed_playlists = []
+    cached_playlists: list[Playlist] = []
+    changed_playlists: list[Playlist] = []
 
     for playlist in playlists:
         # ignore all_playlist
@@ -56,28 +56,12 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     new_tracks_set = TrackSet()
 
     # load tracks from cached playlists
-    if notify_user:
-        message = await discord.private_message(
-            user_id,
-            embed=Embed(
-                title="Loading tracks from cache",
-                description=f"Loading tracks from {len(cached_playlists)} unchanged playlists",
-                color=Color.blue()
-            )
-        )
     for playlist in cached_playlists:
         for track in cache.get(playlist):
             new_tracks_set.add(track)
 
     # fetch tracks from changed playlists
     for playlist in changed_playlists:
-        if notify_user:
-            await message.edit(embed=Embed(
-                    title="Loading tracks",
-                    description=f"{playlist.name}: {playlist.total_tracks} tracks",
-                    color=Color.blue()
-                )
-            )
         tracks = []
         async for track in api_helper.get_tracks(user_id, playlist.id):
             new_tracks_set.add(track)
@@ -89,25 +73,10 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     cached_tracks = cache.get(liked_songs_playlist)
     if cached_tracks is not None:
         # cache hit
-        if notify_user:
-            await message.edit(
-                embed=Embed(
-                    title="Loading tracks from cache",
-                    description=f"{liked_songs_playlist.name}: {liked_songs_playlist.total_tracks} tracks",
-                    color=Color.blue()
-                )
-            )
         for t_meta in cached_tracks:
             new_tracks_set.add(t_meta)
     else:
         # cache miss or is not up-to-date
-        if notify_user:
-            await message.edit(embed=Embed(
-                title="Loading tracks",
-                description=f"{liked_songs_playlist.name}: {liked_songs_playlist.total_tracks} tracks",
-                color=Color.blue()
-            )
-        )
         tracks = []
         async for track in api_helper.get_saved_tracks(user_id):
             new_tracks_set.add(track)
@@ -120,39 +89,17 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     cached = cache.get(all_playlist)
     if cached is not None:
         # cache hit
-        if notify_user:
-            await message.edit(embed=Embed(
-                    title="Loading tracks from cache",
-                    description=f"{all_playlist.name}: {all_playlist.total_tracks} tracks",
-                    color=Color.blue()
-                )
-            )
         for track in cached:
             current_tracks.append(track)
         # the cached tracks are already sorted correctly
     else:
         # cache miss
-        if notify_user:
-            await message.edit(embed=Embed(
-                    title="Loading tracks",
-                    description=f"{all_playlist.name}: {all_playlist.total_tracks} tracks",
-                    color=Color.blue()
-                )
-            )
         async for track in api_helper.get_tracks(user_id, all_playlist.id):
             current_tracks.append(track)
         # sort from old to new
         current_tracks.reverse()
         # don't cache here, because we do that later after the update
 
-    if notify_user:
-        await message.edit(
-            embed=Embed(
-                title="Calculating",
-                description="Checking which songs to add / remove",
-                color=Color.blue()
-            )
-        )
     current_track_ids = [item.id for item in current_tracks]
     new_track_ids = new_tracks_set.ids()
     logger.debug(f"calculating diff between {len(current_tracks)} current and {len(new_track_ids)} updated tracks")
@@ -162,14 +109,6 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     logger.debug(f"to_add: {_format_list(to_add)}")
     logger.debug(f"to_remove: {_format_list(to_remove)}")
 
-    if notify_user:
-        await message.edit(
-            embed=Embed(
-                title="Updating your playlist",
-                description=f"Removing {len(to_remove)} and adding {len(to_add)} tracks",
-                color=Color.blue()
-            )
-        )
     logger.debug(f"Removing {len(to_remove)} and adding {len(to_add)} tracks")
     if len(to_remove) > 0:
         # track order doesn't matter when removing
@@ -179,15 +118,11 @@ async def run(user_id: int, notify_user: bool = True) -> None:
         to_add.reverse()
         await api_helper.add_tracks(user_id, all_playlist.id, to_add)
 
+    if len(to_add) == 0 and len(to_remove) == 0:
+        logger.debug("nothing was added or removed")
+        return
+
     # wait for spotify to finish processing
-    if notify_user:
-        await message.edit(
-            embed=Embed(
-                title="Waiting for Spotify",
-                description="Waiting for Spotify to process changes",
-                color=Color.blue()
-            )
-        )
     remote_track_count = 0
     while remote_track_count != len(new_tracks_set.tracks()):
         logger.debug(f"track count mismatch: expected {len(new_tracks_set.tracks())}, got {remote_track_count}")
@@ -206,19 +141,22 @@ async def run(user_id: int, notify_user: bool = True) -> None:
                         f" for a total of {all_playlist.total_tracks} tracks.",
             color=Color.green()
         )
-        embed.add_field(name=" ", value=" ", inline=False)
+        embed.add_field(name="Changed playlists",
+                        value="\n".join([item.name for item in changed_playlists]),
+                        inline=False)
         embed.add_field(name="Url",
                         value=f"https://open.spotify.com/playlist/{all_playlist.id}",
                         inline=False)
-        embed.add_field(name=" ", value=" ", inline=False)
-        embed.add_field(name="Note",
-                        value="Local tracks are not supported by the Spotify Web API, so they were ignored.",
-                        inline=False)
-        embed.add_field(name=" ", value=" ", inline=False)
-        embed.add_field(name="Note",
-                        value="Do not delete the playlist on your own, use niko.spotify.all_playlist_remove instead!",
-                        inline=False)
-        await message.edit(embed=embed)
+        embed.add_field(name="Local tracks are not supported by the Spotify Web API, so they were ignored.",
+                        value=" ",
+                        inline=True)
+        embed.add_field(name="Do not delete the playlist on your own, use niko.spotify.all_playlist_remove instead!",
+                        value=" ",
+                        inline=True)
+        await discord.private_message(
+            user_id,
+            embed=embed
+        )
 
 def calculate_diff(saved_track_ids: list[str], updated_track_ids: list[str]) -> tuple[list[str], list[str]]:
     """
