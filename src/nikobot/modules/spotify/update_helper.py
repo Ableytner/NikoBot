@@ -149,10 +149,10 @@ async def run(user_id: int, notify_user: bool = True) -> None:
                         inline=False)
         embed.add_field(name="Local tracks are not supported by the Spotify Web API, so they were ignored.",
                         value=" ",
-                        inline=True)
+                        inline=False)
         embed.add_field(name="Do not delete the playlist on your own, use niko.spotify.all_playlist_remove instead!",
                         value=" ",
-                        inline=True)
+                        inline=False)
         await discord.private_message(
             user_id,
             embed=embed

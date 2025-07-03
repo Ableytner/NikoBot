@@ -219,6 +219,10 @@ class Spotify(commands.Cog):
     async def update_all_playlists(self):
         """Update all all_playlists every 15 minutes"""
 
+        if "spotify" not in PersistentStorage:
+            # no user is registered
+            return
+
         for user_id in PersistentStorage["spotify"].keys():
             # ignore all entries that aren't user ids
             if user_id.isdigit():

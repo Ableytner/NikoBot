@@ -81,7 +81,7 @@ async def get_playlists(user_id: int) -> list[Playlist]:
                                           playlist_json["snapshot_id"]))
             offset += 1
 
-    logger.info(f"Retrieved {len(playlists)} user-owned playlists")
+    logger.debug(f"Retrieved {len(playlists)} user-owned playlists")
 
     return playlists
 
@@ -143,7 +143,7 @@ async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[Track, No
 
     playlist_name = json_res["name"]
     total_tracks = json_res["tracks"]["total"]
-    logger.info(f"Requesting {total_tracks} tracks from playlist {playlist_name}")
+    logger.debug(f"Requesting {total_tracks} tracks from playlist {playlist_name}")
 
     offset = 0
     while offset < total_tracks:
@@ -181,7 +181,7 @@ async def get_saved_tracks(user_id: int) -> AsyncGenerator[Track, None]:
     json_res = await res.json()
 
     total_tracks = json_res["total"]
-    logger.info(f"Requesting {total_tracks} tracks from liked songs")
+    logger.debug(f"Requesting {total_tracks} tracks from liked songs")
 
     offset = 0
     while offset < total_tracks:
