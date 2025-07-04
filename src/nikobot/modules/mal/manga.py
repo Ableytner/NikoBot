@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from enum import Enum
 
+from abllib import fs
 from abllib.log import get_logger
 from abllib.storage import VolatileStorage
 import requests
@@ -178,9 +179,12 @@ class Manga():
         Returns a cached picture if available
         """
 
-        path = os.path.join(VolatileStorage["cache_dir"], "mal")
+        path = fs.absolute(VolatileStorage["cache_dir"], "mal", str(self.mal_id))
+
         os.makedirs(path, exist_ok=True)
-        path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
+
+        filename = fs.sanitize(f"{self.title_translated}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
+        path = fs.absolute(path, filename)
 
         if os.path.isfile(path):
             return path
@@ -188,6 +192,7 @@ class Manga():
         r = requests.get(self.picture_url, timeout=30)
         with open(path, "wb") as f:
             f.write(r.content)
+
         return path
 
     def set_chapters_read(self, chapters_read: int) -> None:
@@ -269,7 +274,7 @@ class Manga():
                             value=f"https://myanimelist.net/manga/{self.mal_id}",
                             inline=False)
 
-        file = File(image_path, filename=os.path.basename(image_path))
+        file = File(image_path)
         embed_var.set_image(url=f"attachment://{os.path.basename(image_path)}")
 
         return embed_var, file
