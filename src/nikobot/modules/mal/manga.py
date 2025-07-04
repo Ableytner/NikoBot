@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 from enum import Enum
 
+from abllib import fs
 from abllib.log import get_logger
 from abllib.storage import VolatileStorage
 import requests
@@ -178,9 +179,9 @@ class Manga():
         Returns a cached picture if available
         """
 
-        path = os.path.join(VolatileStorage["cache_dir"], "mal")
+        path = fs.absolute(VolatileStorage["cache_dir"], "mal", str(self.mal_id))
         os.makedirs(path, exist_ok=True)
-        path = os.path.join(path, f"preview_{self.mal_id}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
+        path = fs.absolute(path, f"{self.title_translated}.{self.picture_url.rsplit('.', maxsplit=1)[1]}")
 
         if os.path.isfile(path):
             return path
