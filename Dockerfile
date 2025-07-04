@@ -7,7 +7,7 @@ RUN useradd -m nikobot \
 COPY --chown=nikobot --chmod=755 requirements.txt /home/nikobot/requirements.txt
 
 # install pip packages
-RUN pip install -r /home/nikobot/requirements.txt
+RUN pip install --upgrade -r /home/nikobot/requirements.txt
 
 COPY --chown=nikobot --chmod=755 src/ /home/nikobot/src/
 
