@@ -137,11 +137,14 @@ async def run(user_id: int, notify_user: bool = True) -> None:
     if notify_user:
         embed = Embed(
             title="Successfully updated your playlist",
-            description=f"Removed {len(to_remove)} and added {len(to_add)} tracks to {all_playlist.name}"
-                        f" for a total of {all_playlist.total_tracks} tracks.",
+            description=f"Removed **{len(to_remove)}** and added **{len(to_add)}** tracks"
+                        f" for a total of **{all_playlist.total_tracks}** tracks.",
             color=Color.green()
         )
-        embed.add_field(name="Changed playlists",
+        embed.add_field(name="Changed playlist",
+                        value=all_playlist.name,
+                        inline=False)
+        embed.add_field(name="Source playlists with changes",
                         value="\n".join([item.name for item in changed_playlists]),
                         inline=False)
         embed.add_field(name="Url",
