@@ -224,6 +224,7 @@ class MALNotifier(commands.Cog):
         if not isinstance(manga, Manga): raise TypeError()
 
         if not manga.fetch_chapters():
+            manga._time_next_notify = datetime.now() + timedelta(days=7)
             return
 
         if manga._chapters_total > manga._chapters_read \
