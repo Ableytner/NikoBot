@@ -1,14 +1,17 @@
 """A module containing MyAnimeList-related commands"""
 
+import os
 from asyncio import sleep
 from datetime import datetime, timedelta
 from threading import Thread
 
+from abllib import fs
 from abllib.log import get_logger
 from abllib.storage import PersistentStorage, VolatileStorage
 import discord as discordpy
-from discord import app_commands, Color, Embed
+from discord import app_commands, Color, Embed, File
 from discord.ext import commands, tasks
+from PIL import Image, ImageDraw
 
 from . import error, manganato_helper, mal_helper
 from .mal_user import MALUser
@@ -45,6 +48,43 @@ class MALNotifier(commands.Cog):
         # pylint: disable-next=redefined-outer-name
         embed, file = manga.to_embed()
         await util.discord.reply(ctx, embed=embed, file=file)
+
+    @util.discord.grouped_hybrid_command(
+            name="palette",
+            description="Search for a manga on MyAnimeList and display its dominant colors",
+            command_group=command_group
+    )
+    async def palette(self, ctx: commands.context.Context | discordpy.interactions.Interaction, title: str):
+        """The discord command 'niko.mal.palette'"""
+
+        user_id = util.discord.get_user_id(ctx)
+        manga = await self.get_manga(title, user_id, ctx)
+
+        cover_image = Image.open(manga.picture_file())
+        dominant_colors = manga.get_dominant_colors(10)
+
+        # general size variables
+        orig_size = cover_image.size
+        palette_size = (orig_size[0], (orig_size[1] // 5))
+        size = (orig_size[0], orig_size[1] + palette_size[1])
+        slice_width = palette_size[0] // len(dominant_colors)
+
+        palette_img = Image.new("RGB", size)
+
+        # paste the cover image
+        palette_img.paste(cover_image)
+    
+        d = ImageDraw.Draw(palette_img)
+        for c, color in enumerate(dominant_colors):
+            shape = [(slice_width * c, orig_size[1]), ((slice_width * c) + slice_width, size[1])]
+            d.rectangle(shape, color)
+
+        path = fs.absolute(VolatileStorage["cache_dir"], "mal", f"{manga.mal_id}_palette.png")
+        palette_img.save(path)
+
+        embed = Embed(title=manga.title)
+        embed.set_image(url=f"attachment://{os.path.basename(path)}")
+        await util.discord.reply(ctx, embed=embed, file=File(path))
 
     @util.discord.grouped_hybrid_command(
         name="register",

@@ -228,13 +228,8 @@ class Manga():
 
         image_path = self.picture_file()
 
-        # get the average color
-        # https://stackoverflow.com/a/61730849/15436169
-        dominant_color = Image.open(image_path) \
-                              .copy() \
-                              .convert("RGBA") \
-                              .resize((1, 1), resample=0) \
-                              .getpixel((0, 0))
+        # get the most representative color
+        dominant_color = self.get_dominant_colors()[0]
 
         embed_var = Embed(title=self.title, color=Color.from_rgb(*dominant_color))
 
@@ -276,3 +271,34 @@ class Manga():
 
     def __str__(self) -> str:
         return self.title
+
+    def get_dominant_colors(self, palette_size: int = 5) -> list[tuple[int, int, int]]:
+        """Original code from https://stackoverflow.com/a/61730849/15436169"""
+
+        pil_img = Image.open(self.picture_file())
+
+        # Resize image to speed up processing
+        img = pil_img.copy()
+        img.thumbnail((100, 100))
+
+        # Reduce colors (uses k-means internally)
+        paletted = img.convert('P', palette=Image.Palette.ADAPTIVE, colors=palette_size)
+
+        # Find the color that occurs most often
+        palette = paletted.getpalette()
+
+        colors: list[tuple[int, int, int]] = []
+        curr_color = []
+        for c, item in enumerate(palette):
+            curr_color.append(item)
+            if (c + 1) % 3 == 0:
+                colors.append(tuple(curr_color))
+                curr_color = []
+
+        # sort colors
+        sorted_colors = []
+        color_counts = sorted(paletted.getcolors(), reverse=True)
+        for item in color_counts:
+            sorted_colors.append(colors[item[1]])
+
+        return sorted_colors
