@@ -250,7 +250,7 @@ class MALNotifier(commands.Cog):
         if PersistentStorage.contains("mal.user"):
             for user_id, maluser_json in PersistentStorage["mal.user"].items():
                 maluser = MALUser.from_export(int(user_id), maluser_json)
-                maluser.fetch_manga_chapters()
+                self.notify_user(user_id, maluser)
                 VolatileStorage[f"mal.user.{user_id}"] = maluser
                 c += 1
         logger.info(f"Finished importing {c} MAL user(s)")

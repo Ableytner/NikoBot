@@ -11,7 +11,7 @@ from abllib.log import get_logger
 from abllib.storage import VolatileStorage
 import requests
 from PIL import Image
-from discord import Embed, File
+from discord import Embed, File, Color
 
 from . import error, mal_helper, manganato_helper, natomanga_helper
 from .chapter import Chapter
@@ -228,20 +228,15 @@ class Manga():
 
         image_path = self.picture_file()
 
-        # TODO: fix!!!
         # get the average color
-        im = Image.open(image_path)
-        pix = im.load()
-        central_rgb = pix[int(im.size[0]/2), int(im.size[1]/2)][:-1:]
-        c = 0
-        # while the color is black, look at the next pixel
-        while all((item < 50 for item in central_rgb)):
-            c += 1
-            if int(im.size[0]/2+c) >= im.width or int(im.size[1]/2+c) >= im.height:
-                break
-            central_rgb = pix[int(im.size[0]/2+c), int(im.size[1]/2+c)][:-1:]
+        # https://stackoverflow.com/a/61730849/15436169
+        dominant_color = Image.open(image_path) \
+                              .copy() \
+                              .convert("RGBA") \
+                              .resize((1, 1), resample=0) \
+                              .getpixel((0, 0))
 
-        embed_var = Embed(title=self.title) #, color=Color.from_rgb(*central_rgb))
+        embed_var = Embed(title=self.title, color=Color.from_rgb(*dominant_color))
 
         embed_var.add_field(name="English title",
                             value=self.title_translated,
