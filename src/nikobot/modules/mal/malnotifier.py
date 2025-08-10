@@ -39,36 +39,8 @@ class MALNotifier(commands.Cog):
     async def manga(self, ctx: commands.context.Context | discordpy.interactions.Interaction, title: str):
         """The discord command 'niko.mal.manga'"""
 
-        if title.isdecimal():
-            mal_id = int(title)
-        else:
-            mal_id = mal_helper.search_for_manga(title)
-            if mal_id is None:
-                await util.discord.reply(ctx,
-                                        embed=Embed(title="Manga not found on MyAnimeList", color=Color.orange()))
-                return
-
-        manga = None
-
         user_id = util.discord.get_user_id(ctx)
-        if VolatileStorage.contains(f"mal.user.{user_id}"):
-            maluser: MALUser = VolatileStorage[f"mal.user.{user_id}"]
-
-            maluser.fetch_manga_list()
-
-            if mal_id in maluser.manga:
-                manga = maluser.manga[mal_id]
-
-                manga.fetch_chapters()
-
-        if manga is None:
-            try:
-                manga = Manga.from_mal_id(mal_id)
-            except error.MediaTypeError:
-                await util.discord.reply(ctx,
-                                         embed=Embed(title="Currently only supports manga and not light novel/novel",
-                                                     color=Color.orange()))
-                return
+        manga = await self.get_manga(title, user_id, ctx)
 
         # pylint: disable-next=redefined-outer-name
         embed, file = manga.to_embed()
@@ -254,6 +226,51 @@ class MALNotifier(commands.Cog):
                 VolatileStorage[f"mal.user.{user_id}"] = maluser
                 c += 1
         logger.info(f"Finished importing {c} MAL user(s)")
+
+    async def get_manga(self,
+                        input_data: str,
+                        user_id: int,
+                        ctx: commands.context.Context | discordpy.interactions.Interaction | None = None) \
+       -> Manga | None:
+        """Helper function to process user input and fetch the requested manga"""
+
+        if input_data.isdecimal():
+            mal_id = int(input_data)
+        else:
+            mal_id = mal_helper.search_for_manga(input_data)
+            if mal_id is None:
+                if ctx is not None:
+                    embed = Embed(title="Manga not found on MyAnimeList", color=Color.orange())
+                    await util.discord.reply(ctx, embed=embed)
+                else:
+                    logger.warning(f"Manga {input_data} not found on MyAnimeList")
+                return None
+
+        manga = None
+
+        if VolatileStorage.contains(f"mal.user.{user_id}"):
+            maluser: MALUser = VolatileStorage[f"mal.user.{user_id}"]
+
+            maluser.fetch_manga_list()
+
+            if mal_id in maluser.manga:
+                manga = maluser.manga[mal_id]
+
+                manga.fetch_chapters()
+
+        if manga is None:
+            try:
+                manga = Manga.from_mal_id(mal_id)
+            except error.MediaTypeError:
+                if ctx is not None:
+                    embed = Embed(title="Currently only supports manga and not light novel/novel",
+                                  color=Color.orange())
+                    await util.discord.reply(ctx, embed=embed)
+                else:
+                    logger.warning("Currently only supports manga and not light novel/novel")
+                return None
+
+        return manga
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
