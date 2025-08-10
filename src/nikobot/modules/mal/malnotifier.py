@@ -73,7 +73,7 @@ class MALNotifier(commands.Cog):
 
         # paste the cover image
         palette_img.paste(cover_image)
-    
+
         d = ImageDraw.Draw(palette_img)
         for c, color in enumerate(dominant_colors):
             shape = [(slice_width * c, orig_size[1]), ((slice_width * c) + slice_width, size[1])]
