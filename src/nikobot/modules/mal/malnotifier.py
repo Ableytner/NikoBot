@@ -77,12 +77,13 @@ class MALNotifier(commands.Cog):
         d = ImageDraw.Draw(palette_img)
         for c, color in enumerate(dominant_colors):
             shape = [(slice_width * c, orig_size[1]), ((slice_width * c) + slice_width, size[1])]
-            d.rectangle(shape, color)
+            d.rectangle(shape, color.rgb())
 
         path = fs.absolute(VolatileStorage["cache_dir"], "mal", f"{manga.mal_id}_palette.png")
         palette_img.save(path)
 
-        embed = Embed(title=manga.title)
+        embed = Embed(title=manga.title,
+                      color=Color.from_rgb(*manga.get_color().rgb()))
         embed.set_image(url=f"attachment://{os.path.basename(path)}")
         await util.discord.reply(ctx, embed=embed, file=File(path))
 

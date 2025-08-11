@@ -11,10 +11,12 @@ from abllib.log import get_logger
 from abllib.storage import VolatileStorage
 import requests
 from PIL import Image
-from discord import Embed, File, Color
+import discord as discordpy
+from discord import Embed, File
 
 from . import error, mal_helper, manganato_helper, natomanga_helper
 from .chapter import Chapter
+from ...util import Color
 
 logger = get_logger("mal")
 
@@ -228,10 +230,8 @@ class Manga():
 
         image_path = self.picture_file()
 
-        # get the most representative color
-        dominant_color = self.get_dominant_colors()[0]
-
-        embed_var = Embed(title=self.title, color=Color.from_rgb(*dominant_color))
+        embed_var = Embed(title=self.title,
+                          color=discordpy.Color.from_rgb(*self.get_color().rgb()))
 
         embed_var.add_field(name="English title",
                             value=self.title_translated,
@@ -272,8 +272,29 @@ class Manga():
     def __str__(self) -> str:
         return self.title
 
-    def get_dominant_colors(self, palette_size: int = 5) -> list[tuple[int, int, int]]:
-        """Original code from https://stackoverflow.com/a/61730849/15436169"""
+    def get_color(self) -> Color:
+        """
+        Return the color that best represents the cover picture.
+
+        This prefers brighter and more vibrant colors.
+        """
+        colors = self.get_dominant_colors(10)
+
+        colors_clamped = list(filter(lambda x: x.hsv()[2] >= 40.0, colors))
+        # only clamp colors when at least one color is valid
+        if len(colors_clamped) > 0:
+            colors = colors_clamped
+
+        return max(colors, key=lambda x: x.hsv()[1])
+
+    def get_dominant_colors(self, palette_size: int = 5) -> list[Color]:
+        """
+        Return the most dominant colors of the cover picture.
+        
+        The palette_size parameter specifies how many Colors to reduce to.
+        """
+
+        # Original code from https://stackoverflow.com/a/61730849/15436169
 
         pil_img = Image.open(self.picture_file())
 
@@ -292,7 +313,9 @@ class Manga():
         for c, item in enumerate(palette):
             curr_color.append(item)
             if (c + 1) % 3 == 0:
-                colors.append(tuple(curr_color))
+                # pylint doesn't know that curr_color is 3 long
+                # pylint: disable-next=no-value-for-parameter
+                colors.append(Color.from_rgb(*curr_color))
                 curr_color = []
 
         # sort colors
