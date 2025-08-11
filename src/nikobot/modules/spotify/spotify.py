@@ -226,7 +226,10 @@ class Spotify(commands.Cog):
         for user_id in PersistentStorage["spotify"].keys():
             # ignore all entries that aren't user ids
             if user_id.isdigit():
-                await update_helper.run(int(user_id), True)
+                try:
+                    await update_helper.run(int(user_id), True)
+                except ApiResponseError as err:
+                    logger.exception(err)
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""

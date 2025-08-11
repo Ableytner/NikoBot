@@ -3,11 +3,11 @@
 from abllib.error import CustomException
 
 class ApiResponseError(CustomException):
-    """Exception raised when the spotify api returns an error"""
+    """Exception raised when the spotify API returns an error"""
 
     default_messages = {
-        0: "The api returned an error",
-        1: "The api returned an error: {0}"
+        0: "The API returned an error",
+        1: "The API returned an error: {0}"
     }
     status_code: int | None
     message: str | None
