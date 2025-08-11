@@ -51,6 +51,7 @@ async def run(user_id: int, notify_user: bool = True) -> None:
 
     if len(changed_playlists) == 0 and cache.get(liked_songs_playlist) is not None:
         # yay, nothing changed and we can exit early
+        logger.debug("Nothing changed, we can exit early")
         return
 
     new_tracks_set = TrackSet()
@@ -61,6 +62,9 @@ async def run(user_id: int, notify_user: bool = True) -> None:
             new_tracks_set.add(track)
 
     # fetch tracks from changed playlists
+    changes = len(changed_playlists)
+    total = len(changed_playlists) + len(cached_playlists)
+    logger.debug(f"{changes}/{total} playlists changed, fetching tracks")
     for playlist in changed_playlists:
         tracks = []
         async for track in api_helper.get_tracks(user_id, playlist.id):

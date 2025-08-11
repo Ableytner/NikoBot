@@ -1,14 +1,17 @@
 """contains the cog of the spotify module"""
 
 from asyncio import sleep
+import threading
 from threading import Thread
 
-from abllib import PersistentStorage, VolatileStorage
+from abllib import PersistentStorage, VolatileStorage, CacheStorage, onexit
 from abllib.log import get_logger
 from discord import app_commands, Color, Embed
 from discord.ext import commands, tasks
 
 from . import api_helper, auth_helper, auth_server, update_helper
+from .cache import PlaylistCache
+from .dclasses import Playlist, Track
 from .error import ApiResponseError
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
 
@@ -231,13 +234,82 @@ class Spotify(commands.Cog):
                 except ApiResponseError as err:
                     logger.exception(err)
 
+def import_cache():
+    """Import playlist cache from PersistentStorage"""
+
+    if "spotify" not in PersistentStorage:
+        return
+
+    for user_id in PersistentStorage["spotify"].keys():
+        # ignore all entries that aren't user ids
+        if user_id.isdigit() and "cache" in PersistentStorage[f"spotify.{user_id}"]:
+            # load cache for user
+            cache = PlaylistCache.get_instance(user_id)
+
+            for p_id in PersistentStorage[f"spotify.{user_id}.cache"].keys():
+                tracks = []
+                for item in PersistentStorage[f"spotify.{user_id}.cache.{p_id}.tracks"]:
+                    track = Track(
+                        item[0],
+                        item[1] if len(item) > 1 else None
+                    )
+                    tracks.append(track)
+                cache.set(
+                    Playlist(
+                        "",
+                        p_id,
+                        len(tracks),
+                        PersistentStorage.get(f"spotify.{user_id}.cache.{p_id}.snapshot_id")
+                    ),
+                    tracks
+                )
+
+def export_cache():
+    """Export playlist cache to PersistentStorage"""
+
+    for user_id in CacheStorage["spotify"].keys():
+        # ignore all entries that aren't user ids
+        if user_id.isdigit() and "cache" in CacheStorage[f"spotify.{user_id}"]:
+            # save cache for user
+            logger.debug(f"Exporting spotify playlist cache for user {user_id}")
+            cache = PlaylistCache.get_instance(user_id)
+
+            for p_id in CacheStorage[cache.key].keys():
+                key = f"{cache.key}.{p_id}"
+
+                snapshot_id = CacheStorage.get(f"{key}.snapshot_id")
+                if snapshot_id is not None:
+                    PersistentStorage[f"{key}.snapshot_id"] = snapshot_id
+
+                tracks = []
+                for track in CacheStorage[f"{key}.tracks"]:
+                    track: Track
+                    if p_id == PersistentStorage[f"spotify.{user_id}.all_playlist.id"]:
+                        tracks.append(track.id)
+                    else:
+                        tracks.append([
+                            track.id,
+                            track.added_at
+                        ])
+                PersistentStorage[f"{key}.tracks"] = tracks
+
+    PersistentStorage.save_to_disk()
+
+    logger.info("Finished exporting spotify playlist cache")
+
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
     cog = Spotify(bot)
 
+    import_cache()
+
     cog.update_all_playlists.start()
 
     Thread(target=auth_server.run_http_server, daemon=True).start()
+
+    # signal.signal callbacks don't work in subthreads (only occurs in tests anyways)
+    if threading.current_thread() is threading.main_thread():
+        onexit.register("export_spotify_cache", export_cache)
 
     await bot.add_cog(cog)
