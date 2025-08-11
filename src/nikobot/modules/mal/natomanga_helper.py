@@ -1,5 +1,6 @@
 """Module containing functions for webscraping natomanga.com"""
 
+from abllib import fs, VolatileStorage
 from abllib.log import get_logger
 import bs4 as bs
 import requests
@@ -86,6 +87,9 @@ def get_chapters(url: str) -> list[Chapter]:
     soup = bs.BeautifulSoup(r.content, features="html.parser")
     chapter_class = soup.find("div", {"class": "chapter-list"})
     if chapter_class is None:
+        logger.warning(f"No chapters found for manga {url}, saving response to 'cache/mal/natomanga.html'")
+        with open(fs.absolute(VolatileStorage["cache_dir"], "mal", "natomanga.html"), "wb") as f:
+            f.write(r.content)
         return []
     chapter_objects = chapter_class.find_all("a", href=True)
     chapters = [create_chapter(item.contents[0], item["href"]) for item in chapter_objects]

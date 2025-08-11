@@ -255,18 +255,6 @@ class MALNotifier(commands.Cog):
             manga._chapters_last_notified = manga._chapters_total
             manga._time_next_notify = datetime.now() + timedelta(hours=12)
 
-    def import_users(self):
-        """Import all MALUsers from ``abllib.PersistentStorage``"""
-
-        c = 0
-        if PersistentStorage.contains("mal.user"):
-            for user_id, maluser_json in PersistentStorage["mal.user"].items():
-                maluser = MALUser.from_export(int(user_id), maluser_json)
-                self.notify_user(user_id, maluser)
-                VolatileStorage[f"mal.user.{user_id}"] = maluser
-                c += 1
-        logger.info(f"Finished importing {c} MAL user(s)")
-
     async def get_manga(self,
                         input_data: str,
                         user_id: int,
@@ -311,6 +299,23 @@ class MALNotifier(commands.Cog):
                 return None
 
         return manga
+
+    def import_users(self):
+        """Import all MALUsers from ``abllib.PersistentStorage``"""
+
+        if PersistentStorage.contains("mal.user"):
+            for user_id, maluser_json in PersistentStorage["mal.user"].items():
+                try:
+                    maluser = MALUser.from_export(int(user_id), maluser_json)
+                    util.general.sync(self.notify_user(int(user_id), maluser))
+                    VolatileStorage[f"mal.user.{user_id}"] = maluser
+                # pylint: disable-next=broad-exception-caught
+                except Exception:
+                    logger.exception(f"Failed to import MAL user {user_id}, error:")
+
+        imported = len(VolatileStorage.get("mal.user", default=[]))
+        total = len(PersistentStorage.get("mal.user", default=[]))
+        logger.info(f"Finished importing {imported}/{total} MAL user(s)")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
