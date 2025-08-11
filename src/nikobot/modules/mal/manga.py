@@ -11,10 +11,12 @@ from abllib.log import get_logger
 from abllib.storage import VolatileStorage
 import requests
 from PIL import Image
+import discord as discordpy
 from discord import Embed, File
 
 from . import error, mal_helper, manganato_helper, natomanga_helper
 from .chapter import Chapter
+from ...util import Color
 
 logger = get_logger("mal")
 
@@ -228,20 +230,8 @@ class Manga():
 
         image_path = self.picture_file()
 
-        # TODO: fix!!!
-        # get the average color
-        im = Image.open(image_path)
-        pix = im.load()
-        central_rgb = pix[int(im.size[0]/2), int(im.size[1]/2)][:-1:]
-        c = 0
-        # while the color is black, look at the next pixel
-        while all((item < 50 for item in central_rgb)):
-            c += 1
-            if int(im.size[0]/2+c) >= im.width or int(im.size[1]/2+c) >= im.height:
-                break
-            central_rgb = pix[int(im.size[0]/2+c), int(im.size[1]/2+c)][:-1:]
-
-        embed_var = Embed(title=self.title) #, color=Color.from_rgb(*central_rgb))
+        embed_var = Embed(title=self.title,
+                          color=discordpy.Color.from_rgb(*self.get_color().rgb()))
 
         embed_var.add_field(name="English title",
                             value=self.title_translated,
@@ -281,3 +271,57 @@ class Manga():
 
     def __str__(self) -> str:
         return self.title
+
+    def get_color(self) -> Color:
+        """
+        Return the color that best represents the cover picture.
+
+        This prefers brighter and more vibrant colors.
+        """
+        colors = self.get_dominant_colors(10)
+
+        colors_clamped = list(filter(lambda x: x.hsv()[2] >= 40.0, colors))
+        # only clamp colors when at least one color is valid
+        if len(colors_clamped) > 0:
+            colors = colors_clamped
+
+        return max(colors, key=lambda x: x.hsv()[1])
+
+    def get_dominant_colors(self, palette_size: int = 5) -> list[Color]:
+        """
+        Return the most dominant colors of the cover picture.
+        
+        The palette_size parameter specifies how many Colors to reduce to.
+        """
+
+        # Original code from https://stackoverflow.com/a/61730849/15436169
+
+        pil_img = Image.open(self.picture_file())
+
+        # Resize image to speed up processing
+        img = pil_img.copy()
+        img.thumbnail((100, 100))
+
+        # Reduce colors (uses k-means internally)
+        paletted = img.convert('P', palette=Image.Palette.ADAPTIVE, colors=palette_size)
+
+        # Find the color that occurs most often
+        palette = paletted.getpalette()
+
+        colors: list[tuple[int, int, int]] = []
+        curr_color = []
+        for c, item in enumerate(palette):
+            curr_color.append(item)
+            if (c + 1) % 3 == 0:
+                # pylint doesn't know that curr_color is 3 long
+                # pylint: disable-next=no-value-for-parameter
+                colors.append(Color.from_rgb(*curr_color))
+                curr_color = []
+
+        # sort colors
+        sorted_colors = []
+        color_counts = sorted(paletted.getcolors(), reverse=True)
+        for item in color_counts:
+            sorted_colors.append(colors[item[1]])
+
+        return sorted_colors
