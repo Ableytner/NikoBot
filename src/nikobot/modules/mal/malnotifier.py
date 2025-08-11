@@ -1,14 +1,17 @@
 """A module containing MyAnimeList-related commands"""
 
+import os
 from asyncio import sleep
 from datetime import datetime, timedelta
 from threading import Thread
 
+from abllib import fs
 from abllib.log import get_logger
 from abllib.storage import PersistentStorage, VolatileStorage
 import discord as discordpy
-from discord import app_commands, Color, Embed
+from discord import app_commands, Color, Embed, File
 from discord.ext import commands, tasks
+from PIL import Image, ImageDraw
 
 from . import error, manganato_helper, mal_helper
 from .mal_user import MALUser
@@ -39,40 +42,50 @@ class MALNotifier(commands.Cog):
     async def manga(self, ctx: commands.context.Context | discordpy.interactions.Interaction, title: str):
         """The discord command 'niko.mal.manga'"""
 
-        if title.isdecimal():
-            mal_id = int(title)
-        else:
-            mal_id = mal_helper.search_for_manga(title)
-            if mal_id is None:
-                await util.discord.reply(ctx,
-                                        embed=Embed(title="Manga not found on MyAnimeList", color=Color.orange()))
-                return
-
-        manga = None
-
         user_id = util.discord.get_user_id(ctx)
-        if VolatileStorage.contains(f"mal.user.{user_id}"):
-            maluser: MALUser = VolatileStorage[f"mal.user.{user_id}"]
-
-            maluser.fetch_manga_list()
-
-            if mal_id in maluser.manga:
-                manga = maluser.manga[mal_id]
-
-                manga.fetch_chapters()
-
-        if manga is None:
-            try:
-                manga = Manga.from_mal_id(mal_id)
-            except error.MediaTypeError:
-                await util.discord.reply(ctx,
-                                         embed=Embed(title="Currently only supports manga and not light novel/novel",
-                                                     color=Color.orange()))
-                return
+        manga = await self.get_manga(title, user_id, ctx)
 
         # pylint: disable-next=redefined-outer-name
         embed, file = manga.to_embed()
         await util.discord.reply(ctx, embed=embed, file=file)
+
+    @util.discord.grouped_hybrid_command(
+            name="palette",
+            description="Search for a manga on MyAnimeList and display its dominant colors",
+            command_group=command_group
+    )
+    async def palette(self, ctx: commands.context.Context | discordpy.interactions.Interaction, title: str):
+        """The discord command 'niko.mal.palette'"""
+
+        user_id = util.discord.get_user_id(ctx)
+        manga = await self.get_manga(title, user_id, ctx)
+
+        cover_image = Image.open(manga.picture_file())
+        dominant_colors = manga.get_dominant_colors(10)
+
+        # general size variables
+        orig_size = cover_image.size
+        palette_size = (orig_size[0], (orig_size[1] // 5))
+        size = (orig_size[0], orig_size[1] + palette_size[1])
+        slice_width = palette_size[0] // len(dominant_colors)
+
+        palette_img = Image.new("RGB", size)
+
+        # paste the cover image
+        palette_img.paste(cover_image)
+
+        d = ImageDraw.Draw(palette_img)
+        for c, color in enumerate(dominant_colors):
+            shape = [(slice_width * c, orig_size[1]), ((slice_width * c) + slice_width, size[1])]
+            d.rectangle(shape, color.rgb())
+
+        path = fs.absolute(VolatileStorage["cache_dir"], "mal", f"{manga.mal_id}_palette.png")
+        palette_img.save(path)
+
+        embed = Embed(title=manga.title,
+                      color=Color.from_rgb(*manga.get_color().rgb()))
+        embed.set_image(url=f"attachment://{os.path.basename(path)}")
+        await util.discord.reply(ctx, embed=embed, file=File(path))
 
     @util.discord.grouped_hybrid_command(
         name="register",
@@ -243,17 +256,67 @@ class MALNotifier(commands.Cog):
             manga._chapters_last_notified = manga._chapters_total
             manga._time_next_notify = datetime.now() + timedelta(hours=12)
 
+    async def get_manga(self,
+                        input_data: str,
+                        user_id: int,
+                        ctx: commands.context.Context | discordpy.interactions.Interaction | None = None) \
+       -> Manga | None:
+        """Helper function to process user input and fetch the requested manga"""
+
+        if input_data.isdecimal():
+            mal_id = int(input_data)
+        else:
+            mal_id = mal_helper.search_for_manga(input_data)
+            if mal_id is None:
+                if ctx is not None:
+                    embed = Embed(title="Manga not found on MyAnimeList", color=Color.orange())
+                    await util.discord.reply(ctx, embed=embed)
+                else:
+                    logger.warning(f"Manga {input_data} not found on MyAnimeList")
+                return None
+
+        manga = None
+
+        if VolatileStorage.contains(f"mal.user.{user_id}"):
+            maluser: MALUser = VolatileStorage[f"mal.user.{user_id}"]
+
+            maluser.fetch_manga_list()
+
+            if mal_id in maluser.manga:
+                manga = maluser.manga[mal_id]
+
+                manga.fetch_chapters()
+
+        if manga is None:
+            try:
+                manga = Manga.from_mal_id(mal_id)
+            except error.MediaTypeError:
+                if ctx is not None:
+                    embed = Embed(title="Currently only supports manga and not light novel/novel",
+                                  color=Color.orange())
+                    await util.discord.reply(ctx, embed=embed)
+                else:
+                    logger.warning("Currently only supports manga and not light novel/novel")
+                return None
+
+        return manga
+
     def import_users(self):
         """Import all MALUsers from ``abllib.PersistentStorage``"""
 
-        c = 0
         if PersistentStorage.contains("mal.user"):
             for user_id, maluser_json in PersistentStorage["mal.user"].items():
-                maluser = MALUser.from_export(int(user_id), maluser_json)
-                maluser.fetch_manga_chapters()
-                VolatileStorage[f"mal.user.{user_id}"] = maluser
-                c += 1
-        logger.info(f"Finished importing {c} MAL user(s)")
+                try:
+                    maluser = MALUser.from_export(int(user_id), maluser_json)
+                    util.general.sync(self.notify_user(int(user_id), maluser))
+                    VolatileStorage[f"mal.user.{user_id}"] = maluser
+                # pylint: disable-next=broad-exception-caught
+                except Exception:
+                    logger.exception(f"Failed to import MAL user {user_id}, error:")
+
+        imported = len(VolatileStorage.get("mal.user", default=[]))
+        total = len(PersistentStorage.get("mal.user", default=[]))
+        logger.info(f"Finished importing {imported}/{total} MAL user(s)")
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
