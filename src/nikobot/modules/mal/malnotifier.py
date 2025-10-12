@@ -215,7 +215,7 @@ class MALNotifier(commands.Cog):
         except requests.exceptions.ConnectionError as exc:
             if "NameResolutionError" in str(exc):
                 try:
-                    requests.get("https://google.com")
+                    requests.get("https://google.com", timeout=5)
                     logger.error(f"NameResolutionError when trying to fetch new chapters: {exc}")
                 except:
                     logger.error("NameResolutionError: DNS server not reachable")
