@@ -99,14 +99,14 @@ jobs:
       env:
         GH_TOKEN: ${{ github.token }}
       run: |
-        touch body.md
         gh api --method POST -H "Accept: application/vnd.github+json" \
           "/repos/${GITHUB_REPOSITORY}/releases/generate-notes" \
           -f tag_name="${{ github.event.inputs.version_number }}" \
-          --jq ".body" > "body.md"
+          --jq ".body" \
+          > body.md
     - name: Create new release
       uses: ncipollo/release-action@v1
       with:
         bodyFile: "body.md"
-        tag: "${{ github.event.inputs.version_number }}"
+        tag: ${{ github.event.inputs.version_number }}
         token: ${{ secrets.GITHUB_TOKEN }}

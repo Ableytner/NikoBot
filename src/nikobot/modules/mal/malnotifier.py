@@ -12,6 +12,7 @@ import discord as discordpy
 from discord import app_commands, Color, Embed, File
 from discord.ext import commands, tasks
 from PIL import Image, ImageDraw
+import requests
 
 from . import error, manganato_helper, mal_helper
 from .mal_user import MALUser
@@ -202,14 +203,24 @@ class MALNotifier(commands.Cog):
         if not VolatileStorage.contains("mal.user"):
             return
 
-        for user_id, maluser in VolatileStorage["mal.user"].items():
-            if not isinstance(user_id, str): raise TypeError()
-            if not isinstance(maluser, MALUser): raise TypeError()
+        try:
+            for user_id, maluser in VolatileStorage["mal.user"].items():
+                if not isinstance(user_id, str): raise TypeError()
+                if not isinstance(maluser, MALUser): raise TypeError()
 
-            await self.notify_user(int(user_id), maluser)
+                await self.notify_user(int(user_id), maluser)
 
-            # avoid rate limits
-            await sleep(60)
+                # avoid rate limits
+                await sleep(60)
+        except requests.exceptions.ConnectionError as exc:
+            if "NameResolutionError" in str(exc):
+                try:
+                    requests.get("https://google.com")
+                    logger.error(f"NameResolutionError when trying to fetch new chapters: {exc}")
+                except:
+                    logger.error("NameResolutionError: DNS server not reachable")
+            else:
+                raise
 
     async def notify_user(self, user_id: int, maluser: MALUser) -> None:
         """Notify the user if any of his ``Manga`` got a new chapter"""
