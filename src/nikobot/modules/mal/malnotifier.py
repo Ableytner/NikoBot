@@ -5,18 +5,19 @@ from asyncio import sleep
 from datetime import datetime, timedelta
 from threading import Thread
 
+import discord as discordpy
+import requests
 from abllib import fs
 from abllib.log import get_logger
 from abllib.storage import PersistentStorage, VolatileStorage
-import discord as discordpy
-from discord import app_commands, Color, Embed, File
+from discord import Color, Embed, File, app_commands
 from discord.ext import commands, tasks
 from PIL import Image, ImageDraw
 
-from . import error, manganato_helper, mal_helper
+from ... import util
+from . import error, mal_helper, manganato_helper
 from .mal_user import MALUser
 from .manga import Manga
-from ... import util
 
 # pylint: disable=protected-access
 
@@ -202,14 +203,28 @@ class MALNotifier(commands.Cog):
         if not VolatileStorage.contains("mal.user"):
             return
 
-        for user_id, maluser in VolatileStorage["mal.user"].items():
-            if not isinstance(user_id, str): raise TypeError()
-            if not isinstance(maluser, MALUser): raise TypeError()
+        try:
+            for user_id, maluser in VolatileStorage["mal.user"].items():
+                if not isinstance(user_id, str): raise TypeError()
+                if not isinstance(maluser, MALUser): raise TypeError()
 
-            await self.notify_user(int(user_id), maluser)
+                await self.notify_user(int(user_id), maluser)
 
-            # avoid rate limits
-            await sleep(60)
+                # avoid rate limits
+                await sleep(60)
+        except requests.exceptions.ConnectionError as exc:
+            if "NameResolutionError" in str(exc):
+                try:
+                    requests.get("https://google.com", timeout=5)
+                except:
+                    logger.error("NameResolutionError while fetching new chapters: DNS server not reachable")
+                    return
+
+                logger.error(f"NameResolutionError while fetching new chapters: {exc}")
+                return
+
+            logger.error(f"ConnectionError while fetching new chapters: {exc}")
+            return
 
     async def notify_user(self, user_id: int, maluser: MALUser) -> None:
         """Notify the user if any of his ``Manga`` got a new chapter"""
