@@ -75,12 +75,21 @@ async def _ensure_session() -> None:
         _session = aiohttp.ClientSession()
 
 async def _check_res(res: aiohttp.ClientResponse) -> None:
+    # also see https://developer.spotify.com/documentation/web-api/concepts/api-calls
+
     if await _has_json(res) and "error" in await res.json():
         error_json = await res.json()
 
-        err = ApiResponseError.with_values(error_json["error"]["message"])
-        err.message = error_json["error"]["message"]
-        err.status_code = error_json["error"]["status"]
+        # authentication error
+        if isinstance(error_json["error"], str):
+            message = error_json["error"]
+        # regular error
+        else:
+            message = error_json["error"]["message"]
+
+        err = ApiResponseError(f"The API returned status code {res.status} and error: {message}")
+        err.message = message
+        err.status_code = res.status
 
         raise err
 

@@ -1,15 +1,17 @@
 """contains the cog of the spotify module"""
 
 from asyncio import sleep
+import threading
 from threading import Thread
 
-from abllib import PersistentStorage, VolatileStorage
+from abllib import PersistentStorage, VolatileStorage, CacheStorage, onexit
 from abllib.log import get_logger
 from discord import app_commands, Color, Embed
-from discord.ext import commands
+from discord.ext import commands, tasks
 
 from . import api_helper, auth_helper, auth_server, update_helper
 from .cache import PlaylistCache
+from .dclasses import Playlist, Track
 from .error import ApiResponseError
 from ...util.discord import grouped_hybrid_command, reply, get_user_id, private_message
 
@@ -150,7 +152,8 @@ class Spotify(commands.Cog):
 
         # to make pylint happy
         message = None
-        is_new_playlist = None
+
+        is_new_playlist = True
 
         if f"spotify.{user_id}.all_playlist.id" in PersistentStorage:
             try:
@@ -167,49 +170,19 @@ class Spotify(commands.Cog):
                 else:
                     raise
 
-        if f"spotify.{user_id}.all_playlist.id" not in PersistentStorage:
+        if is_new_playlist:
             all_playlist = await api_helper.create_playlist(user_id, "🌎 everything")
             PersistentStorage[f"spotify.{user_id}.all_playlist.id"] = all_playlist.id
             message = await reply(ctx, embed=Embed(title=f"Creating new playlist {all_playlist.name}",
                                                    color=Color.blue()))
-            is_new_playlist = True
 
-        playlist_metas = await api_helper.get_playlists(user_id)
-        # exclude all_playlist
-        playlist_metas = [item for item in playlist_metas if item.id != all_playlist.id]
-        updated_track_ids = await update_helper.get_all_track_ids(user_id, playlist_metas, message)
+        await update_helper.run(user_id, True)
 
-        current_track_ids = await update_helper.get_current_track_ids(user_id, all_playlist, message)
-
-        await message.edit(embed=Embed(title="Calculating",
-                                       description="Checking which songs to add",
-                                       color=Color.blue()))
-        to_remove, to_add = update_helper.calculate_diff(current_track_ids, updated_track_ids)
-        # the newest track needs to be first
-        to_add.reverse()
-
-        await message.edit(embed=Embed(title="Updating your playlist",
-                                       description=f"Removing {len(to_remove)} and adding {len(to_add)} tracks",
-                                       color=Color.blue()))
-        logger.info(f"Removing {len(to_remove)} and adding {len(to_add)} tracks")
-        if len(to_remove) > 0:
-            await api_helper.remove_tracks(user_id, all_playlist.id, to_remove)
-        if len(to_add) > 0:
-            await api_helper.add_tracks(user_id, all_playlist.id, to_add)
-
-        # wait for spotify to finish processing
-        await sleep(5)
-
-        # request new snapshot_id
-        all_playlist = await api_helper.get_playlist_meta(user_id, all_playlist.id)
-        cache = PlaylistCache(user_id)
-        cache.set(all_playlist, current_track_ids)
-
-        title = "Successfully created new playlist" if is_new_playlist else "Successfully updated your playlist"
-        embed = Embed(title=title,
-                      description=f"Removed {len(to_remove)} and added {len(to_add)} tracks "
-                                  f"to {all_playlist.name} for a total of {len(updated_track_ids)} tracks.",
-                      color=Color.green())
+        embed = Embed(
+            title="Successfully created your new playlist" if is_new_playlist else "Successfully updated your playlist",
+            description="The playlist is automatically updated every 15 minutes.",
+            color=Color.green()
+        )
         embed.add_field(name=" ", value=" ", inline=False)
         embed.add_field(name="Url",
                         value=f"https://open.spotify.com/playlist/{all_playlist.id}",
@@ -245,11 +218,98 @@ class Spotify(commands.Cog):
         await reply(ctx, embed=Embed(title="Successfully deleted the playlist",
                                      color=Color.green()))
 
+    @tasks.loop(minutes=15, reconnect=True, name="update-all-playlists-task")
+    async def update_all_playlists(self):
+        """Update all all_playlists every 15 minutes"""
+
+        if "spotify" not in PersistentStorage:
+            # no user is registered
+            return
+
+        for user_id in PersistentStorage["spotify"].keys():
+            # ignore all entries that aren't user ids
+            if user_id.isdigit():
+                try:
+                    await update_helper.run(int(user_id), True)
+                except ApiResponseError as err:
+                    logger.exception(err)
+
+def import_cache():
+    """Import playlist cache from PersistentStorage"""
+
+    if "spotify" not in PersistentStorage:
+        return
+
+    for user_id in PersistentStorage["spotify"].keys():
+        # ignore all entries that aren't user ids
+        if user_id.isdigit() and "cache" in PersistentStorage[f"spotify.{user_id}"]:
+            # load cache for user
+            cache = PlaylistCache.get_instance(user_id)
+
+            for p_id in PersistentStorage[f"spotify.{user_id}.cache"].keys():
+                tracks = []
+                for item in PersistentStorage[f"spotify.{user_id}.cache.{p_id}.tracks"]:
+                    track = Track(
+                        item[0],
+                        item[1] if len(item) > 1 else None
+                    )
+                    tracks.append(track)
+                cache.set(
+                    Playlist(
+                        "",
+                        p_id,
+                        len(tracks),
+                        PersistentStorage.get(f"spotify.{user_id}.cache.{p_id}.snapshot_id")
+                    ),
+                    tracks
+                )
+
+def export_cache():
+    """Export playlist cache to PersistentStorage"""
+
+    for user_id in CacheStorage["spotify"].keys():
+        # ignore all entries that aren't user ids
+        if user_id.isdigit() and "cache" in CacheStorage[f"spotify.{user_id}"]:
+            # save cache for user
+            logger.debug(f"Exporting spotify playlist cache for user {user_id}")
+            cache = PlaylistCache.get_instance(user_id)
+
+            for p_id in CacheStorage[cache.key].keys():
+                key = f"{cache.key}.{p_id}"
+
+                snapshot_id = CacheStorage.get(f"{key}.snapshot_id")
+                if snapshot_id is not None:
+                    PersistentStorage[f"{key}.snapshot_id"] = snapshot_id
+
+                tracks = []
+                for track in CacheStorage[f"{key}.tracks"]:
+                    track: Track
+                    if p_id == PersistentStorage[f"spotify.{user_id}.all_playlist.id"]:
+                        tracks.append(track.id)
+                    else:
+                        tracks.append([
+                            track.id,
+                            track.added_at
+                        ])
+                PersistentStorage[f"{key}.tracks"] = tracks
+
+    PersistentStorage.save_to_disk()
+
+    logger.info("Finished exporting spotify playlist cache")
+
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
     cog = Spotify(bot)
 
+    import_cache()
+
+    cog.update_all_playlists.start()
+
     Thread(target=auth_server.run_http_server, daemon=True).start()
+
+    # signal.signal callbacks don't work in subthreads (only occurs in tests anyways)
+    if threading.current_thread() is threading.main_thread():
+        onexit.register("export_spotify_cache", export_cache)
 
     await bot.add_cog(cog)

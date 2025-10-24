@@ -8,6 +8,13 @@ from abllib.error import WrongTypeError
 logger = log.get_logger("spotify.dclasses")
 
 @dataclass
+class Track:
+    """A custom dataclass which holds metadata for a single track"""
+
+    id: str
+    added_at: int | None = None
+
+@dataclass
 class Playlist:
     """A custom dataclass which holds metadata for a single playlist"""
 
@@ -26,8 +33,11 @@ class TrackSet:
     def __init__(self):
         self._tracks: dict[str, int] = {}
 
-    def add(self, track_id: str, timestamp: int) -> None:
+    def add(self, t_meta: Track) -> None:
         """Add a new track id and timestamp to the set"""
+
+        track_id = t_meta.id
+        timestamp = t_meta.added_at
 
         if not isinstance(track_id, str): raise WrongTypeError.with_values(track_id, str)
         if not isinstance(timestamp, int): raise WrongTypeError.with_values(timestamp, int)
@@ -37,10 +47,12 @@ class TrackSet:
         elif timestamp < self._tracks[track_id]:
             self._tracks[track_id] = timestamp
 
-    def get(self) -> list[tuple[str, int]]:
-        """Return all track ids and timestamps without order"""
+    def tracks(self) -> list[Track]:
+        """Return all tracks, sorted from oldest to newest"""
 
-        return list(self._tracks.items())
+        items = [Track(key, value) for key, value in self._tracks.items()]
+        items.sort(key=lambda x: x.added_at)
+        return items
 
     def ids(self) -> list[str]:
         """Return all track ids, sorted from oldest to newest"""

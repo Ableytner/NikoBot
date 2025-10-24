@@ -1,54 +1,68 @@
-"""Module containing classes for interfacing with the Spotify-related cache"""
+"""Module containing classes for interfacing with the Spotify-related caches"""
 
-from typing import Any
+from abllib import CacheStorage
 
-from abllib import PersistentStorage
+from .dclasses import Track, Playlist
 
-from .dclasses import Playlist
+# TODO: save / load cache in PersistentStorage
 
 class Cache():
     """Base class for all spotify caches"""
 
-    def __init__(self, user_id: int):
-        self.user_id = user_id
-        self.key = f"spotify.{user_id}.cache"
+    user_id: int
+    key: str
+
+    @classmethod
+    def get_instance(cls, user_id: int):
+        """Return the Cache instance of the given user"""
+
+        inst = cls()
+
+        inst.user_id = user_id
+        inst.key = f"spotify.{user_id}.cache"
+
+        return inst
 
 class PlaylistCache(Cache):
     """Class used for caching playlists"""
 
-    def get(self, p_meta: Playlist) -> list[Any] | None:
+    def get(self, p_meta: Playlist) -> list[Track] | None:
         """Return the cached playlist, or None on missed or out-of-date cache"""
+
+        if p_meta.id is None or p_meta.id == "":
+            raise RuntimeError()
 
         key = f"{self.key}.{p_meta.id}"
 
         # cache miss
-        if f"{key}" not in PersistentStorage:
+        if f"{key}" not in CacheStorage:
             return None
 
         # prefer snapshot_id
-        if p_meta.snapshot_id is not None and f"{key}.snapshot_id" in PersistentStorage:
-            if PersistentStorage[f"{key}.snapshot_id"] == p_meta.snapshot_id:
+        if p_meta.snapshot_id is not None and f"{key}.snapshot_id" in CacheStorage:
+            if CacheStorage[f"{key}.snapshot_id"] == p_meta.snapshot_id:
                 # the playlist hasn't changed since
-                return PersistentStorage[f"{key}.tracks"]
+                return CacheStorage[f"{key}.tracks"]
 
             # out-of-date cache
-            del PersistentStorage[f"{key}"]
+            del CacheStorage[f"{key}"]
             return None
 
         # fall back to track count
-        if len(PersistentStorage[f"{key}.tracks"]) == p_meta.total_tracks:
-            return PersistentStorage[f"{key}.tracks"]
+        if len(CacheStorage[f"{key}.tracks"]) == p_meta.total_tracks:
+            return CacheStorage[f"{key}.tracks"]
 
         # out-of-date cache
-        del PersistentStorage[f"{key}"]
+        del CacheStorage[f"{key}"]
         return None
 
-    def set(self, p_meta: Playlist, tracks: list[Any]) -> None:
+    def set(self, p_meta: Playlist, tracks: list[Track]) -> None:
         """Add the given playlist to the cache"""
 
         key = f"{self.key}.{p_meta.id}"
 
         if p_meta.snapshot_id is not None:
-            PersistentStorage[f"{key}.snapshot_id"] = p_meta.snapshot_id
+            CacheStorage[f"{key}.snapshot_id"] = p_meta.snapshot_id
 
-        PersistentStorage[f"{key}.tracks"] = tracks.copy()
+        # copy tracks to be sure
+        CacheStorage[f"{key}.tracks"] = tracks.copy()
