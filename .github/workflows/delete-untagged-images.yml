@@ -15,8 +15,8 @@ jobs:
     steps:
     - name: lowercase github.repository
       run: |
-        echo "REPOSITORY_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
+        echo "PACKAGE_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]' | cut -d "/" -f2`" >>${GITHUB_ENV}
     - uses: dataaxiom/ghcr-cleanup-action@v1
       with:
-        package: ${{ env.REPOSITORY_NAME }}
+        package: ${{ env.PACKAGE_NAME }}
         delete-untagged: true
