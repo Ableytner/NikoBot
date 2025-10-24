@@ -13,6 +13,10 @@ jobs:
   delete-untagged:
     runs-on: self-hosted
     steps:
+    - name: lowercase github.repository
+      run: |
+        echo "REPOSITORY_NAME=`echo ${{github.repository}} | tr '[:upper:]' '[:lower:]'`" >>${GITHUB_ENV}
     - uses: dataaxiom/ghcr-cleanup-action@v1
       with:
+        package: ${{ env.REPOSITORY_NAME }}
         delete-untagged: true
