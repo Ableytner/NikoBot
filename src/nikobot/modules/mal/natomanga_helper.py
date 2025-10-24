@@ -7,6 +7,7 @@ import requests
 
 from . import flare_solverr
 from .chapter import Chapter
+from .error import CloudflareChallengeError
 
 logger = get_logger("mal")
 
@@ -56,7 +57,7 @@ def get_manga_url(titles: str | list[str]) -> str | None:
         r = requests.get(url, timeout=30, headers=headers, cookies=cf_cookies, allow_redirects=True)
 
         if r.status_code == 403: # forbidden
-            raise Exception("FlareSolverr didn't work")
+            raise CloudflareChallengeError()
         if r.status_code == 404: # not found
             continue
 
@@ -90,7 +91,7 @@ def get_chapters(url: str) -> list[Chapter]:
     r = requests.get(url, timeout=30, headers=headers, cookies=cf_cookies, allow_redirects=True)
 
     if r.status_code == 403: # forbidden
-        raise Exception("FlareSolverr didn't work")
+        raise CloudflareChallengeError()
 
     soup = bs.BeautifulSoup(r.content, features="html.parser")
     chapter_class = soup.find("div", {"class": "chapter-list"})

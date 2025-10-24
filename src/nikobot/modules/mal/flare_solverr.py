@@ -1,7 +1,11 @@
+"""Module containing functions for comunicating with the FlareSolverr instance"""
+
 from datetime import datetime, timedelta
 
 import requests
 from abllib import VolatileStorage, get_logger, NamedLock
+
+from .error import FlareSolverrResponseError
 
 logger = get_logger("FlareSolverr")
 
@@ -30,15 +34,14 @@ def solve(key: str, url: str) -> tuple[dict[str, str], dict[str, str]]:
         "url": url,
         "maxTimeout": 60000
     }
-    r = requests.post("http://192.168.0.145:9213/v1", headers=headers, json=data)
+    r = requests.post("http://192.168.0.145:9213/v1", timeout=30, headers=headers, json=data)
 
     if "status" in r.json() and r.json()["message"] == "Challenge not detected!":
         logger.debug("No cf challenge necessary")
         return ({}, {})
 
     if "solution" not in r.json() or r.json()["status"] != "ok":
-        logger.warning(f"FlareSolverr returned invalid data: {r.json()}")
-        raise Exception()
+        raise FlareSolverrResponseError.with_values(r.json())
 
     solution = r.json()["solution"]
 
