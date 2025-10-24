@@ -38,6 +38,7 @@ jobs:
         TEST_CHANNEL_ID: ${{ secrets.TEST_CHANNEL_ID }}
       run: |
         cat config.template.json \
+        | sed 's/"log_level": "INFO"/"log_level": "DEBUG"/g' \
         | sed 's/"discord_token_testbot": ""/"discord_token_testbot": "${{ env.DISCORD_TOKEN_TESTBOT }}"/g' \
         | sed 's/"discord_token_helperbot": ""/"discord_token_helperbot": "${{ env.DISCORD_TOKEN_HELPERBOT }}"/g' \
         | sed 's/"test_channel_id": ""/"test_channel_id": "${{ env.TEST_CHANNEL_ID }}"/g' \

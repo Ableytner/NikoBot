@@ -33,11 +33,6 @@ from nikobot.discord_bot import DiscordBot
 # delete dev.py on release build
 
 if __name__ == "__main__":
-    # setup logging
-    log.initialize(log.LogLevel.INFO)
-    log.add_console_handler()
-    log.add_file_handler()
-
     # https://stackoverflow.com/a/4480202/15436169
     parser = argparse.ArgumentParser("nikobot")
     parser.add_argument("--config",
@@ -51,6 +46,14 @@ if __name__ == "__main__":
         raise FileNotFoundError("Config file couldn't be found")
     with open(args.config, "r", encoding="utf8") as cf:
         config: dict[str, typing.Any] = json.load(cf)
+
+    # setup logging
+    log_level = log.LogLevel.INFO
+    if "log_level" in config:
+        log_level = log.LogLevel.from_str(config["log_level"])
+    log.initialize(log_level)
+    log.add_console_handler()
+    log.add_file_handler()
 
     # setup storage
     storage_dir = fs.absolute(config["storage_dir"])
