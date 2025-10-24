@@ -34,7 +34,7 @@ from nikobot.discord_bot import DiscordBot
 
 if __name__ == "__main__":
     # setup logging
-    log.initialize(log.LogLevel.DEBUG)
+    log.initialize(log.LogLevel.INFO)
     log.add_console_handler()
     log.add_file_handler()
 
