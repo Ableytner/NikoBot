@@ -3,7 +3,7 @@ name: Delete untagged docker images
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 4 12 * *' # 04:00am, on day 12 of the month
+    - cron: '0 4 12 * *' # 04:00am, on day 12 of every month
 
 defaults:
   run:
