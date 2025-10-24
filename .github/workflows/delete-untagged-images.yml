@@ -1,0 +1,18 @@
+name: Delete untagged docker images
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 12 * *' # 04:00am, on day 12 of every month
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  delete-untagged:
+    runs-on: self-hosted
+    steps:
+    - uses: dataaxiom/ghcr-cleanup-action@v1
+      with:
+        delete-untagged: true
