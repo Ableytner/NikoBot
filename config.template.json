@@ -10,6 +10,7 @@
     ],
     "storage_dir": "./storage",
     "discord_token": "",
+    "log_level": "INFO",
     "test": {
         "discord_token_testbot": "",
         "discord_token_helperbot": "",
