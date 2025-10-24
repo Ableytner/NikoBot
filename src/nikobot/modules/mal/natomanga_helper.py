@@ -5,7 +5,9 @@ from abllib.log import get_logger
 import bs4 as bs
 import requests
 
+from . import flare_solverr
 from .chapter import Chapter
+from .error import CloudflareChallengeError
 
 logger = get_logger("mal")
 
@@ -46,13 +48,17 @@ def get_manga_url(titles: str | list[str]) -> str | None:
         else:
             titles.pop(i)
 
+    cf_cookies, headers = flare_solverr.solve("natomanga", f"{BASE_URL}/manga/")
+
     result_urls: list[str] = []
     for title in titles:
         url = f"{BASE_URL}/manga/{_sanitize_title(title)}"
 
-        r = requests.get(url, timeout=30)
+        r = requests.get(url, timeout=30, headers=headers, cookies=cf_cookies, allow_redirects=True)
 
-        if r.status_code == 404:
+        if r.status_code == 403: # forbidden
+            raise CloudflareChallengeError()
+        if r.status_code == 404: # not found
             continue
 
         result_urls.append(url)
@@ -66,23 +72,26 @@ def get_manga_url(titles: str | list[str]) -> str | None:
     logger.debug(f"found multiple urls {result_urls} for manga {titles[0]}")
 
     max_chapters = -1
-    i = 0
-    while i < len(result_urls):
+    max_url = ""
+    for url in result_urls:
         chapters = get_chapters(url)
         if len(chapters) > max_chapters:
             max_chapters = len(chapters)
-            result_urls.pop(i)
-        else:
-            i += 1
+            max_url = url
 
-    logger.debug(f"picked {result_urls[0]} with {max_chapters} chapters")
+    logger.debug(f"picked {max_url} with {max_chapters} chapters")
 
-    return result_urls[0]
+    return max_url
 
 def get_chapters(url: str) -> list[Chapter]:
     """Get a list of ``Chapter``s from a given manganato url"""
 
-    r = requests.get(url, timeout=30)
+    cf_cookies, headers = flare_solverr.solve("natomanga", f"{BASE_URL}/manga/")
+
+    r = requests.get(url, timeout=30, headers=headers, cookies=cf_cookies, allow_redirects=True)
+
+    if r.status_code == 403: # forbidden
+        raise CloudflareChallengeError()
 
     soup = bs.BeautifulSoup(r.content, features="html.parser")
     chapter_class = soup.find("div", {"class": "chapter-list"})

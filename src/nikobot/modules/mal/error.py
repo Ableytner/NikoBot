@@ -2,6 +2,21 @@
 
 from abllib.error import CustomException
 
+class CloudflareChallengeError(CustomException):
+    """Exception raised when solving a Cloudflare challenge didn't work"""
+
+    default_messages = {
+        0: "Cloudflare challenge solving didn't work"
+    }
+
+class FlareSolverrResponseError(CustomException):
+    """Exception raised when FlareSolverr returns an invalid response"""
+
+    default_messages = {
+        0: "FlareSolverr responded with an invalid response",
+        1: "FlareSolverr responded with an invalid response: {0}"
+    }
+
 class MangaFetchException(CustomException):
     """Exception raised when fetching the manga failed"""
 
