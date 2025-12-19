@@ -135,8 +135,10 @@ class Manga():
         """
 
         if self._manga_provider is not None:
+            # this sets manga_provider to None if it was deleted
             self._fetch_chapters()
-        else:
+
+        if self._manga_provider is None:
             manga_url = natomanga_helper.get_manga_url([self.title, self.title_translated] + self.synonyms)
             if manga_url is None:
                 logger.warning(f"Manga {self.mal_id} could not be found automatically")
@@ -166,7 +168,7 @@ class Manga():
 
         if len(chapters) == 0:
             logger.warning(f"Manga {self.mal_id} was propably deleted at url {self._manga_provider_url}, " +
-                  "removing and trying again later")
+                           "removing and trying again later")
             self.set_manga_provider(None, None)
             return
 

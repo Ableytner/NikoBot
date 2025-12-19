@@ -3,11 +3,9 @@
 from abllib import fs, VolatileStorage
 from abllib.log import get_logger
 import bs4 as bs
-import requests
 
 from . import flare_solverr
 from .chapter import Chapter
-from .error import CloudflareChallengeError
 
 logger = get_logger("mal")
 
@@ -48,17 +46,13 @@ def get_manga_url(titles: str | list[str]) -> str | None:
         else:
             titles.pop(i)
 
-    cf_cookies, headers = flare_solverr.solve("natomanga", f"{BASE_URL}/manga/")
-
     result_urls: list[str] = []
     for title in titles:
         url = f"{BASE_URL}/manga/{_sanitize_title(title)}"
 
-        r = requests.get(url, timeout=30, headers=headers, cookies=cf_cookies, allow_redirects=True)
+        content = flare_solverr.get(url)
 
-        if r.status_code == 403: # forbidden
-            raise CloudflareChallengeError()
-        if r.status_code == 404: # not found
+        if "cannot be found" in content: # not found
             continue
 
         result_urls.append(url)
@@ -86,19 +80,14 @@ def get_manga_url(titles: str | list[str]) -> str | None:
 def get_chapters(url: str) -> list[Chapter]:
     """Get a list of ``Chapter``s from a given manganato url"""
 
-    cf_cookies, headers = flare_solverr.solve("natomanga", f"{BASE_URL}/manga/")
+    content = flare_solverr.get(url)
 
-    r = requests.get(url, timeout=30, headers=headers, cookies=cf_cookies, allow_redirects=True)
-
-    if r.status_code == 403: # forbidden
-        raise CloudflareChallengeError()
-
-    soup = bs.BeautifulSoup(r.content, features="html.parser")
+    soup = bs.BeautifulSoup(content, features="html.parser")
     chapter_class = soup.find("div", {"class": "chapter-list"})
     if chapter_class is None:
         logger.warning(f"No chapters found for manga {url}, saving response to 'cache/mal/natomanga.html'")
-        with open(fs.absolute(VolatileStorage["cache_dir"], "mal", "natomanga.html"), "wb") as f:
-            f.write(r.content)
+        with open(fs.absolute(VolatileStorage["cache_dir"], "mal", "natomanga.html"), "w") as f:
+            f.write(content)
         return []
     chapter_objects = chapter_class.find_all("a", href=True)
     chapters = [create_chapter(item.contents[0], item["href"]) for item in chapter_objects]
@@ -113,6 +102,7 @@ def _sanitize_title(title: str) -> str:
                 .replace(".", "") \
                 .replace(":", "") \
                 .replace("!", "") \
+                .replace(",", "") \
                 .lower()
 
 def _setup():

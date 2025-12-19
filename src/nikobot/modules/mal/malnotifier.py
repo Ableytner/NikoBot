@@ -15,7 +15,7 @@ from discord.ext import commands, tasks
 from PIL import Image, ImageDraw
 
 from ... import util
-from . import error, mal_helper, manganato_helper
+from . import error, mal_helper, manganato_helper, natomanga_helper
 from .mal_user import MALUser
 from .manga import Manga
 
@@ -338,6 +338,7 @@ async def setup(bot: commands.Bot):
 
     mal_helper._setup()
     manganato_helper._setup()
+    natomanga_helper._setup()
 
     cog = MALNotifier(bot)
 
