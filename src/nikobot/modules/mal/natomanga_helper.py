@@ -86,7 +86,7 @@ def get_chapters(url: str) -> list[Chapter]:
     chapter_class = soup.find("div", {"class": "chapter-list"})
     if chapter_class is None:
         logger.warning(f"No chapters found for manga {url}, saving response to 'cache/mal/natomanga.html'")
-        with open(fs.absolute(VolatileStorage["cache_dir"], "mal", "natomanga.html"), "w") as f:
+        with open(fs.absolute(VolatileStorage["cache_dir"], "mal", "natomanga.html"), "w", encoding="utf8") as f:
             f.write(content)
         return []
     chapter_objects = chapter_class.find_all("a", href=True)
