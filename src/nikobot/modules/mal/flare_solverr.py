@@ -65,3 +65,33 @@ def solve(key: str, url: str) -> tuple[dict[str, str], dict[str, str]]:
     }
 
     return (jar, headers)
+
+@NamedLock("FlareSolverr_solve")
+def get(url: str) -> str:
+    """
+    Try to fetch the given url, solving any cloudflare challenge on the way.
+    """
+
+    logger.info("Requesting url with FlareSolverr")
+
+    headers = {"Content-Type": "application/json"}
+    data = {
+        "cmd": "request.get",
+        "url": url,
+        "maxTimeout": 60000
+    }
+    r = requests.post(
+        f"http://{VolatileStorage['mal.flare_solverr_ip']}/v1",
+        timeout=30,
+        headers=headers,
+        json=data
+    )
+
+    if "status" in r.json() and r.json()["message"] == "Challenge not detected!":
+        logger.debug("No cf challenge necessary")
+        return r.json()["solution"]["response"]
+
+    if "solution" not in r.json() or r.json()["status"] != "ok":
+        raise FlareSolverrResponseError.with_values(r.json())
+
+    return r.json()["solution"]["response"]
