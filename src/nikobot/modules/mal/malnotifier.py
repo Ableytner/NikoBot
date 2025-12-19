@@ -241,7 +241,7 @@ class MALNotifier(commands.Cog):
                 await self.notify_manga(user_id, manga)
 
                 # avoid rate limits
-                await sleep(1)
+                await sleep(5)
 
         maluser.save_to_storage()
 
