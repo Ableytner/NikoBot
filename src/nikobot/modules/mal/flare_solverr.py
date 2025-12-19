@@ -35,7 +35,7 @@ def solve(key: str, url: str) -> tuple[dict[str, str], dict[str, str]]:
         "maxTimeout": 60000
     }
     r = requests.post(
-        f"http://{VolatileStorage['malnotifier.flare_solverr_ip']}/v1",
+        f"http://{VolatileStorage['mal.flare_solverr_ip']}/v1",
         timeout=30,
         headers=headers,
         json=data

@@ -1,6 +1,7 @@
 """A module containing the ``MALUser`` class"""
 
 from __future__ import annotations
+from typing import Any
 
 from abllib.storage import PersistentStorage
 
@@ -20,7 +21,7 @@ class MALUser():
         self.manga: dict[int, Manga] = {}
 
     @staticmethod
-    def from_export(discord_user_id: int, export: dict[str, str]) -> MALUser:
+    def from_export(discord_user_id: int, export: dict[str, Any]) -> MALUser:
         """Factory method creating a new MALUser object using the export data created by my_user.export()"""
 
         if not isinstance(discord_user_id, int):
@@ -43,7 +44,7 @@ class MALUser():
 
         self.manga[manga.mal_id] = manga
 
-    def export(self) -> dict[str, str]:
+    def export(self) -> dict[str, Any]:
         """Create a dictionary which is JSON-compliant and can be used to recreate this exact User"""
 
         return {

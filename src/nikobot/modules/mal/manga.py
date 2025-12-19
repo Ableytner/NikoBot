@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from datetime import datetime
 from enum import Enum
+from typing import Any
 
 from abllib import fs
 from abllib.log import get_logger
@@ -71,7 +72,7 @@ class Manga():
 
     # pylint: disable=protected-access
     @staticmethod
-    def from_export(export: dict[str, str]) -> Manga:
+    def from_export(export: dict[str, Any]) -> Manga:
         """Factory method creating a new Manga object using the export data created by my_manga.export()"""
 
         if not isinstance(export["mal_id"], int):
@@ -112,7 +113,7 @@ class Manga():
                       data["score"])
         return manga
 
-    def export(self) -> dict[str, str]:
+    def export(self) -> dict[str, Any]:
         """Create a dictionary which is JSON-compliant and can be used to recreate this exact Manga"""
 
         export_data = {
