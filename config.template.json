@@ -17,7 +17,8 @@
         "test_channel_id": ""
     },
     "malnotifier": {
-        "client_id": ""
+        "client_id": "",
+        "flare_solverr_ip": ""
     },
     "spotify": {
         "client_id": "",

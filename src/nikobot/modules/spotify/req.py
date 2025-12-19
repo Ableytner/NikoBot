@@ -1,4 +1,4 @@
-"""A module containing wrapping functions around requests which retires on rate-limit exceedings"""
+"""A module containing wrapping functions around requests which retries on rate-limit exceedings"""
 
 import asyncio
 

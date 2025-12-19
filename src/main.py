@@ -76,8 +76,14 @@ if __name__ == "__main__":
            or config["malnotifier"]["client_id"] == "":
             raise ValueError("Missing client_id for use with the malnotifier module. " +
                              "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
+        if "malnotifier" not in config \
+           or "flare_solverr_ip" not in config["malnotifier"] \
+           or config["malnotifier"]["flare_solverr_ip"] == "":
+            raise ValueError("Missing flare_solverr_ip for use with the malnotifier module. " +
+                             "Take a look at https://github.com/FlareSolverr/FlareSolverr on how to set up your own instance, then add its IP to your config.json.")
 
         VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
+        VolatileStorage["mal.flare_solverr_ip"] = config["malnotifier"]["flare_solverr_ip"]
 
     if "spotify.spotify" in config["modules"]:
         if "spotify" not in config \

@@ -34,7 +34,7 @@ def solve(key: str, url: str) -> tuple[dict[str, str], dict[str, str]]:
         "url": url,
         "maxTimeout": 60000
     }
-    r = requests.post("http://192.168.0.145:9213/v1", timeout=30, headers=headers, json=data)
+    r = requests.post(f"http://{VolatileStorage['malnotifier.flare_solverr_ip']}/v1", timeout=30, headers=headers, json=data)
 
     if "status" in r.json() and r.json()["message"] == "Challenge not detected!":
         logger.debug("No cf challenge necessary")
