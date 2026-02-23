@@ -16,7 +16,7 @@ from .error import UserNotRegisteredError
 
 logger = log.get_logger("spotify.auth_helper")
 
-REDIRECT_URL = "https://nikobot.ableytner.duckdns.org/spotify_auth"
+REDIRECT_URL = "https://nikobot.ableytner.at/spotify_auth"
 
 def is_authed(user_id: int) -> bool:
     """Return whether the given user is already authenticated"""
