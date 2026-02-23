@@ -27,7 +27,6 @@ from nikobot.discord_bot import DiscordBot
 # replace DEBUG env var with TYPE_CHECKING for testing discord bot startup
 # move mal config loading to centralized handler
 # move all module-specific code to that module (e.g. help module in on_command_error)
-# update to python 3.13
 # add some sort of statistics system (similar in usage to help module)
 # type-checking for util.discord functions
 # delete dev.py on release build
@@ -57,6 +56,7 @@ if __name__ == "__main__":
 
     # setup storage
     storage_dir = fs.absolute(config["storage_dir"])
+    os.makedirs(storage_dir, exist_ok=True)
     storage.initialize(os.path.join(storage_dir, "storage.json"), True)
 
     def save_func():

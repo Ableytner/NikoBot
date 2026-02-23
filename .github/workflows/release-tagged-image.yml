@@ -14,7 +14,7 @@ jobs:
   pylint:
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     uses: ./.github/workflows/define-pylint.yml
     with:
       python-version: ${{ matrix.python-version }}
@@ -23,7 +23,7 @@ jobs:
   pytest:
     strategy:
       matrix:
-        python-version: ["3.11", "3.12", "3.13"]
+        python-version: ["3.11", "3.12", "3.13", "3.14"]
     uses: ./.github/workflows/define-pytest.yml
     with:
       python-version: ${{ matrix.python-version }}
