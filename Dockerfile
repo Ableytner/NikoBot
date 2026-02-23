@@ -1,4 +1,4 @@
-FROM python:3.12-bookworm
+FROM python:3.14-slim
 
 RUN useradd -m nikobot \
   && mkdir /home/nikobot/src \
