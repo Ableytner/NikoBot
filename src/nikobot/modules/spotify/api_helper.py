@@ -28,9 +28,7 @@ async def create_playlist(user_id: int, playlist_name: str) -> Playlist:
 
     await auth_helper.ensure_token(user_id)
 
-    user_spotify_id = await get_user_spotify_id(user_id)
-
-    url = f"https://api.spotify.com/v1/users/{user_spotify_id}/playlists"
+    BASE_URL = "https://api.spotify.com/v1/me/playlists"
     headers = auth_helper.get_auth_headers(user_id)
     body = {
         "name": playlist_name,
@@ -38,7 +36,7 @@ async def create_playlist(user_id: int, playlist_name: str) -> Playlist:
         "public": False
     }
 
-    res = await req.post(url, headers, json=body)
+    res = await req.post(BASE_URL, headers, json=body)
     json_res = await res.json()
 
     return Playlist(playlist_name, json_res["id"], 0, None)
@@ -122,10 +120,13 @@ async def delete_playlist(user_id: int, playlist_id: str) -> None:
 
     # unfollowing a playlist deletes it
     # https://stackoverflow.com/a/78710008/15436169
-    url = f"https://api.spotify.com/v1/playlists/{playlist_id}/followers"
+    BASE_URL = "https://api.spotify.com/v1/me/library"
+    params = {
+        "uris": f"spotify:playlist:{playlist_id}"
+    }
     headers = auth_helper.get_auth_headers(user_id)
 
-    await req.delete(url, headers)
+    await req.delete(BASE_URL, headers, params)
 
 async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[Track, None]:
     """Return a generator over all track ids and date_added of a playlist"""
@@ -153,7 +154,7 @@ async def get_tracks(user_id: int, playlist_id: str) -> AsyncGenerator[Track, No
             "limit": 50
         }
 
-        res = await req.get(BASE_URL + "/tracks", headers, params)
+        res = await req.get(BASE_URL + "/items", headers, params)
         json_res = await res.json()
 
         for track_json in json_res["items"]:
@@ -210,7 +211,7 @@ async def add_tracks(user_id: int, playlist_id: str, track_ids: list[str]) -> No
 
     await auth_helper.ensure_token(user_id)
 
-    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/items"
     headers = auth_helper.get_auth_headers(user_id)
 
     total_tracks = len(track_ids)
@@ -233,7 +234,7 @@ async def remove_tracks(user_id: int, playlist_id: str, track_ids: list[str]) ->
 
     await auth_helper.ensure_token(user_id)
 
-    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/tracks"
+    BASE_URL = f"https://api.spotify.com/v1/playlists/{playlist_id}/items"
     headers = auth_helper.get_auth_headers(user_id)
 
     total_tracks = len(track_ids)
@@ -241,10 +242,10 @@ async def remove_tracks(user_id: int, playlist_id: str, track_ids: list[str]) ->
     offset = 0
     while offset < total_tracks:
         body = {
-            "tracks": [{"uri": f"spotify:track:{item}"} for item in track_ids[0:100:]]
+            "items": [{"uri": f"spotify:track:{item}"} for item in track_ids[0:100:]]
         }
 
         await req.delete(BASE_URL, headers, json=body)
 
         track_ids = track_ids[100:]
-        offset += len(body["tracks"])
+        offset += 100

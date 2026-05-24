@@ -137,7 +137,7 @@ def get_auth_string() -> str:
     authorization_encoded = base64.b64encode(authorization.encode("ascii")).decode("ascii")
     return authorization_encoded
 
-def get_auth_headers(user_id: int) -> str:
+def get_auth_headers(user_id: int) -> dict[str, str]:
     """Get the Oauth header containing the access token"""
 
     return {
