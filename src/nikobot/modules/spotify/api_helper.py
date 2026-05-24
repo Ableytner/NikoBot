@@ -242,10 +242,10 @@ async def remove_tracks(user_id: int, playlist_id: str, track_ids: list[str]) ->
     offset = 0
     while offset < total_tracks:
         body = {
-            "tracks": [{"uri": f"spotify:track:{item}"} for item in track_ids[0:100:]]
+            "items": [{"uri": f"spotify:track:{item}"} for item in track_ids[0:100:]]
         }
 
         await req.delete(BASE_URL, headers, json=body)
 
         track_ids = track_ids[100:]
-        offset += len(body["tracks"])
+        offset += 100
