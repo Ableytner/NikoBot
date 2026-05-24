@@ -28,7 +28,7 @@ async def create_playlist(user_id: int, playlist_name: str) -> Playlist:
 
     await auth_helper.ensure_token(user_id)
 
-    url = f"https://api.spotify.com/v1/me/playlists"
+    BASE_URL = "https://api.spotify.com/v1/me/playlists"
     headers = auth_helper.get_auth_headers(user_id)
     body = {
         "name": playlist_name,
@@ -36,7 +36,7 @@ async def create_playlist(user_id: int, playlist_name: str) -> Playlist:
         "public": False
     }
 
-    res = await req.post(url, headers, json=body)
+    res = await req.post(BASE_URL, headers, json=body)
     json_res = await res.json()
 
     return Playlist(playlist_name, json_res["id"], 0, None)
@@ -120,7 +120,7 @@ async def delete_playlist(user_id: int, playlist_id: str) -> None:
 
     # unfollowing a playlist deletes it
     # https://stackoverflow.com/a/78710008/15436169
-    BASE_URL = f"https://api.spotify.com/v1/me/library"
+    BASE_URL = "https://api.spotify.com/v1/me/library"
     params = {
         "uris": f"spotify:playlist:{playlist_id}"
     }
