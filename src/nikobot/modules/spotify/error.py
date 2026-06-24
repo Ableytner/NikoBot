@@ -19,3 +19,11 @@ class UserNotRegisteredError(CustomException):
         0: "The requested user is not yet registered",
         1: "The requested user {0} is not yet registered"
     }
+
+class UserRegistrationExpired(CustomException):
+    """Exception raised when the user is registered for longer than 6 months without re-authorization"""
+
+    default_messages = {
+        0: "The requested users' registration has expired",
+        1: "The requested user {0} registration has expired"
+    }

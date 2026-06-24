@@ -2,6 +2,7 @@
 
 from asyncio import sleep
 import threading
+from datetime import datetime
 from threading import Thread
 
 from abllib import PersistentStorage, VolatileStorage, CacheStorage, onexit
@@ -40,7 +41,7 @@ class Spotify(commands.Cog):
 
         user_id = get_user_id(ctx)
 
-        if auth_helper.is_authed(user_id):
+        if auth_helper.is_authed(user_id) and not auth_helper.is_auth_expired(user_id):
             await reply(ctx, embed=Embed(title="You are already registered",
                                          color=Color.orange()))
             return
@@ -62,14 +63,14 @@ class Spotify(commands.Cog):
         embed.add_field(name="Note",
                         value="You have 5 minutes until registration times out.",
                         inline=False)
-        await private_message(user_id, embed=embed)
+        link_message = await private_message(user_id, embed=embed)
 
         elapsed = 0
-        while not auth_helper.is_authed(user_id) and f"spotify.auth.{user_id}" in VolatileStorage and elapsed < 60 * 5:
+        while f"spotify.auth.{user_id}" in VolatileStorage and elapsed < 60 * 5:
             await sleep(1)
             elapsed += 1
 
-        if auth_helper.is_authed(user_id):
+        if auth_helper.is_authed(user_id) and not auth_helper.is_auth_expired(user_id):
             # auth was successful
 
             # verify that requests actually work
@@ -104,6 +105,12 @@ class Spotify(commands.Cog):
             auth_helper.cancel_auth(user_id)
             await message.edit(embed=Embed(title="Registration timed out",
                                            color=Color.orange()))
+        else:
+            auth_helper.cancel_auth(user_id)
+            await message.edit(embed=Embed(title="Something went wrong",
+                                           color=Color.orange()))
+
+        await link_message.delete()
 
     @grouped_hybrid_command(
         "deregister",
@@ -229,10 +236,30 @@ class Spotify(commands.Cog):
         for user_id in PersistentStorage["spotify"].keys():
             # ignore all entries that aren't user ids
             if user_id.isdigit():
-                try:
-                    await update_helper.run(int(user_id), True)
-                except ApiResponseError as err:
-                    logger.exception(err)
+                if auth_helper.is_auth_expired(user_id):
+                    embed = Embed(
+                        title="Spotify registration expired",
+                        description="According to Spotify, you need to reauthenticate every 6 months.",
+                        color=Color.orange()
+                    )
+                    embed.add_field(name="To reauthenticate, simply run",
+                                    value="niko.spotify.register",
+                                    inline=False)
+                    embed.add_field(name="More information",
+                                    value="https://developer.spotify.com/blog/2026-06-18-refresh-token-expiration",
+                                    inline=False)
+                    embed.add_field(name="Note",
+                                    value="Your created playlist will not be updated until you reregister",
+                                    inline=False)
+                    await private_message(
+                        user_id,
+                        embed=embed
+                    )
+                else:
+                    try:
+                        await update_helper.run(int(user_id), True)
+                    except ApiResponseError as err:
+                        logger.exception(err)
 
 def import_cache():
     """Import playlist cache from PersistentStorage"""
@@ -243,6 +270,12 @@ def import_cache():
     for user_id in PersistentStorage["spotify"].keys():
         # ignore all entries that aren't user ids
         if user_id.isdigit() and "cache" in PersistentStorage[f"spotify.{user_id}"]:
+            # migrate old keys
+            if f"spotify.{user_id}.token_expiration_date" in PersistentStorage:
+                acces_token_expiry = PersistentStorage[f"spotify.{user_id}.token_expiration_date"]
+                PersistentStorage[f"spotify.{user_id}.access_token_expiration_date"] = acces_token_expiry
+                PersistentStorage[f"spotify.{user_id}.refresh_token_expiration_date"] = datetime.now().timestamp()
+                del PersistentStorage[f"spotify.{user_id}.token_expiration_date"]
             # load cache for user
             cache = PlaylistCache.get_instance(user_id)
 
@@ -266,6 +299,9 @@ def import_cache():
 
 def export_cache():
     """Export playlist cache to PersistentStorage"""
+
+    if "spotify" not in CacheStorage:
+        return
 
     for user_id in CacheStorage["spotify"].keys():
         # ignore all entries that aren't user ids

@@ -54,6 +54,9 @@ if __name__ == "__main__":
     log.add_console_handler()
     log.add_file_handler()
 
+    # quiet down other loggers
+    log.get_logger("discord").setLevel(log.LogLevel.INFO.value)
+
     # setup storage
     storage_dir = fs.absolute(config["storage_dir"])
     os.makedirs(storage_dir, exist_ok=True)

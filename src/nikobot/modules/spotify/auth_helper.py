@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from abllib import log, VolatileStorage, PersistentStorage
 
 from . import req
-from .error import UserNotRegisteredError
+from .error import UserNotRegisteredError, UserRegistrationExpired
 
 logger = log.get_logger("spotify.auth_helper")
 
@@ -22,6 +22,15 @@ def is_authed(user_id: int) -> bool:
     """Return whether the given user is already authenticated"""
 
     return f"spotify.{user_id}" in PersistentStorage
+
+def is_auth_expired(user_id: int) -> bool:
+    """Return whether the given users' authentication is expired"""
+
+    refresh_token_expiry_str = PersistentStorage[f"spotify.{user_id}.refresh_token_expiration_date"]
+    refresh_token_expiration = datetime.fromtimestamp(refresh_token_expiry_str)
+    refresh_token_expiration -= timedelta(days=1) # make the expiration date a bit sooner
+
+    return refresh_token_expiration < datetime.now()
 
 def auth(user_id: int) -> str:
     """
@@ -66,9 +75,11 @@ async def complete_auth(user_id: int, auth_code: str):
     json_res = await res.json()
 
     PersistentStorage[f"spotify.{user_id}.access_token"] = json_res["access_token"]
-    PersistentStorage[f"spotify.{user_id}.refresh_token"] = json_res["refresh_token"]
     expires_at = datetime.now() + timedelta(seconds=json_res["expires_in"])
-    PersistentStorage[f"spotify.{user_id}.token_expiration_date"] = expires_at.timestamp()
+    PersistentStorage[f"spotify.{user_id}.access_token_expiration_date"] = expires_at.timestamp()
+    PersistentStorage[f"spotify.{user_id}.refresh_token"] = json_res["refresh_token"]
+    expires_at = datetime.now() + timedelta(weeks=24) # 6 months
+    PersistentStorage[f"spotify.{user_id}.refresh_token_expiration_date"] = expires_at.timestamp()
     PersistentStorage.save_to_disk()
 
     del VolatileStorage[f"spotify.auth.{user_id}"]
@@ -91,15 +102,21 @@ async def ensure_token(user_id: int) -> None:
     if f"spotify.{user_id}" not in PersistentStorage:
         raise UserNotRegisteredError()
 
-    expiration_time = datetime.fromtimestamp(PersistentStorage[f"spotify.{user_id}.token_expiration_date"])
-    expiration_time -= timedelta(minutes=5) # make the expiration date a bit sooner
+    access_token_expiry_str = PersistentStorage[f"spotify.{user_id}.access_token_expiration_date"]
+    access_token_expiration = datetime.fromtimestamp(access_token_expiry_str)
+    access_token_expiration -= timedelta(minutes=5) # make the expiration date a bit sooner
 
-    if expiration_time > datetime.now():
-        # the token has not yet expired
-        return
+    refresh_token_expiry_str = PersistentStorage[f"spotify.{user_id}.refresh_token_expiration_date"]
+    refresh_token_expiration = datetime.fromtimestamp(refresh_token_expiry_str)
+    refresh_token_expiration -= timedelta(days=1) # make the expiration date a bit sooner
 
-    # the token has already expired
-    await refresh_token(user_id)
+    if refresh_token_expiration < datetime.now():
+        # the refresh token has expired
+        raise UserRegistrationExpired.with_values(user_id)
+
+    if access_token_expiration < datetime.now():
+        # the access token has expired
+        await refresh_token(user_id)
 
 async def refresh_token(user_id: int) -> None:
     """Refresh the given users Spotify token"""
@@ -122,7 +139,7 @@ async def refresh_token(user_id: int) -> None:
     if "refresh_token" in json_res:
         PersistentStorage[f"spotify.{user_id}.refresh_token"] = json_res["refresh_token"]
     expires_at = datetime.now() + timedelta(seconds=json_res["expires_in"])
-    PersistentStorage[f"spotify.{user_id}.token_expiration_date"] = expires_at.timestamp()
+    PersistentStorage[f"spotify.{user_id}.access_token_expiration_date"] = expires_at.timestamp()
 
 def _hash_user_id(user_id: int) -> str:
     user_id = str(user_id).encode("utf8")
