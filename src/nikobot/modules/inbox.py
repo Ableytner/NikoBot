@@ -13,6 +13,8 @@ Example message:
 }
 """
 
+# pylint: disable=broad-exception-caught
+
 import asyncio
 import json
 import logging
@@ -39,6 +41,40 @@ class InboxHandler:
     async def handle_post(self, request: web.Request) -> web.Response:
         """Handle incoming POST requests from AblApi"""
 
+        logger.debug(f"Got request: {await request.text()}")
+
+        response = await self._validate_request(request)
+        if response is not None:
+            return response
+
+        future = asyncio.get_event_loop().create_future()
+
+        async def send_and_resolve():
+            msg = await self._send_message(await request.json())
+            if msg is None:
+                future.set_result({"status": "failed", "reason": "Could not send message to Discord"})
+                return
+            future.set_result({
+                "status": "success",
+                "message_id": str(msg.id),
+                "channel_id": str(msg.channel.id)
+            })
+
+        asyncio.ensure_future(send_and_resolve())
+
+        try:
+            result = await asyncio.wait_for(future, timeout=30.0)
+            return web.json_response(result, status=200)
+        except asyncio.TimeoutError:
+            return web.Response(
+                status=504,
+                text="Gateway Timeout",
+                content_type="text/plain"
+            )
+
+    async def _validate_request(self, request: web.Request) -> web.Response | None:
+        """Ensure the request is not malformed"""
+
         if not await self._check_auth(request):
             logger.warning("Unauthorized access attempt")
             return web.Response(
@@ -46,8 +82,6 @@ class InboxHandler:
                 text="Unauthorized",
                 content_type="text/plain"
             )
-
-        logger.debug(f"Got request: {await request.text()}")
 
         try:
             body = await request.json()
@@ -79,30 +113,8 @@ class InboxHandler:
                 content_type="text/plain"
             )
 
-        future = asyncio.get_event_loop().create_future()
-
-        async def send_and_resolve():
-            msg = await self._send_message(body)
-            if msg is None:
-                future.set_result({"status": "failed", "reason": "Could not send message to Discord"})
-                return
-            future.set_result({
-                "status": "success",
-                "message_id": str(msg.id),
-                "channel_id": str(msg.channel.id)
-            })
-
-        asyncio.ensure_future(send_and_resolve())
-
-        try:
-            result = await asyncio.wait_for(future, timeout=30.0)
-            return web.json_response(result, status=200)
-        except asyncio.TimeoutError:
-            return web.Response(
-                status=504,
-                text="Gateway Timeout",
-                content_type="text/plain"
-            )
+        # no complaints
+        return None
 
     async def _check_auth(self, request: web.Request) -> bool:
         """Check if the request has a valid API secret"""
