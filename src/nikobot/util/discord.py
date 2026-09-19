@@ -559,6 +559,9 @@ async def channel_message(channel_id: int, *args, **kwargs) -> discordpy.Message
     """
 
     channel = get_bot().get_channel(channel_id)
+    if channel is None:
+        raise error.ChannelNotFound.with_values(channel_id)
+
     return await channel.send(*args, **kwargs)
 
 async def private_message(user_id: int, *args, **kwargs) \

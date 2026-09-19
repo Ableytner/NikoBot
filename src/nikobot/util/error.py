@@ -26,6 +26,14 @@ class UserNotFound(CustomException):
         1: "The discord user {0} couldn't be found"
     }
 
+class ChannelNotFound(CustomException):
+    """Exception raised when the discord channel wasn't found"""
+
+    default_messages = {
+        0: "The discord channel couldn't be found",
+        1: "The discord channel {0} couldn't be found"
+    }
+
 class MissingRequiredArgument(commands.MissingRequiredArgument):
     """Exception raised when a command was called without a required argument"""
 

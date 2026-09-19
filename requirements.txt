@@ -1,4 +1,5 @@
 abllib
+aiohttp
 beautifulsoup4
 discord.py
 pillow

@@ -106,6 +106,20 @@ if __name__ == "__main__":
         VolatileStorage["spotify.client_id"] = config["spotify"]["client_id"]
         VolatileStorage["spotify.client_secret"] = config["spotify"]["client_secret"]
 
+    if "inbox" in config["modules"]:
+        if "inbox" not in config \
+           or "api_secret" not in config["inbox"] \
+           or config["inbox"]["api_secret"] == "":
+            raise ValueError("Missing api_secret for use with the inbox module. " +
+                             "Generate a strong secret and add it to your config.json.")
+        if "inbox" not in config \
+           or "allowed_channels" not in config["inbox"] \
+           or not isinstance(config["inbox"]["allowed_channels"], list):
+            raise ValueError("Allowed channels not configured")
+
+        VolatileStorage["inbox.api_secret"] = config["inbox"]["api_secret"]
+        VolatileStorage["inbox.allowed_channels"] = config["inbox"].get("allowed_channels", [])
+
     # setup storage directories
     VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
     os.makedirs(VolatileStorage["cache_dir"], exist_ok=True)

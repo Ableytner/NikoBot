@@ -23,5 +23,9 @@
     "spotify": {
         "client_id": "",
         "client_secret": ""
+    },
+    "inbox": {
+        "api_secret": "",
+        "allowed_channels": []
     }
 }
