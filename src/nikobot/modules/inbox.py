@@ -25,7 +25,7 @@ from aiohttp import web
 import discord as discordpy
 from discord.ext import commands
 
-from nikobot.util import discord
+from nikobot.util import discord, general
 
 logger = get_logger("inbox")
 
@@ -195,6 +195,21 @@ class InboxHandler:
 
 async def setup(bot) -> None:
     """Setup the inbox module"""
+
+    config = general.load_config()
+    
+    if "inbox" not in config \
+       or "api_secret" not in config["inbox"] \
+       or config["inbox"]["api_secret"] == "":
+        raise ValueError("Missing api_secret for use with the inbox module. " +
+                         "Generate a strong secret and add it to your config.json.")
+    if "inbox" not in config \
+       or "allowed_channels" not in config["inbox"] \
+       or not isinstance(config["inbox"]["allowed_channels"], list):
+        raise ValueError("Allowed channels not configured")
+
+    VolatileStorage["inbox.api_secret"] = config["inbox"]["api_secret"]
+    VolatileStorage["inbox.allowed_channels"] = config["inbox"].get("allowed_channels", [])
 
     handler = InboxHandler(bot)
 

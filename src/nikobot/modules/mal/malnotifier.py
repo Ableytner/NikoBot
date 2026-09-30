@@ -15,6 +15,7 @@ from discord.ext import commands, tasks
 from PIL import Image, ImageDraw
 
 from ... import util
+from ...util import general
 from . import error, mal_helper, manganato_helper, natomanga_helper
 from .mal_user import MALUser
 from .manga import Manga
@@ -335,6 +336,23 @@ class MALNotifier(commands.Cog):
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
+
+    config = general.load_config()
+    
+    if "malnotifier" not in config \
+       or "client_id" not in config["malnotifier"] \
+       or config["malnotifier"]["client_id"] == "":
+        raise ValueError("Missing client_id for use with the malnotifier module. " +
+                         "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
+    if "malnotifier" not in config \
+       or "flare_solverr_ip" not in config["malnotifier"] \
+       or config["malnotifier"]["flare_solverr_ip"] == "":
+        raise ValueError("Missing flare_solverr_ip for use with the malnotifier module. " +
+                         "Take a look at https://github.com/FlareSolverr/FlareSolverr " \
+                         "on how to set up your own instance, then add its IP to your config.json.")
+
+    VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
+    VolatileStorage["mal.flare_solverr_ip"] = config["malnotifier"]["flare_solverr_ip"]
 
     mal_helper._setup()
     manganato_helper._setup()

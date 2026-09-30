@@ -10,6 +10,7 @@ from abllib.log import get_logger
 from discord import app_commands, Color, Embed
 from discord.ext import commands, tasks
 
+from ... import util
 from . import api_helper, auth_helper, auth_server, update_helper
 from .cache import PlaylistCache
 from .dclasses import Playlist, Track
@@ -335,6 +336,24 @@ def export_cache():
 
 async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
+
+    config = util.general.load_config()
+    
+    if "spotify" not in config \
+       or "client_id" not in config["spotify"] \
+       or config["spotify"]["client_id"] == "":
+        raise ValueError("Missing client_id for use with the spotify module. " +
+                         "You can create one here https://developer.spotify.com/dashboard " +
+                         "and add it to your config.json.")
+    if "spotify" not in config \
+       or "client_secret" not in config["spotify"] \
+       or config["spotify"]["client_secret"] == "":
+        raise ValueError("Missing client_secret for use with the spotify module. " +
+                         "You can create one here https://developer.spotify.com/dashboard " +
+                         "and add it to your config.json.")
+
+    VolatileStorage["spotify.client_id"] = config["spotify"]["client_id"]
+    VolatileStorage["spotify.client_secret"] = config["spotify"]["client_secret"]
 
     cog = Spotify(bot)
 

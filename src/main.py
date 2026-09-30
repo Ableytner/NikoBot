@@ -73,53 +73,6 @@ if __name__ == "__main__":
     VolatileStorage["modules_to_load"] = config["modules"]
     VolatileStorage["discord_token"] = config["discord_token"]
 
-    if "mal.malnotifier" in config["modules"]:
-        if "malnotifier" not in config \
-           or "client_id" not in config["malnotifier"] \
-           or config["malnotifier"]["client_id"] == "":
-            raise ValueError("Missing client_id for use with the malnotifier module. " +
-                             "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
-        if "malnotifier" not in config \
-           or "flare_solverr_ip" not in config["malnotifier"] \
-           or config["malnotifier"]["flare_solverr_ip"] == "":
-            raise ValueError("Missing flare_solverr_ip for use with the malnotifier module. " +
-                             "Take a look at https://github.com/FlareSolverr/FlareSolverr " \
-                             "on how to set up your own instance, then add its IP to your config.json.")
-
-        VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
-        VolatileStorage["mal.flare_solverr_ip"] = config["malnotifier"]["flare_solverr_ip"]
-
-    if "spotify.spotify" in config["modules"]:
-        if "spotify" not in config \
-           or "client_id" not in config["spotify"] \
-           or config["spotify"]["client_id"] == "":
-            raise ValueError("Missing client_id for use with the spotify module. " +
-                             "You can create one here https://developer.spotify.com/dashboard " +
-                             "and add it to your config.json.")
-        if "spotify" not in config \
-           or "client_secret" not in config["spotify"] \
-           or config["spotify"]["client_secret"] == "":
-            raise ValueError("Missing client_secret for use with the spotify module. " +
-                             "You can create one here https://developer.spotify.com/dashboard " +
-                             "and add it to your config.json.")
-
-        VolatileStorage["spotify.client_id"] = config["spotify"]["client_id"]
-        VolatileStorage["spotify.client_secret"] = config["spotify"]["client_secret"]
-
-    if "inbox" in config["modules"]:
-        if "inbox" not in config \
-           or "api_secret" not in config["inbox"] \
-           or config["inbox"]["api_secret"] == "":
-            raise ValueError("Missing api_secret for use with the inbox module. " +
-                             "Generate a strong secret and add it to your config.json.")
-        if "inbox" not in config \
-           or "allowed_channels" not in config["inbox"] \
-           or not isinstance(config["inbox"]["allowed_channels"], list):
-            raise ValueError("Allowed channels not configured")
-
-        VolatileStorage["inbox.api_secret"] = config["inbox"]["api_secret"]
-        VolatileStorage["inbox.allowed_channels"] = config["inbox"].get("allowed_channels", [])
-
     # setup storage directories
     VolatileStorage["cache_dir"] = os.path.join(storage_dir, "cache")
     os.makedirs(VolatileStorage["cache_dir"], exist_ok=True)
