@@ -37,7 +37,6 @@ def setup_storages():
         "bot",
         "modules",
         "modules_to_load",
-        "mal.CLIENT-ID",
         "test_channel_id"
     ]
     keys_to_remove = []
@@ -77,15 +76,6 @@ def bot():
         raise ValueError("Missing test_channel_id for use with integration tests. " +
                          "Refer to the README for more information.")
     VolatileStorage["test_channel_id"] = int(config["test"]["test_channel_id"])
-
-    if "mal.malnotifier" in config["modules"]:
-        if "malnotifier" not in config \
-            or "client_id" not in config["malnotifier"] \
-            or config["malnotifier"]["client_id"] == "":
-            raise ValueError("Missing client_id for use with the malnotifier module. " +
-                             "You can create one https://myanimelist.net/apiconfig and add it to your config.json.")
-
-        VolatileStorage["mal.client_id"] = config["malnotifier"]["client_id"]
 
     # don't ignore commands sent by other bots
     async def process_commands(self, message):

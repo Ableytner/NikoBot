@@ -5,8 +5,7 @@
         "clear",
         "music",
         "avatar",
-        "tc4.tc4",
-        "mal.malnotifier"
+        "tc4.tc4"
     ],
     "storage_dir": "./storage",
     "discord_token": "",
