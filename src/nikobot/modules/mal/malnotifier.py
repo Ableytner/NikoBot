@@ -338,7 +338,7 @@ async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
     config = general.load_config()
-    
+
     if "malnotifier" not in config \
        or "client_id" not in config["malnotifier"] \
        or config["malnotifier"]["client_id"] == "":

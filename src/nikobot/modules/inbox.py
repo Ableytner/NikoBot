@@ -197,7 +197,7 @@ async def setup(bot) -> None:
     """Setup the inbox module"""
 
     config = general.load_config()
-    
+
     if "inbox" not in config \
        or "api_secret" not in config["inbox"] \
        or config["inbox"]["api_secret"] == "":

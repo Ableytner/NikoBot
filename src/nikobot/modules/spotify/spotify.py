@@ -338,7 +338,7 @@ async def setup(bot: commands.Bot):
     """Setup the bot_commands cog"""
 
     config = util.general.load_config()
-    
+
     if "spotify" not in config \
        or "client_id" not in config["spotify"] \
        or config["spotify"]["client_id"] == "":

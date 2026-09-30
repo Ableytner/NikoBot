@@ -68,5 +68,5 @@ VolatileStorage["temp_dir"] = os.path.join(STORAGE_DIR, "temp")
 shutil.rmtree(VolatileStorage["temp_dir"], ignore_errors=True)
 os.makedirs(VolatileStorage["temp_dir"], exist_ok=True)
 
-# pylint: disable-next=unused-import
+# pylint: disable-next=unused-import, wrong-import-position
 from .fixtures import *
