@@ -47,6 +47,8 @@ class DiscordBot(commands.Bot):
     # pylint: disable-next=arguments-differ
     async def on_message(self,
                          message: discordpy.Message):
+        await super().on_message(message)
+
         if self.user is None or message.author.id == self.user.id:
             return
 
