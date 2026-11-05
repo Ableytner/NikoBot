@@ -5,6 +5,7 @@
         "clear",
         "music",
         "avatar",
+        "oslinker",
         "tc4.tc4"
     ],
     "storage_dir": "./storage",
@@ -26,5 +27,9 @@
     "inbox": {
         "api_secret": "",
         "allowed_channels": []
+    },
+    "oslinker": {
+        "repo_base": "",
+        "channel_id": ""
     }
 }
