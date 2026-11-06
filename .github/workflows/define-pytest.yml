@@ -44,4 +44,4 @@ jobs:
         > config.json
     - name: Run tests with pytest
       run: |
-        pytest src --skip-linting
+        pytest src --skip-linting --full-trace

@@ -44,6 +44,18 @@ class DiscordBot(commands.Bot):
 
         logger.info(f"{self.user} is now online")
 
+    # pylint: disable-next=arguments-differ
+    async def on_message(self,
+                         message: discordpy.Message):
+        await super().on_message(message)
+
+        if self.user is None or message.author.id == self.user.id:
+            return
+
+        if discord.is_cog_loaded("oslinker"):
+            oslinker_cog = self.cogs["OSLinker"]
+            await oslinker_cog.on_message(message)
+
     async def on_command_error(self,
                                context: commands.context.Context,
                                exception: commands.errors.CommandError, /) -> None:

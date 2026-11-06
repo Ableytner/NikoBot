@@ -86,6 +86,7 @@ def bot():
     DiscordBot.process_commands = process_commands
 
     bot_ready = [False]
+    bot_error: list[Exception | None] = [None]
     async def on_ready(self: DiscordBot):
         """Override on_ready to wait for the bot to start"""
 
@@ -102,12 +103,20 @@ def bot():
         # pylint: disable-next=broad-exception-caught
         except Exception as e:
             logger.exception(e)
+            bot_error[0] = e
+            # wake up the main thread so it can report the real error
             _thread.interrupt_main()
     Thread(target=thread_func, daemon=True).start()
 
-    while not bot_ready[0]:
-        logger.info("waiting for bot to start...")
-        sleep(1)
+    try:
+        while not bot_ready[0]:
+            logger.info("waiting for bot to start...")
+            sleep(1)
+    except KeyboardInterrupt:
+        # surface the actual startup error instead of a bare KeyboardInterrupt
+        if bot_error[0] is not None:
+            raise RuntimeError(f"Discord bot failed to start: {bot_error[0]}") from bot_error[0]
+        raise
 
     exc = None
     try:
