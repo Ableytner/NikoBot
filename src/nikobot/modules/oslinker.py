@@ -32,14 +32,14 @@ class OSLinker(commands.Cog):
         pr_matches = re.findall(r"!\d{1,4}", content)
         if len(pr_matches) != 0 \
            and re.search(r"\[!\d{1,4}\]", content) is None:
-            for pr_id in pr_matches:
+            for pr_id in set(pr_matches):
                 url = f"{VolatileStorage['oslinker.repo_base']}/-/merge_requests/{pr_id.strip('!')}"
                 replies.append(f"Linked PR: [{pr_id}]({url})")
 
         issue_matches = re.findall(r"#\d{1,4}", content)
         if len(issue_matches) != 0 \
            and re.search(r"\[#\d{1,4}\]", content) is None:
-            for issue_id in issue_matches:
+            for issue_id in set(issue_matches):
                 url = f"{VolatileStorage['oslinker.repo_base']}/-/work_items/{issue_id.strip('#')}"
                 replies.append(f"Linked Issue: [{issue_id}]({url})")
 
