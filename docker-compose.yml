@@ -6,3 +6,4 @@ services:
     volumes:
       - ./config.json:/home/nikobot/config.json
       - ./storage:/home/nikobot/storage
+      - ./tube_requests.txt:/tube_requests.txt
