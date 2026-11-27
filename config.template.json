@@ -28,7 +28,11 @@
         "allowed_channels": []
     },
     "oslinker": {
-        "repo_base": "",
-        "channel_id": ""
+        "repos": [
+            {
+                "repo_base": "",
+                "channel_id": ""
+            }
+        ]
     }
 }
